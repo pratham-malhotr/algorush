@@ -48,7 +48,7 @@ export function FeeTransparency() {
                     { platform: "Pionex", model: "0.05% + extra bots", profits: "No" },
                     { platform: "Binance Grid", model: "0.1% trading fee", profits: "No" },
                   ].map((row, i) => (
-                    <tr key={i} className="bg-bg-surface hover:bg-white/[0.02] transition-colors">
+                    <tr key={i} className="bg-bg-surface hover:bg-black/[0.02] transition-colors">
                       <td className="px-6 py-4 text-text-secondary">{row.platform}</td>
                       <td className="px-6 py-4 text-text-secondary">{row.model}</td>
                       <td className="px-6 py-4 text-text-secondary">{row.profits}</td>

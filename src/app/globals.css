@@ -54,10 +54,10 @@
 
 :root {
   /* Premium Light Theme */
-  --bg-base: #F8FAFC;         /* slate-50 */
+  --bg-base: #FFFFFF;         /* pure white */
   --bg-surface: #FFFFFF;      /* pure white */
   --bg-elevated: #FFFFFF;     /* pure white */
-  --bg-border: #E2E8F0;       /* slate-200 */
+  --bg-border: #F1F5F9;       /* slate-100 */
   
   --accent-blue: #0052FF;     /* Coinbase / Institutional Blue */
   --accent-blue-dim: #DBEAFE; /* blue-100 */
@@ -65,8 +65,8 @@
   --accent-red: #EF4444;      /* red-500 */
   --accent-amber: #F59E0B;    /* amber-500 */
   
-  --text-primary: #0F172A;    /* slate-900 */
-  --text-secondary: #475569;  /* slate-600 */
+  --text-primary: #1E293B;    /* slate-800 - minimal black */
+  --text-secondary: #64748B;  /* slate-500 */
   --text-tertiary: #94A3B8;   /* slate-400 */
   
   --gold: #F5C542;

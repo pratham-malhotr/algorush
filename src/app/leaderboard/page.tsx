@@ -70,7 +70,7 @@ export default function LeaderboardPage() {
                 <motion.tr 
                   variants={itemVariants}
                   key={trader.rank} 
-                  className="group transition-colors hover:bg-white/[0.02]"
+                  className="group transition-colors hover:bg-black/[0.02]"
                 >
                   <td className="px-6 py-5">
                     <div className="flex items-center justify-center h-8 w-8 rounded-full bg-bg-elevated font-mono text-[14px] font-bold text-text-secondary">

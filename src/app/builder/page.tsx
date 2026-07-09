@@ -27,7 +27,7 @@ export default function BuilderPage() {
           <input 
             type="text" 
             defaultValue={strategyName} 
-            className="bg-transparent text-[16px] font-semibold text-text-primary outline-none hover:bg-white/5 focus:bg-white/5 px-2 py-1 rounded"
+            className="bg-transparent text-[16px] font-semibold text-text-primary outline-none hover:bg-black/5 focus:bg-black/5 px-2 py-1 rounded"
           />
           <Badge variant={strategyStatus.toLowerCase() as any}>{strategyStatus}</Badge>
           

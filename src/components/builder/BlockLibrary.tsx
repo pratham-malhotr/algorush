@@ -77,7 +77,7 @@ export function BlockLibrary() {
           <div key={cat.name} className="mb-2">
             <button
               onClick={() => toggleCategory(cat.name)}
-              className="flex w-full items-center justify-between rounded px-2 py-2 hover:bg-white/5"
+              className="flex w-full items-center justify-between rounded px-2 py-2 hover:bg-black/5"
             >
               <div className="flex items-center gap-2">
                 {openCategories[cat.name] ? (
@@ -94,7 +94,7 @@ export function BlockLibrary() {
                 {cat.blocks.map((block) => (
                   <div
                     key={block}
-                    className="group relative flex h-[52px] w-full cursor-grab items-center justify-between rounded-lg border border-bg-border bg-white/50 backdrop-blur-md px-3 active:cursor-grabbing hover:border-accent-blue/50 hover:bg-bg-surface hover:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all"
+                    className="group relative flex h-[52px] w-full cursor-grab items-center justify-between rounded-lg border border-bg-border bg-black/5 backdrop-blur-md px-3 active:cursor-grabbing hover:border-accent-blue/50 hover:bg-bg-surface hover:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all"
                     draggable
                     onDragStart={(e) => onDragStart(e, 'conditionNode', block, cat.name)}
                   >
