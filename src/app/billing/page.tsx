@@ -56,6 +56,7 @@ export default function BillingPage() {
 
       const stripe = await stripePromise;
       if (stripe) {
+        // @ts-ignore
         await stripe.redirectToCheckout({ sessionId });
       }
     } catch (error) {

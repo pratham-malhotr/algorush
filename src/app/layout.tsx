@@ -21,10 +21,10 @@ export const metadata: Metadata = {
   title: "AlgoText.ai | No-Code Algorithmic Trading",
   description: "Turn natural language into professional trading strategies. Build, backtest, and automate in minutes.",
   manifest: "/manifest.json",
-  themeColor: "#0F1318",
+  themeColor: "#ffffff",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "AlgoText"
   }
 };
@@ -37,7 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased dark`}
+      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-bg-base text-text-primary relative">
         <NoiseOverlay />
