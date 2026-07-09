@@ -32,7 +32,7 @@ export default function BuilderPage() {
           <Badge variant={strategyStatus.toLowerCase() as any}>{strategyStatus}</Badge>
           
           {/* Simulation Toggle */}
-          <div className="flex items-center ml-4 rounded-md bg-black/40 p-1 border border-bg-border">
+          <div className="flex items-center ml-4 rounded-md bg-bg-elevated p-1 border border-bg-border">
             <button className="flex items-center gap-2 rounded px-3 py-1 text-[12px] font-medium text-accent-blue bg-accent-blue/10">
               <FlaskConical className="h-3 w-3" />
               Paper Trading

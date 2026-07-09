@@ -20,7 +20,7 @@ export function Logo({ className }: { className?: string }) {
         <path d="M18 6L10 18H16L14 26L22 14H16L18 6Z" fill="#3B82F6" />
       </svg>
       <span className="font-sans font-bold text-lg tracking-tight">
-        <span className="text-white">Algo</span>
+        <span className="text-text-primary">Algo</span>
         <span className="text-[#3B82F6]">Rush</span>
       </span>
     </div>

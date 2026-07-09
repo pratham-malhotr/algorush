@@ -167,20 +167,20 @@ export function Hero() {
             <div className="relative flex-1 bg-white" style={{ backgroundImage: "radial-gradient(circle, #E2E8F0 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
                {/* Strategy Start Node */}
                <div className="absolute top-[40px] left-[50%] ml-[-100px] flex h-[60px] w-[200px] items-center justify-center rounded-lg border-2 border-accent-blue bg-accent-blue-dim">
-                 <span className="font-semibold text-white">Strategy Start</span>
+                 <span className="font-semibold text-text-primary">Strategy Start</span>
                  <div className="absolute -bottom-[20px] left-1/2 h-[20px] w-[2px] bg-accent-blue" />
                </div>
                
                {/* Condition Node */}
                <div className="absolute top-[140px] left-[50%] ml-[-110px] flex h-[80px] w-[220px] flex-col justify-center rounded-lg border border-accent-blue bg-[#0F2036] px-4 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
                  <span className="text-[12px] text-accent-blue">ENTRY CONDITION</span>
-                 <span className="text-[14px] font-medium text-white">RSI Crosses Below 30</span>
+                 <span className="text-[14px] font-medium text-text-primary">RSI Crosses Below 30</span>
                  <div className="absolute -bottom-[20px] left-1/2 h-[20px] w-[2px] bg-accent-blue" />
                </div>
 
                {/* Execute Node */}
                <div className="absolute top-[260px] left-[50%] ml-[-100px] flex h-[60px] w-[200px] items-center justify-center rounded-lg border-2 border-accent-green bg-[#0A2010] shadow-[0_0_15px_rgba(34,197,94,0.1)]">
-                 <span className="font-semibold text-white">Execute BUY Order</span>
+                 <span className="font-semibold text-text-primary">Execute BUY Order</span>
                </div>
             </div>
           </div>

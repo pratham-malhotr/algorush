@@ -60,7 +60,7 @@ export function HowItWorks() {
                   {i === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white" style={{ backgroundImage: "radial-gradient(circle, #E2E8F0 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
                        <div className="h-20 w-48 rounded-lg border border-accent-blue bg-[#0F2036] shadow-[0_0_15px_rgba(59,130,246,0.15)] flex items-center justify-center">
-                         <span className="font-medium text-white">RSI Block</span>
+                         <span className="font-medium text-text-primary">RSI Block</span>
                        </div>
                     </div>
                   )}

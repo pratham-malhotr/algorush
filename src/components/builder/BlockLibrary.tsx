@@ -103,7 +103,7 @@ export function BlockLibrary() {
                       <div className={`flex h-6 w-6 items-center justify-center rounded-md bg-bg-elevated group-hover:bg-accent-blue/10 transition-colors`}>
                         <div className={`h-2 w-2 rounded-full ${cat.bgColor} shadow-[0_0_8px_currentColor]`} />
                       </div>
-                      <span className="text-[13px] font-medium text-text-primary group-hover:text-white transition-colors">{block}</span>
+                      <span className="text-[13px] font-medium text-text-primary group-hover:text-text-primary transition-colors">{block}</span>
                     </div>
                     <GripVertical className="h-4 w-4 text-text-tertiary opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>

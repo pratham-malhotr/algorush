@@ -35,7 +35,7 @@ export function ConditionNode({ id, data }: { id: string; data: { label: string;
         </span>
       </div>
       
-      <span className="text-[15px] font-semibold text-white mb-3">{data.label}</span>
+      <span className="text-[15px] font-semibold text-text-primary mb-3">{data.label}</span>
       
       {/* Advanced Inline Config */}
       <div className="flex items-center gap-2 rounded-md bg-white/60 p-2 border border-bg-border/50">

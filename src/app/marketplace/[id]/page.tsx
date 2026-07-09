@@ -44,7 +44,7 @@ export default function StrategyDetailsPage({ params }: { params: { id: string }
     <div className="min-h-screen bg-bg-base text-text-primary">
       {/* Top Nav */}
       <header className="h-16 border-b border-bg-border bg-bg-surface flex items-center px-8">
-        <Link href="/marketplace" className="flex items-center gap-2 text-text-secondary hover:text-white transition-colors">
+        <Link href="/marketplace" className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors">
           <ArrowLeft className="h-4 w-4" /> Back to Marketplace
         </Link>
       </header>
