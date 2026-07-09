@@ -12,6 +12,7 @@ import {
   applyNodeChanges,
   applyEdgeChanges,
 } from 'reactflow'
+import { BacktestResult, generateMockData, runLocalBacktest } from '@/lib/backtester/engine'
 
 export type StrategyStatus = "Draft" | "Live" | "Paused"
 
@@ -26,6 +27,7 @@ interface BuilderState {
   maxPerTrade: number
   isBacktestDrawerOpen: boolean
   isBacktesting: boolean
+  backtestResult: BacktestResult | null
   
   onNodesChange: OnNodesChange
   onEdgesChange: OnEdgesChange
@@ -64,6 +66,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   maxPerTrade: 10,
   isBacktestDrawerOpen: false,
   isBacktesting: false,
+  backtestResult: null,
 
   onNodesChange: (changes: NodeChange[]) => {
     set({
@@ -93,8 +96,17 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   setIsBacktestDrawerOpen: (isOpen) => set({ isBacktestDrawerOpen: isOpen }),
   runBacktest: () => {
     set({ isBacktesting: true })
+    
+    // Simulate API delay and run engine
     setTimeout(() => {
-      set({ isBacktesting: false, isBacktestDrawerOpen: true })
-    }, 2000)
+      const data = generateMockData(90)
+      const result = runLocalBacktest(null, data) // pass null for strategy in MVP
+      
+      set({ 
+        isBacktesting: false, 
+        isBacktestDrawerOpen: true,
+        backtestResult: result
+      })
+    }, 1500)
   }
 }))

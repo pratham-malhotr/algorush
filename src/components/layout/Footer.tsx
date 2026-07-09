@@ -53,7 +53,7 @@ export function Footer() {
 
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-bg-border pt-8 sm:flex-row">
           <p className="text-[14px] text-text-tertiary">
-            © 2026 AlgoRush. All rights reserved.
+            © 2026 AlgoText.ai. All rights reserved.
           </p>
           <div className="flex items-center gap-2 rounded-full border border-[#166534] bg-[#052E16] px-3 py-1 text-[12px] font-semibold text-accent-green">
             <ShieldCheck className="h-4 w-4" />

@@ -69,7 +69,7 @@ function CanvasFlow() {
         onDragOver={onDragOver}
         nodeTypes={nodeTypes}
         fitView
-        className="algorush-canvas"
+        className="algotext-ai-canvas"
         defaultEdgeOptions={defaultEdgeOptions}
       >
         <Background color="#1E2836" variant={"dots" as any} gap={24} size={2} />

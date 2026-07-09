@@ -116,7 +116,7 @@ export function Hero() {
         </h1>
         
         <p className="mb-10 max-w-[560px] text-[18px] leading-[1.7] text-text-secondary">
-          AlgoRush lets you build powerful algorithmic trading strategies using
+          AlgoText.ai lets you build powerful algorithmic trading strategies using
           a simple drag-and-drop interface. Connect your wallet, set your rules,
           and let your bot trade crypto while you sleep — for just 0.05% on volume.
         </p>

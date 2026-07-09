@@ -45,7 +45,7 @@ export default function OnboardingPage() {
                 exit={{ opacity: 0, x: -20 }}
                 className="flex flex-col h-full"
               >
-                <h2 className="mb-2 text-[24px] font-bold text-text-primary">Welcome to AlgoRush</h2>
+                <h2 className="mb-2 text-[24px] font-bold text-text-primary">Welcome to AlgoText.ai</h2>
                 <p className="mb-8 text-[15px] text-text-secondary">What's your experience level with algorithmic trading?</p>
                 
                 <div className="flex flex-col gap-4">

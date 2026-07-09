@@ -21,7 +21,7 @@ import {
 } from '@tanstack/react-query';
 
 const config = getDefaultConfig({
-  appName: 'AlgoRush',
+  appName: 'AlgoText.ai',
   projectId: 'YOUR_PROJECT_ID', // Replace with real WalletConnect ID later
   chains: [mainnet, polygon, optimism, arbitrum, base],
   ssr: true, // If your dApp uses server side rendering (SSR)

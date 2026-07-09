@@ -37,7 +37,7 @@ export function FeeTransparency() {
                 <tbody className="divide-y divide-bg-border">
                   <tr className="bg-accent-green/5 border-l-4 border-l-accent-green">
                     <td className="px-6 py-4 font-semibold text-accent-green flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-accent-green" /> AlgoRush
+                      <div className="h-2 w-2 rounded-full bg-accent-green" /> AlgoText.ai
                     </td>
                     <td className="px-6 py-4 text-text-primary font-medium">0.05% volume</td>
                     <td className="px-6 py-4 text-text-primary font-medium">No</td>

@@ -8,7 +8,7 @@ const TESTIMONIALS = [
   {
     name: "Alex M.",
     role: "Day Trader",
-    content: "AlgoRush completely changed how I trade. I built a complex RSI strategy in 10 minutes without knowing Python.",
+    content: "AlgoText.ai completely changed how I trade. I built a complex RSI strategy in 10 minutes without knowing Python.",
   },
   {
     name: "Sarah J.",
@@ -18,7 +18,7 @@ const TESTIMONIALS = [
   {
     name: "David K.",
     role: "Hobbyist",
-    content: "I've tried other bot builders, but they were too confusing. AlgoRush's visual canvas makes algorithmic trading accessible to anyone.",
+    content: "I've tried other bot builders, but they were too confusing. AlgoText.ai's visual canvas makes algorithmic trading accessible to anyone.",
   }
 ]
 

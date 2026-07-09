@@ -18,8 +18,15 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AlgoRush | No-Code Algorithmic Trading",
-  description: "Build, backtest, and deploy algorithmic trading strategies without writing a single line of code.",
+  title: "AlgoText.ai | No-Code Algorithmic Trading",
+  description: "Turn natural language into professional trading strategies. Build, backtest, and automate in minutes.",
+  manifest: "/manifest.json",
+  themeColor: "#0F1318",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "AlgoText"
+  }
 };
 
 export default function RootLayout({

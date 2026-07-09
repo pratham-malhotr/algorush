@@ -10,7 +10,7 @@ export function FinalCTA() {
           Start trading smarter today
         </h2>
         <p className="mb-10 text-[20px] text-text-secondary">
-          Join 12,000+ traders using AlgoRush
+          Join 12,000+ traders using AlgoText.ai
         </p>
         
         <Link href="/onboarding" className="mb-6">

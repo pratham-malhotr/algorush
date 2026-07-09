@@ -4,10 +4,11 @@ import * as React from "react"
 import { useBuilderStore } from "@/store/useBuilderStore"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Play } from "lucide-react"
+import { Play, ShieldAlert, FlaskConical, Globe } from "lucide-react"
 import { BlockLibrary } from "@/components/builder/BlockLibrary"
 import { SettingsPanel } from "@/components/builder/SettingsPanel"
 import { BacktestDrawer } from "@/components/builder/BacktestDrawer"
+import { StrategyPrompt } from "@/components/builder/StrategyPrompt"
 import dynamic from "next/dynamic"
 
 const StrategyCanvas = dynamic(
@@ -29,9 +30,39 @@ export default function BuilderPage() {
             className="bg-transparent text-[16px] font-semibold text-text-primary outline-none hover:bg-white/5 focus:bg-white/5 px-2 py-1 rounded"
           />
           <Badge variant={strategyStatus.toLowerCase() as any}>{strategyStatus}</Badge>
+          
+          {/* Simulation Toggle */}
+          <div className="flex items-center ml-4 rounded-md bg-black/40 p-1 border border-bg-border">
+            <button className="flex items-center gap-2 rounded px-3 py-1 text-[12px] font-medium text-accent-blue bg-accent-blue/10">
+              <FlaskConical className="h-3 w-3" />
+              Paper Trading
+            </button>
+            <button className="flex items-center gap-2 rounded px-3 py-1 text-[12px] font-medium text-text-secondary hover:text-text-primary">
+              Live
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-3">
+          <Button variant="ghost" className="text-[13px] h-8 text-accent-red hover:bg-accent-red/10 hover:text-accent-red">
+            <ShieldAlert className="h-4 w-4 mr-2" />
+            Kill Switch
+          </Button>
+          <div className="h-4 w-px bg-bg-border mx-1" />
           <Button variant="ghost" className="text-[13px] h-8">Save Draft</Button>
+          <Button 
+            variant="outline" 
+            className="text-[13px] h-8 border-accent-blue/30 text-accent-blue hover:bg-accent-blue/10"
+            onClick={() => {
+              if (strategyDSL) {
+                alert("Submitting strategy to marketplace for 30-day live validation...\nOnce verified, it will appear publicly.");
+              } else {
+                alert("Build a strategy first!");
+              }
+            }}
+          >
+            <Globe className="h-4 w-4 mr-2" />
+            Publish
+          </Button>
           <Button 
             variant="secondary" 
             className="text-[13px] h-8 flex items-center gap-2"
@@ -57,6 +88,9 @@ export default function BuilderPage() {
         <StrategyCanvas />
         <SettingsPanel />
         
+        {/* Absolute positioned AI prompt */}
+        <StrategyPrompt />
+
         {/* Absolute positioned drawer */}
         <BacktestDrawer />
       </div>

@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # TimescaleDB acts as both our standard PostgreSQL (for metadata) 
+  # and time-series database (for OHLCV data)
+  db:
+    image: timescale/timescaledb:latest-pg15
+    container_name: algotext-db
+    environment:
+      POSTGRES_USER: algotext
+      POSTGRES_PASSWORD: algotext_password
+      POSTGRES_DB: algotext_main
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # Redis for caching, rate-limiting, and BullMQ (Event Bus for microservices)
+  redis:
+    image: redis:7-alpine
+    container_name: algotext-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+  # Prometheus for scraping metrics from our Next.js API and microservices
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: algotext-prometheus
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    # In a real setup, we'd mount a prometheus.yml config file here
+
+  # Grafana for visualizing the Prometheus metrics
+  grafana:
+    image: grafana/grafana:latest
+    container_name: algotext-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:

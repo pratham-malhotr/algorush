@@ -14,7 +14,7 @@ const STEPS = [
   },
   {
     title: "Connect your wallet securely",
-    description: "AlgoRush never holds funds. Trades execute via your own wallet securely using smart contracts.",
+    description: "AlgoText.ai executes trades directly to your connected brokerage account with full transparency.",
     icon: Shield,
   },
   {
@@ -28,7 +28,7 @@ export function HowItWorks() {
   return (
     <section className="mx-auto flex w-full max-w-[1200px] flex-col items-center px-6 py-24">
       <div className="mb-16 text-center">
-        <h2 className="mb-4 text-[36px] font-bold text-text-primary">How AlgoRush works</h2>
+        <h2 className="mb-4 text-[36px] font-bold text-text-primary">How AlgoText.ai works</h2>
         <p className="text-[16px] text-text-secondary">From idea to live trading bot in under 5 minutes</p>
       </div>
 
