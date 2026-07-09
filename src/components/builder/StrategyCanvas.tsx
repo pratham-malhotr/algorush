@@ -57,7 +57,7 @@ function CanvasFlow() {
   }), [])
 
   return (
-    <div className="flex-1 h-full w-full bg-[#070A0D]" ref={reactFlowWrapper}>
+    <div className="flex-1 h-full w-full bg-white" ref={reactFlowWrapper}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -72,7 +72,7 @@ function CanvasFlow() {
         className="algotext-ai-canvas"
         defaultEdgeOptions={defaultEdgeOptions}
       >
-        <Background color="#1E2836" variant={"dots" as any} gap={24} size={2} />
+        <Background color="#E2E8F0" variant={"dots" as any} gap={24} size={2} />
         <Controls 
           className="bg-bg-surface border border-bg-border rounded-md shadow-sm overflow-hidden fill-text-secondary"
           showInteractive={false}
@@ -80,7 +80,7 @@ function CanvasFlow() {
         <MiniMap 
           nodeColor="#3B82F6" 
           maskColor="rgba(7,10,13,0.8)" 
-          style={{ backgroundColor: '#0F1318', border: '1px solid #1E2836', borderRadius: '8px' }} 
+          style={{ backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-bg-border)', borderRadius: '8px' }} 
         />
       </ReactFlow>
     </div>

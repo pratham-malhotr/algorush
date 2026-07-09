@@ -59,7 +59,7 @@ export function BlockLibrary() {
   }
 
   return (
-    <div className="flex h-full w-[260px] shrink-0 flex-col border-r border-bg-border bg-[#0F1318]">
+    <div className="flex h-full w-[260px] shrink-0 flex-col border-r border-bg-border bg-bg-surface">
       <div className="p-4 pb-2">
         <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-text-secondary">Block Library</h3>
         <div className="relative">
@@ -94,7 +94,7 @@ export function BlockLibrary() {
                 {cat.blocks.map((block) => (
                   <div
                     key={block}
-                    className="group relative flex h-[52px] w-full cursor-grab items-center justify-between rounded-lg border border-bg-border bg-[#070A0D]/50 backdrop-blur-md px-3 active:cursor-grabbing hover:border-accent-blue/50 hover:bg-[#0F1318] hover:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all"
+                    className="group relative flex h-[52px] w-full cursor-grab items-center justify-between rounded-lg border border-bg-border bg-white/50 backdrop-blur-md px-3 active:cursor-grabbing hover:border-accent-blue/50 hover:bg-bg-surface hover:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all"
                     draggable
                     onDragStart={(e) => onDragStart(e, 'conditionNode', block, cat.name)}
                   >

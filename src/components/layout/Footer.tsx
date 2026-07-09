@@ -5,7 +5,7 @@ import { ShieldCheck } from "lucide-react"
 
 export function Footer() {
   return (
-    <footer className="w-full border-t border-bg-border bg-[#0A0C10] py-16">
+    <footer className="w-full border-t border-bg-border bg-bg-base py-16">
       <div className="mx-auto flex max-w-[1200px] flex-col px-6">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
           {/* COL 1: Logo + tagline + social icons */}

@@ -80,7 +80,7 @@ export function Hero() {
         const node = nodes[i]
         ctx.beginPath()
         ctx.arc(node.x, node.y, node.isBlue ? 4 + node.pulse * 1.5 : 4, 0, Math.PI * 2)
-        ctx.fillStyle = node.isBlue ? `rgba(59, 130, 246, ${0.4 + node.pulse * 0.6})` : "#1E2836"
+        ctx.fillStyle = node.isBlue ? `rgba(59, 130, 246, ${0.4 + node.pulse * 0.6})` : "#E2E8F0"
         ctx.fill()
       }
 
@@ -148,7 +148,7 @@ export function Hero() {
       {/* Hero Preview Image (Mockup) */}
       <div className="relative z-10 mt-16 w-full max-w-[1100px] px-4 opacity-0 animate-[fadeInUp_1s_ease-out_0.5s_forwards]">
         <div 
-          className="relative overflow-hidden rounded-[var(--radius-lg)] border border-bg-border bg-[#0A0C10] shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+          className="relative overflow-hidden rounded-[var(--radius-lg)] border border-bg-border bg-bg-base shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
           style={{ transform: "rotateX(8deg) rotateY(-3deg)", transformStyle: "preserve-3d", perspective: "1000px" }}
         >
           {/* Fading edges mask */}
@@ -164,7 +164,7 @@ export function Hero() {
               </div>
             </div>
             {/* Fake nodes on canvas */}
-            <div className="relative flex-1 bg-[#070A0D]" style={{ backgroundImage: "radial-gradient(circle, #1E2836 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
+            <div className="relative flex-1 bg-white" style={{ backgroundImage: "radial-gradient(circle, #E2E8F0 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
                {/* Strategy Start Node */}
                <div className="absolute top-[40px] left-[50%] ml-[-100px] flex h-[60px] w-[200px] items-center justify-center rounded-lg border-2 border-accent-blue bg-accent-blue-dim">
                  <span className="font-semibold text-white">Strategy Start</span>

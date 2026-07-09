@@ -43,7 +43,7 @@ export default function StrategyDetailsPage({ params }: { params: { id: string }
   return (
     <div className="min-h-screen bg-bg-base text-text-primary">
       {/* Top Nav */}
-      <header className="h-16 border-b border-bg-border bg-[#0F1318] flex items-center px-8">
+      <header className="h-16 border-b border-bg-border bg-bg-surface flex items-center px-8">
         <Link href="/marketplace" className="flex items-center gap-2 text-text-secondary hover:text-white transition-colors">
           <ArrowLeft className="h-4 w-4" /> Back to Marketplace
         </Link>
@@ -83,7 +83,7 @@ export default function StrategyDetailsPage({ params }: { params: { id: string }
             </div>
             
             {/* Mock Chart Area */}
-            <div className="h-64 rounded-xl bg-[#0F1318] border border-bg-border flex items-center justify-center text-text-tertiary flex-col gap-2">
+            <div className="h-64 rounded-xl bg-bg-surface border border-bg-border flex items-center justify-center text-text-tertiary flex-col gap-2">
               <TrendingUp className="h-8 w-8 text-accent-green/50" />
               <span>Interactive Equity Curve visualization would go here</span>
             </div>

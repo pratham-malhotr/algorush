@@ -29,7 +29,7 @@ const itemVariants = {
 
 export default function LeaderboardPage() {
   return (
-    <div className="flex min-h-[calc(100vh-64px)] w-full flex-col bg-[#070A0D] p-6 lg:p-10">
+    <div className="flex min-h-[calc(100vh-64px)] w-full flex-col bg-white p-6 lg:p-10">
       <div className="mx-auto w-full max-w-[1200px]">
         
         {/* Header */}
@@ -51,7 +51,7 @@ export default function LeaderboardPage() {
         <div className="rounded-[var(--radius-lg)] border border-bg-border bg-bg-surface shadow-[var(--shadow-card)] overflow-hidden">
           <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-bg-border bg-[#0F1318] text-[12px] uppercase tracking-wider text-text-secondary">
+              <tr className="border-b border-bg-border bg-bg-surface text-[12px] uppercase tracking-wider text-text-secondary">
                 <th className="px-6 py-5 font-semibold">Rank</th>
                 <th className="px-6 py-5 font-semibold">Trader & Strategy</th>
                 <th className="px-6 py-5 font-semibold">Return (30D)</th>

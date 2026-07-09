@@ -44,7 +44,7 @@ export function LeaderboardPreview() {
           {TOP_TRADERS.map((trader) => (
             <div
               key={trader.username}
-              className={`flex flex-col rounded-[var(--radius-lg)] border bg-[#0F1318] p-6 transition-transform hover:scale-[1.02] ${trader.glow}`}
+              className={`flex flex-col rounded-[var(--radius-lg)] border bg-bg-surface p-6 transition-transform hover:scale-[1.02] ${trader.glow}`}
             >
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-3">

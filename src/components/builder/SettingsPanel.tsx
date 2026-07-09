@@ -11,7 +11,7 @@ export function SettingsPanel() {
   } = useBuilderStore()
 
   return (
-    <div className="flex h-full w-[320px] shrink-0 flex-col overflow-y-auto border-l border-bg-border bg-[#0F1318] p-5">
+    <div className="flex h-full w-[320px] shrink-0 flex-col overflow-y-auto border-l border-bg-border bg-bg-surface p-5">
       <h3 className="mb-6 text-[16px] font-bold text-text-primary">Strategy Settings</h3>
 
       {/* Exchange & Market */}

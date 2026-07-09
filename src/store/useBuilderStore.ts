@@ -13,12 +13,14 @@ import {
   applyEdgeChanges,
 } from 'reactflow'
 import { BacktestResult, generateMockData, runLocalBacktest } from '@/lib/backtester/engine'
+import { StrategyDSL } from '@/lib/types/strategy'
 
 export type StrategyStatus = "Draft" | "Live" | "Paused"
 
 interface BuilderState {
   nodes: Node[]
   edges: Edge[]
+  strategyDSL: StrategyDSL | null
   strategyName: string
   strategyStatus: StrategyStatus
   exchange: string
@@ -29,6 +31,7 @@ interface BuilderState {
   isBacktesting: boolean
   backtestResult: BacktestResult | null
   
+  updateStrategy: (dsl: StrategyDSL) => void
   onNodesChange: OnNodesChange
   onEdgesChange: OnEdgesChange
   onConnect: OnConnect
@@ -58,6 +61,7 @@ const initialNodes: Node[] = [
 export const useBuilderStore = create<BuilderState>((set, get) => ({
   nodes: initialNodes,
   edges: [],
+  strategyDSL: null,
   strategyName: 'My Strategy #1',
   strategyStatus: 'Draft',
   exchange: 'Binance',
@@ -67,6 +71,8 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   isBacktestDrawerOpen: false,
   isBacktesting: false,
   backtestResult: null,
+
+  updateStrategy: (dsl: StrategyDSL) => set({ strategyDSL: dsl }),
 
   onNodesChange: (changes: NodeChange[]) => {
     set({
@@ -100,7 +106,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     // Simulate API delay and run engine
     setTimeout(() => {
       const data = generateMockData(90)
-      const result = runLocalBacktest(null, data) // pass null for strategy in MVP
+      const result = runLocalBacktest(get().strategyDSL, data) 
       
       set({ 
         isBacktesting: false, 

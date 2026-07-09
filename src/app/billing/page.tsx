@@ -47,7 +47,13 @@ export default function BillingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priceId })
       });
-      const { sessionId } = await response.json();
+      const { sessionId, mockMode } = await response.json();
+      
+      if (mockMode) {
+        window.location.href = '/billing?success=true';
+        return;
+      }
+
       const stripe = await stripePromise;
       if (stripe) {
         await stripe.redirectToCheckout({ sessionId });

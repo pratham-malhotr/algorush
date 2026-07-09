@@ -121,7 +121,7 @@ export default function MarketsPage() {
   }, [])
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] w-full flex-col bg-[#070A0D] p-6 lg:p-10">
+    <div className="flex min-h-[calc(100vh-64px)] w-full flex-col bg-white p-6 lg:p-10">
       <div className="mx-auto w-full max-w-[1200px]">
         
         {/* Top Overview Cards */}
@@ -161,7 +161,7 @@ export default function MarketsPage() {
 
         {/* Live Markets Table */}
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-bg-border bg-bg-surface shadow-[var(--shadow-card)]">
-          <div className="border-b border-bg-border bg-[#0F1318] px-6 py-4">
+          <div className="border-b border-bg-border bg-bg-surface px-6 py-4">
             <h2 className="text-[18px] font-bold text-text-primary flex items-center gap-2">
               Live Markets
               <span className="relative flex h-2 w-2">

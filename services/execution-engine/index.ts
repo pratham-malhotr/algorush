@@ -20,6 +20,7 @@ const worker = new Worker('execution-queue', async job => {
     status: 'filled', 
     orderId: `exec_${Date.now()}`
   };
+// @ts-ignore
 }, { connection });
 
 console.log('[Execution Engine] Started and listening on "execution-queue"');

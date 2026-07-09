@@ -21,7 +21,7 @@ export default function DevelopersPage() {
 
   return (
     <div className="min-h-screen bg-bg-base text-text-primary flex flex-col">
-      <header className="h-16 border-b border-bg-border bg-[#0F1318] flex items-center px-8 shrink-0 justify-between">
+      <header className="h-16 border-b border-bg-border bg-bg-surface flex items-center px-8 shrink-0 justify-between">
         <div className="font-bold text-xl flex items-center gap-2">
           <Terminal className="h-5 w-5 text-accent-blue" />
           AlgoText Developers
@@ -38,7 +38,7 @@ export default function DevelopersPage() {
             Bypass the UI and interact directly with the AlgoText execution and risk engines. Designed for institutional scale and ultra-low latency.
           </p>
 
-          <div className="w-full bg-[#0F1318] border border-bg-border p-6 rounded-xl flex items-center justify-between">
+          <div className="w-full bg-bg-surface border border-bg-border p-6 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Key className="h-6 w-6 text-text-tertiary" />
               <div>
@@ -61,8 +61,8 @@ export default function DevelopersPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="bg-bg-surface border border-bg-border rounded-2xl p-8">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Code className="h-5 w-5 text-accent-blue" /> Submit Order</h3>
-            <p className="text-sm text-text-secondary mb-6">POST <code className="bg-[#0F1318] px-2 py-1 rounded text-accent-green">/api/v1/orders</code></p>
-            <pre className="bg-[#0F1318] p-4 rounded-xl text-xs font-mono text-text-tertiary overflow-x-auto">
+            <p className="text-sm text-text-secondary mb-6">POST <code className="bg-bg-surface px-2 py-1 rounded text-accent-green">/api/v1/orders</code></p>
+            <pre className="bg-bg-surface p-4 rounded-xl text-xs font-mono text-text-tertiary overflow-x-auto">
 {`{
   "symbol": "AAPL",
   "qty": 100,
@@ -78,8 +78,8 @@ export default function DevelopersPage() {
 
           <div className="bg-bg-surface border border-bg-border rounded-2xl p-8">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Code className="h-5 w-5 text-accent-blue" /> List Strategies</h3>
-            <p className="text-sm text-text-secondary mb-6">GET <code className="bg-[#0F1318] px-2 py-1 rounded text-accent-blue">/api/v1/strategies</code></p>
-            <pre className="bg-[#0F1318] p-4 rounded-xl text-xs font-mono text-text-tertiary overflow-x-auto">
+            <p className="text-sm text-text-secondary mb-6">GET <code className="bg-bg-surface px-2 py-1 rounded text-accent-blue">/api/v1/strategies</code></p>
+            <pre className="bg-bg-surface p-4 rounded-xl text-xs font-mono text-text-tertiary overflow-x-auto">
 {`{
   "data": [
     {

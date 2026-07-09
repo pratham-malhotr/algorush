@@ -22,6 +22,7 @@ const worker = new Worker('backtest-queue', async job => {
     metrics: { totalReturn: "+24%", winRate: "58%" },
     jobId: job.id
   };
+// @ts-ignore
 }, { connection });
 
 worker.on('completed', job => {

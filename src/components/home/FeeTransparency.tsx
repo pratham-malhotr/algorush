@@ -3,7 +3,7 @@ import { Check } from "lucide-react"
 
 export function FeeTransparency() {
   return (
-    <section className="w-full border-t border-bg-border bg-[#0A0C10] py-24">
+    <section className="w-full border-t border-bg-border bg-bg-base py-24">
       <div className="mx-auto max-w-[1200px] px-6">
         <h2 className="mb-16 text-center text-[36px] font-bold text-text-primary">
           The most transparent fee model in crypto

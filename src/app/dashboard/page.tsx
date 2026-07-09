@@ -22,7 +22,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-bg-base text-text-primary flex flex-col">
       {/* Top Nav */}
-      <header className="h-16 border-b border-bg-border bg-[#0F1318] flex items-center justify-between px-8">
+      <header className="h-16 border-b border-bg-border bg-bg-surface flex items-center justify-between px-8">
         <div className="font-bold text-xl flex items-center gap-2">
           <Zap className="h-5 w-5 text-accent-blue" />
           AlgoText.ai
@@ -56,7 +56,21 @@ export default function DashboardPage() {
             <div className="text-sm text-text-tertiary mt-2">Well below 50% cap</div>
           </div>
           <div className="bg-bg-surface border border-bg-border p-6 rounded-xl flex flex-col justify-center items-start">
-            <button className="flex items-center gap-2 text-accent-red font-bold hover:bg-accent-red/10 px-4 py-2 rounded-lg border border-accent-red/30 transition-colors w-full justify-center">
+            <button 
+              className="flex items-center gap-2 text-accent-red font-bold hover:bg-accent-red/10 px-4 py-2 rounded-lg border border-accent-red/30 transition-colors w-full justify-center"
+              onClick={async () => {
+                try {
+                  await fetch('/api/kill-switch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'engage' })
+                  });
+                  alert('CRITICAL: Kill Switch Engaged. All trading halted across all strategies.');
+                } catch (e) {
+                  alert('Error engaging Kill Switch!');
+                }
+              }}
+            >
               <ShieldAlert className="h-5 w-5" />
               GLOBAL KILL SWITCH
             </button>
@@ -72,10 +86,10 @@ export default function DashboardPage() {
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={portfolioData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1E2836" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-bg-border)" vertical={false} />
                   <XAxis dataKey="time" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#475569" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 1000', 'dataMax + 1000']} tickFormatter={(v) => `$${v/1000}k`}/>
-                  <Tooltip contentStyle={{ backgroundColor: '#151B24', borderColor: '#1E2836' }} />
+                  <Tooltip contentStyle={{ backgroundColor: 'var(--color-bg-elevated)', borderColor: 'var(--color-bg-border)' }} />
                   <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={3} dot={false} />
                 </LineChart>
               </ResponsiveContainer>

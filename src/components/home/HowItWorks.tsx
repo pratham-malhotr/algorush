@@ -58,7 +58,7 @@ export function HowItWorks() {
                 <div className="relative aspect-video w-full overflow-hidden rounded-[var(--radius-xl)] border border-bg-border bg-bg-surface shadow-[var(--shadow-card)]">
                   {/* Mock content based on step */}
                   {i === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-[#070A0D]" style={{ backgroundImage: "radial-gradient(circle, #1E2836 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
+                    <div className="absolute inset-0 flex items-center justify-center bg-white" style={{ backgroundImage: "radial-gradient(circle, #E2E8F0 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
                        <div className="h-20 w-48 rounded-lg border border-accent-blue bg-[#0F2036] shadow-[0_0_15px_rgba(59,130,246,0.15)] flex items-center justify-center">
                          <span className="font-medium text-white">RSI Block</span>
                        </div>
@@ -86,7 +86,7 @@ export function HowItWorks() {
                     </div>
                   )}
                   {i === 3 && (
-                    <div className="absolute inset-0 flex p-6 bg-[#070A0D]">
+                    <div className="absolute inset-0 flex p-6 bg-white">
                       <div className="w-full flex flex-col gap-3">
                         {[1, 2, 3].map((j) => (
                           <div key={j} className="h-12 w-full rounded border border-bg-border bg-bg-elevated flex items-center px-4">

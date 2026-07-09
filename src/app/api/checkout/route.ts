@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     // For MVP, create a mock checkout session if no API keys are present
     if (!process.env.STRIPE_SECRET_KEY) {
       console.warn("Stripe Secret Key missing. Returning mock session ID.");
-      return NextResponse.json({ sessionId: 'cs_test_mock123' });
+      return NextResponse.json({ sessionId: 'cs_test_mock123', mockMode: true });
     }
 
     const session = await stripe.checkout.sessions.create({

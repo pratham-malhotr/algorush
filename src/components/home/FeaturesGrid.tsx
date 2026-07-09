@@ -39,7 +39,7 @@ const FEATURES = [
 
 export function FeaturesGrid() {
   return (
-    <section className="bg-[#070A0D] py-24">
+    <section className="bg-white py-24">
       <div className="mx-auto max-w-[1200px] px-6 lg:px-10">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -65,7 +65,7 @@ export function FeaturesGrid() {
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
               key={i}
-              className="group relative flex flex-col rounded-[var(--radius-lg)] border border-bg-border bg-[#070A0D]/50 p-8 transition-all hover:scale-[1.005]"
+              className="group relative flex flex-col rounded-[var(--radius-lg)] border border-bg-border bg-white/50 p-8 transition-all hover:scale-[1.005]"
             >
               <div className="absolute inset-0 -z-10 rounded-[var(--radius-lg)] bg-gradient-to-br from-accent-blue/0 to-transparent opacity-0 transition-opacity duration-500 group-hover:from-accent-blue/10 group-hover:opacity-100" />
               <div className="absolute -inset-px -z-10 rounded-[var(--radius-lg)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" style={{ background: "linear-gradient(to bottom right, rgba(59,130,246,0.5), transparent)" }} />

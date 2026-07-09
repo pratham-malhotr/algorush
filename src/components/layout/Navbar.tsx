@@ -22,7 +22,7 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
   return (
-    <nav className="sticky top-0 z-[100] flex h-[64px] w-full items-center justify-between border-b border-bg-border bg-[#0A0C10]/85 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+    <nav className="sticky top-0 z-[100] flex h-[64px] w-full items-center justify-between border-b border-bg-border bg-bg-base/85 px-4 backdrop-blur-md sm:px-6 lg:px-8">
       {/* Left side */}
       <div className="flex items-center gap-8">
         <Link href="/" className="flex items-center">

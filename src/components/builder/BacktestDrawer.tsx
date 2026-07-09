@@ -53,11 +53,11 @@ export function BacktestDrawer() {
             <div className="mb-8 h-[220px] w-full rounded-lg border border-bg-border bg-bg-base p-4">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={backtestResult.equityCurve}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1E2836" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-bg-border)" vertical={false} />
               <XAxis dataKey="date" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#475569" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#151B24', border: '1px solid #1E2836', borderRadius: '6px' }}
+                contentStyle={{ backgroundColor: 'var(--color-bg-elevated)', border: '1px solid var(--color-bg-border)', borderRadius: '6px' }}
                 itemStyle={{ color: '#F8FAFC' }}
               />
               <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} dot={false} />

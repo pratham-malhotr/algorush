@@ -10,7 +10,7 @@ const CATEGORY_STYLES: Record<string, { bg: string, border: string, text: string
 }
 
 export function ConditionNode({ id, data }: { id: string; data: { label: string; category: string } }) {
-  const styles = CATEGORY_STYLES[data.category] || { bg: "bg-[#151B24]", border: "border-text-tertiary", text: "text-text-tertiary" }
+  const styles = CATEGORY_STYLES[data.category] || { bg: "bg-bg-elevated", border: "border-text-tertiary", text: "text-text-tertiary" }
   const setNodes = useBuilderStore((state) => state.setNodes)
   const setEdges = useBuilderStore((state) => state.setEdges)
 
@@ -38,7 +38,7 @@ export function ConditionNode({ id, data }: { id: string; data: { label: string;
       <span className="text-[15px] font-semibold text-white mb-3">{data.label}</span>
       
       {/* Advanced Inline Config */}
-      <div className="flex items-center gap-2 rounded-md bg-[#070A0D]/60 p-2 border border-bg-border/50">
+      <div className="flex items-center gap-2 rounded-md bg-white/60 p-2 border border-bg-border/50">
         <select className="h-7 cursor-pointer rounded bg-transparent px-1 text-[12px] font-mono text-text-secondary outline-none focus:text-text-primary">
           <option>{"<"} Below</option>
           <option>{">"} Above</option>

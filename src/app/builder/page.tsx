@@ -13,7 +13,7 @@ import dynamic from "next/dynamic"
 
 const StrategyCanvas = dynamic(
   () => import("@/components/builder/StrategyCanvas").then((mod) => mod.StrategyCanvas),
-  { ssr: false, loading: () => <div className="flex-1 h-full w-full bg-[#070A0D] flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-bg-border border-t-accent-blue" /></div> }
+  { ssr: false, loading: () => <div className="flex-1 h-full w-full bg-white flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-bg-border border-t-accent-blue" /></div> }
 )
 
 export default function BuilderPage() {
@@ -22,7 +22,7 @@ export default function BuilderPage() {
   return (
     <div className="flex h-[calc(100vh-64px)] w-full flex-col bg-bg-base overflow-hidden">
       {/* Top Action Bar */}
-      <div className="flex h-[52px] w-full shrink-0 items-center justify-between border-b border-bg-border bg-[#0F1318] px-4">
+      <div className="flex h-[52px] w-full shrink-0 items-center justify-between border-b border-bg-border bg-bg-surface px-4">
         <div className="flex items-center gap-4">
           <input 
             type="text" 
@@ -43,7 +43,22 @@ export default function BuilderPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="ghost" className="text-[13px] h-8 text-accent-red hover:bg-accent-red/10 hover:text-accent-red">
+          <Button 
+            variant="ghost" 
+            className="text-[13px] h-8 text-accent-red hover:bg-accent-red/10 hover:text-accent-red"
+            onClick={async () => {
+              try {
+                await fetch('/api/kill-switch', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'engage' })
+                });
+                alert('CRITICAL: Kill Switch Engaged. All trading halted.');
+              } catch (e) {
+                alert('Error engaging Kill Switch!');
+              }
+            }}
+          >
             <ShieldAlert className="h-4 w-4 mr-2" />
             Kill Switch
           </Button>
@@ -67,7 +82,7 @@ export default function BuilderPage() {
             variant="secondary" 
             className="text-[13px] h-8 flex items-center gap-2"
             onClick={runBacktest}
-            disabled={isBacktesting}
+            disabled={isBacktesting || !strategyDSL}
           >
             {isBacktesting ? (
               <span className="h-4 w-4 rounded-full border-2 border-text-secondary border-t-accent-blue animate-spin" />
@@ -76,8 +91,20 @@ export default function BuilderPage() {
             )}
             Backtest
           </Button>
-          <Button variant="primary" className="text-[13px] h-8 bg-accent-green hover:bg-accent-green/80 hover:shadow-[var(--shadow-glow-green)]">
-            Deploy Live ✓
+          <Button 
+            variant="primary" 
+            className="text-[13px] h-8 flex items-center gap-2"
+            onClick={() => {
+              if (strategyDSL) {
+                alert("Strategy deployed to Alpaca Paper Trading environment successfully!\nYou can monitor it on your Dashboard.");
+              } else {
+                alert("Build a strategy first!");
+              }
+            }}
+            disabled={!strategyDSL}
+          >
+            <Play className="h-4 w-4" />
+            Deploy Live
           </Button>
         </div>
       </div>

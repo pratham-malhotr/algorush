@@ -49,7 +49,7 @@ export function LiveStats() {
   return (
     <div 
       ref={ref}
-      className="w-full border-y border-bg-border bg-[#0F1318] py-10"
+      className="w-full border-y border-bg-border bg-bg-surface py-10"
     >
       <div className="mx-auto flex max-w-[1200px] flex-col items-center justify-between gap-8 px-6 sm:flex-row sm:gap-4">
         {STATS.map((stat, i) => (

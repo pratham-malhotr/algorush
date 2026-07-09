@@ -17,7 +17,7 @@ export default function MarketplacePage() {
   return (
     <div className="min-h-screen bg-bg-base text-text-primary flex flex-col">
       {/* Top Nav */}
-      <header className="h-16 border-b border-bg-border bg-[#0F1318] flex items-center justify-between px-8 shrink-0">
+      <header className="h-16 border-b border-bg-border bg-bg-surface flex items-center justify-between px-8 shrink-0">
         <div className="font-bold text-xl flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-accent-blue" />
           AlgoText Marketplace
@@ -41,7 +41,7 @@ export default function MarketplacePage() {
             <input 
               type="text" 
               placeholder="Search for strategies (e.g., 'Mean Reversion', 'Crypto BTC')" 
-              className="w-full bg-[#0F1318] border border-bg-border rounded-full py-4 pl-12 pr-4 outline-none focus:border-accent-blue transition-colors"
+              className="w-full bg-bg-surface border border-bg-border rounded-full py-4 pl-12 pr-4 outline-none focus:border-accent-blue transition-colors"
             />
           </div>
         </div>
