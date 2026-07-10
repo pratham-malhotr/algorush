@@ -24,9 +24,18 @@ export function Hero() {
     window.addEventListener("resize", resizeCanvas)
 
     // Node particle system
-    const nodes: { x: number; y: number; vx: number; vy: number; isBlue: boolean; pulse: number; pulseDir: number }[] = []
+    const nodes: { x: number; y: number; vx: number; vy: number; isBlue: boolean; pulse: number; pulseDir: number; baseX: number; baseY: number }[] = []
     const numNodes = Math.floor(window.innerWidth / 20) // responsive node count
     
+    let mouseX = -1000;
+    let mouseY = -1000;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+
     for (let i = 0; i < numNodes; i++) {
       nodes.push({
         x: Math.random() * canvas.width,
@@ -36,7 +45,11 @@ export function Hero() {
         isBlue: Math.random() > 0.85,
         pulse: Math.random(),
         pulseDir: 0.01,
+        baseX: 0, 
+        baseY: 0,
       })
+      nodes[nodes.length - 1].baseX = nodes[nodes.length - 1].x;
+      nodes[nodes.length - 1].baseY = nodes[nodes.length - 1].y;
     }
 
     const render = () => {
@@ -54,6 +67,23 @@ export function Hero() {
         if (node.isBlue) {
           node.pulse += node.pulseDir
           if (node.pulse > 1 || node.pulse < 0) node.pulseDir *= -1
+        }
+        
+        // Mouse interaction (repel)
+        const dx = mouseX - node.x;
+        const dy = mouseY - node.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 150) {
+          const force = (150 - dist) / 150;
+          node.vx -= (dx / dist) * force * 0.5;
+          node.vy -= (dy / dist) * force * 0.5;
+        }
+        
+        // Friction / return to normal speed
+        const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy);
+        if (speed > 1.5) {
+          node.vx *= 0.95;
+          node.vy *= 0.95;
         }
       }
 
@@ -91,6 +121,7 @@ export function Hero() {
 
     return () => {
       window.removeEventListener("resize", resizeCanvas)
+      window.removeEventListener("mousemove", handleMouseMove)
       cancelAnimationFrame(animationFrameId)
     }
   }, [])
@@ -109,23 +140,26 @@ export function Hero() {
           ⚡ Crypto Algo Trading — Zero Code Required
         </div>
         
-        <h1 className="mb-6 text-[36px] font-bold leading-tight tracking-tight text-text-primary md:text-[64px]">
-          Build Crypto <span className="bg-gradient-to-r from-accent-blue to-accent-green bg-clip-text text-transparent">Bots</span>.<br />
+        <h1 className="mb-6 text-[36px] font-bold leading-tight tracking-tight text-text-primary md:text-[72px]">
+          Build Crypto <span className="relative inline-block">
+            <span className="absolute -inset-2 bg-gradient-to-r from-accent-blue to-accent-green opacity-30 blur-lg rounded-full"></span>
+            <span className="relative bg-gradient-to-r from-accent-blue to-accent-green bg-clip-text text-transparent">Bots</span>
+          </span>.<br />
           Trade 24/7.<br />
           No Code Needed.
         </h1>
         
         <p className="mb-10 max-w-[560px] text-[18px] leading-[1.7] text-text-secondary">
-          AlgoText.ai lets you build powerful algorithmic trading strategies using
+          AlgoText lets you build powerful algorithmic trading strategies using
           a simple drag-and-drop interface. Connect your wallet, set your rules,
           and let your bot trade crypto while you sleep — for just 0.05% on volume.
         </p>
         
-        <div className="flex flex-row items-center gap-3">
-          <Button variant="primary" className="px-[28px] py-[13px] text-[15px]">
+        <div className="flex flex-row items-center gap-4 mt-2">
+          <Button variant="primary" className="px-[32px] py-[24px] text-[16px] shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] transition-shadow">
             Start Building Free →
           </Button>
-          <Button variant="secondary" className="px-[28px] py-[13px] text-[15px]">
+          <Button variant="secondary" className="px-[32px] py-[24px] text-[16px] bg-white border border-bg-border hover:bg-black/[0.02]">
             <Play className="mr-2 h-4 w-4" /> Watch Demo
           </Button>
         </div>

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity, ShieldAlert, Zap, TrendingUp, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 const portfolioData = [
   { time: '09:30', value: 25000 },
@@ -25,7 +26,7 @@ export default function DashboardPage() {
       <header className="h-16 border-b border-bg-border bg-bg-surface flex items-center justify-between px-8">
         <div className="font-bold text-xl flex items-center gap-2">
           <Zap className="h-5 w-5 text-accent-blue" />
-          AlgoText.ai
+          AlgoText
         </div>
         <div className="flex items-center gap-6">
           <Link href="/builder" className="text-sm font-medium hover:text-accent-blue transition-colors">Build Strategy</Link>
@@ -36,26 +37,31 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="flex-1 p-8 max-w-7xl mx-auto w-full flex flex-col gap-8">
+      <motion.main 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="flex-1 p-8 max-w-7xl mx-auto w-full flex flex-col gap-8"
+      >
         
         {/* Header Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-bg-surface border border-bg-border p-6 rounded-xl">
+          <div className="bg-bg-surface border border-bg-border p-6 rounded-xl hover:shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all">
             <div className="text-sm text-text-secondary mb-1">Total Account Value</div>
             <div className="text-3xl font-mono font-bold">$26,250.00</div>
             <div className="text-sm text-accent-green mt-2 flex items-center gap-1"><TrendingUp className="h-4 w-4"/> +5.0% Today</div>
           </div>
-          <div className="bg-bg-surface border border-bg-border p-6 rounded-xl">
+          <div className="bg-bg-surface border border-bg-border p-6 rounded-xl hover:shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all">
             <div className="text-sm text-text-secondary mb-1">Active Strategies</div>
             <div className="text-3xl font-mono font-bold">2 / 10</div>
             <div className="text-sm text-text-tertiary mt-2">Using Pro Plan</div>
           </div>
-          <div className="bg-bg-surface border border-bg-border p-6 rounded-xl">
+          <div className="bg-bg-surface border border-bg-border p-6 rounded-xl hover:shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all">
             <div className="text-sm text-text-secondary mb-1">Total Exposure</div>
             <div className="text-3xl font-mono font-bold">14.5%</div>
             <div className="text-sm text-text-tertiary mt-2">Well below 50% cap</div>
           </div>
-          <div className="bg-bg-surface border border-bg-border p-6 rounded-xl flex flex-col justify-center items-start">
+          <div className="bg-bg-surface border border-bg-border p-6 rounded-xl flex flex-col justify-center items-start hover:shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all">
             <button 
               className="flex items-center gap-2 text-accent-red font-bold hover:bg-accent-red/10 px-4 py-2 rounded-lg border border-accent-red/30 transition-colors w-full justify-center"
               onClick={async () => {
@@ -81,7 +87,7 @@ export default function DashboardPage() {
         {/* Chart & Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          <div className="lg:col-span-2 bg-bg-surface border border-bg-border rounded-xl p-6">
+          <div className="lg:col-span-2 bg-bg-surface border border-bg-border rounded-xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
             <h3 className="font-bold text-lg mb-6">Live Equity Curve (Paper Trading)</h3>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -96,7 +102,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-bg-surface border border-bg-border rounded-xl p-6 flex flex-col">
+          <div className="bg-bg-surface border border-bg-border rounded-xl p-6 flex flex-col shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
             <h3 className="font-bold text-lg mb-6 flex items-center justify-between">
               Active Strategies
               <Link href="/builder" className="text-sm text-accent-blue font-normal">Create New</Link>
@@ -124,7 +130,7 @@ export default function DashboardPage() {
 
           </div>
         </div>
-      </main>
+      </motion.main>
     </div>
   );
 }

@@ -18,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AlgoText.ai | No-Code Algorithmic Trading",
+  title: "AlgoText | No-Code Algorithmic Trading",
   description: "Turn natural language into professional trading strategies. Build, backtest, and automate in minutes.",
   manifest: "/manifest.json",
   themeColor: "#ffffff",

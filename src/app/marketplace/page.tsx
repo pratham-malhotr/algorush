@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Search, TrendingUp, ShieldCheck, Download, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
 
 export default function MarketplacePage() {
   const { strategies, creators } = useMarketplaceStore();
@@ -62,12 +63,23 @@ export default function MarketplacePage() {
         </div>
 
         {/* Strategy Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ staggerChildren: 0.1 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
           {filteredStrategies.map(strategy => {
             const creator = creators[strategy.creatorId];
             return (
-              <Link href={`/marketplace/${strategy.id}`} key={strategy.id} className="group flex flex-col bg-bg-surface border border-bg-border rounded-xl overflow-hidden hover:border-accent-blue/50 transition-colors">
-                <div className="p-6 flex-1 flex flex-col">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                key={strategy.id}
+                className="h-full"
+              >
+                <Link href={`/marketplace/${strategy.id}`} className="group flex flex-col h-full bg-bg-surface border border-bg-border rounded-xl overflow-hidden hover:border-accent-blue/50 hover:shadow-[0_8px_30px_rgba(59,130,246,0.12)] hover:-translate-y-1 transition-all duration-300">
+                  <div className="p-6 flex-1 flex flex-col">
                   <div className="flex items-start justify-between mb-4">
                     <Badge className="bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20">
                       {strategy.category}
@@ -112,10 +124,11 @@ export default function MarketplacePage() {
                     </div>
                   </div>
                 </div>
-              </Link>
+                </Link>
+              </motion.div>
             )
           })}
-        </div>
+        </motion.div>
 
       </main>
     </div>

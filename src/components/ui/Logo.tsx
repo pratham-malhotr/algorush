@@ -21,7 +21,7 @@ export function Logo({ className }: { className?: string }) {
       </svg>
       <span className="font-sans font-bold text-lg tracking-tight">
         <span className="text-text-primary">Algo</span>
-        <span className="text-[#3B82F6]">Rush</span>
+        <span className="text-[#3B82F6]">Text</span>
       </span>
     </div>
   )
