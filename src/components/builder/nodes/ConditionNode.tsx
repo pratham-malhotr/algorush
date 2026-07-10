@@ -37,19 +37,21 @@ export function ConditionNode({ id, data }: { id: string; data: { label: string;
       
       <span className="text-[15px] font-semibold text-text-primary mb-3">{data.label}</span>
       
-      {/* Advanced Inline Config */}
-      <div className="flex items-center gap-2 rounded-md bg-black/5 p-2 border border-bg-border/50">
-        <select className="h-7 cursor-pointer rounded bg-transparent px-1 text-[12px] font-mono text-text-secondary outline-none focus:text-text-primary">
-          <option>{"<"} Below</option>
-          <option>{">"} Above</option>
-          <option>{"="} Equal</option>
-        </select>
-        <input 
-          type="number" 
-          defaultValue={30} 
-          className="h-7 w-16 rounded border border-bg-border bg-bg-surface px-2 text-center font-mono text-[13px] font-bold text-accent-blue outline-none focus:border-accent-blue"
-        />
-      </div>
+      {/* Advanced Inline Config - Hide for Time/Event based conditions */}
+      {!data.label.includes("DAY_OF_WEEK") && !data.label.includes("MARKET_EVENT") && !data.label.includes("TIME") && (
+        <div className="flex items-center gap-2 rounded-md bg-black/5 p-2 border border-bg-border/50">
+          <select className="h-7 cursor-pointer rounded bg-transparent px-1 text-[12px] font-mono text-text-secondary outline-none focus:text-text-primary">
+            <option>{"<"} Below</option>
+            <option>{">"} Above</option>
+            <option>{"="} Equal</option>
+          </select>
+          <input 
+            type="number" 
+            defaultValue={30} 
+            className="h-7 w-16 rounded border border-bg-border bg-bg-surface px-2 text-center font-mono text-[13px] font-bold text-accent-blue outline-none focus:border-accent-blue"
+          />
+        </div>
+      )}
 
       <Handle type="target" position={Position.Top} className={`h-4 w-4 border-2 border-bg-base ${styles.border.replace("border-", "bg-")} transition-transform hover:scale-125`} />
       <Handle type="source" position={Position.Bottom} className={`h-4 w-4 border-2 border-bg-base ${styles.border.replace("border-", "bg-")} transition-transform hover:scale-125`} />

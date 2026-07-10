@@ -39,10 +39,11 @@ export function StrategyPrompt() {
         const newNodes: any[] = [];
         const newEdges: any[] = [];
         let yPos = 50;
+        let sideToggle = -1; // -1 for left, 1 for right
 
         // 1. Start Node
         newNodes.push({ id: 'start', type: 'triggerNode', position: { x: 250, y: yPos }, data: { label: 'Strategy Start' } });
-        yPos += 100;
+        yPos += 120; // Increased vertical spacing for curved edges
 
         // 2. Entry Conditions
         if (strat.entryConditions?.length) {
@@ -51,11 +52,12 @@ export function StrategyPrompt() {
             newNodes.push({ 
               id: nodeId, 
               type: 'conditionNode', 
-              position: { x: 250, y: yPos }, 
+              position: { x: 250 + (sideToggle * 150), y: yPos }, 
               data: { category: 'technical', label: `If ${cond.left?.type} == ${cond.right}` } 
             });
+            sideToggle *= -1;
             newEdges.push({ id: `e-${nodeId}`, source: idx === 0 ? 'start' : `entry-${idx-1}`, target: nodeId, animated: true });
-            yPos += 100;
+            yPos += 120;
           });
         }
 
@@ -64,12 +66,13 @@ export function StrategyPrompt() {
         newNodes.push({ 
           id: exec1Id, 
           type: 'executeNode', 
-          position: { x: 250, y: yPos }, 
+          position: { x: 250 + (sideToggle * 150), y: yPos }, 
           data: { label: `${strat.action?.type} ${strat.action?.quantityValue || ''} ${strat.instruments?.[0]?.symbol || 'Asset'}` } 
         });
+        sideToggle *= -1;
         const lastEntryNode = strat.entryConditions?.length ? `entry-${strat.entryConditions.length - 1}` : 'start';
         newEdges.push({ id: `e-${exec1Id}`, source: lastEntryNode, target: exec1Id, animated: true });
-        yPos += 100;
+        yPos += 120;
 
         // 4. Exit Conditions
         if (strat.exitConditions?.length) {
@@ -78,15 +81,16 @@ export function StrategyPrompt() {
             newNodes.push({ 
               id: nodeId, 
               type: 'conditionNode', 
-              position: { x: 250, y: yPos }, 
+              position: { x: 250 + (sideToggle * 150), y: yPos }, 
               data: { category: 'risk', label: `If ${cond.left?.type} == ${cond.right}` } 
             });
+            sideToggle *= -1;
             newEdges.push({ id: `e-${nodeId}`, source: idx === 0 ? exec1Id : `exit-${idx-1}`, target: nodeId, animated: true });
-            yPos += 100;
+            yPos += 120;
           });
         }
 
-        // 5. Exit Action
+        // 5. Exit Action (Centered anchor)
         const exec2Id = 'exec-2';
         newNodes.push({ 
           id: exec2Id, 
