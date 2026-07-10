@@ -2,13 +2,18 @@ import * as React from "react"
 import { useBuilderStore } from "@/store/useBuilderStore"
 import { Button } from "@/components/ui/button"
 import { AssetSelector } from "./AssetSelector"
+import { usePaperTradingStore } from "@/store/usePaperTradingStore"
+import { useRouter } from "next/navigation"
 
 export function SettingsPanel() {
+  const router = useRouter()
+  const deployStrategy = usePaperTradingStore(state => state.deployStrategy)
   const { 
     exchange, setExchange,
     tradingPair, setTradingPair,
     allocation, setAllocation,
-    maxPerTrade, setMaxPerTrade
+    maxPerTrade, setMaxPerTrade,
+    strategyDSL
   } = useBuilderStore()
 
   return (
@@ -75,6 +80,20 @@ export function SettingsPanel() {
             className="w-full accent-accent-blue"
           />
         </div>
+
+        <Button 
+          className="mt-4 w-full bg-accent-green hover:bg-green-600 text-white font-bold h-12 rounded-xl shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all"
+          onClick={() => {
+            if (strategyDSL) {
+              deployStrategy(strategyDSL);
+              router.push('/dashboard');
+            } else {
+              alert('Please generate a strategy first using the prompt bar!');
+            }
+          }}
+        >
+          DEPLOY TO PAPER TRADING
+        </Button>
       </div>
 
     </div>

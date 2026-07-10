@@ -6,6 +6,7 @@ import { Providers } from "./providers";
 
 import { PageTransition } from "@/components/layout/PageTransition";
 import { NoiseOverlay } from "@/components/ui/NoiseOverlay";
+import { PaperTradingEngine } from "@/components/trading/PaperTradingEngine";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -40,6 +41,7 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-bg-base text-text-primary relative">
+        <PaperTradingEngine />
         <NoiseOverlay />
         <Providers>
           <Navbar />

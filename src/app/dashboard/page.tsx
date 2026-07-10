@@ -1,24 +1,19 @@
 "use client"
 import * as React from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { usePaperTradingStore } from '@/store/usePaperTradingStore';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Activity, ShieldAlert, Zap, TrendingUp, Settings } from 'lucide-react';
+import { Activity, ShieldAlert, Zap, TrendingUp, Settings, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
-const portfolioData = [
-  { time: '09:30', value: 25000 },
-  { time: '10:00', value: 25120 },
-  { time: '11:00', value: 25400 },
-  { time: '12:00', value: 25300 },
-  { time: '13:00', value: 25800 },
-  { time: '14:00', value: 26100 },
-  { time: '15:00', value: 25950 },
-  { time: '16:00', value: 26250 },
-];
-
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const { balance, equityHistory, activeStrategies, trades, positions, currentPrices } = usePaperTradingStore();
+
+  const totalEquity = equityHistory.length > 0 ? equityHistory[equityHistory.length - 1].value : balance;
+  const pnl = totalEquity - 100000;
+  const pnlPercent = (pnl / 100000) * 100;
 
   return (
     <div className="min-h-screen bg-bg-base text-text-primary flex flex-col">
@@ -48,18 +43,20 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-bg-surface border border-bg-border p-6 rounded-xl hover:shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all">
             <div className="text-sm text-text-secondary mb-1">Total Account Value</div>
-            <div className="text-3xl font-mono font-bold">$26,250.00</div>
-            <div className="text-sm text-accent-green mt-2 flex items-center gap-1"><TrendingUp className="h-4 w-4"/> +5.0% Today</div>
+            <div className="text-3xl font-mono font-bold">${totalEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div className={`text-sm mt-2 flex items-center gap-1 ${pnl >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
+              <TrendingUp className="h-4 w-4"/> {pnl >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}% Total
+            </div>
           </div>
           <div className="bg-bg-surface border border-bg-border p-6 rounded-xl hover:shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all">
             <div className="text-sm text-text-secondary mb-1">Active Strategies</div>
-            <div className="text-3xl font-mono font-bold">2 / 10</div>
-            <div className="text-sm text-text-tertiary mt-2">Using Pro Plan</div>
+            <div className="text-3xl font-mono font-bold">{activeStrategies.filter(s => s.status === 'RUNNING').length}</div>
+            <div className="text-sm text-text-tertiary mt-2">Running Live</div>
           </div>
           <div className="bg-bg-surface border border-bg-border p-6 rounded-xl hover:shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all">
-            <div className="text-sm text-text-secondary mb-1">Total Exposure</div>
-            <div className="text-3xl font-mono font-bold">14.5%</div>
-            <div className="text-sm text-text-tertiary mt-2">Well below 50% cap</div>
+            <div className="text-sm text-text-secondary mb-1">Open Positions</div>
+            <div className="text-3xl font-mono font-bold">{positions.length}</div>
+            <div className="text-sm text-text-tertiary mt-2">Cash: ${balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
           </div>
           <div className="bg-bg-surface border border-bg-border p-6 rounded-xl flex flex-col justify-center items-start hover:shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all">
             <button 
@@ -91,12 +88,12 @@ export default function DashboardPage() {
             <h3 className="font-bold text-lg mb-6">Live Equity Curve (Paper Trading)</h3>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={portfolioData}>
+                <LineChart data={equityHistory}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-bg-border)" vertical={false} />
                   <XAxis dataKey="time" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#475569" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 1000', 'dataMax + 1000']} tickFormatter={(v) => `$${v/1000}k`}/>
+                  <YAxis stroke="#475569" fontSize={12} tickLine={false} axisLine={false} domain={['dataMin - 1000', 'dataMax + 1000']} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`}/>
                   <Tooltip contentStyle={{ backgroundColor: 'var(--color-bg-elevated)', borderColor: 'var(--color-bg-border)' }} />
-                  <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={3} dot={false} isAnimationActive={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -109,11 +106,14 @@ export default function DashboardPage() {
             </h3>
             
             <div className="flex flex-col gap-4 flex-1">
-              {['RSI Mean Reversion (AAPL)', 'MACD Trend Follow (BTC)'].map((strat, i) => (
-                <div key={strat} className="p-4 border border-bg-border rounded-lg flex items-center justify-between hover:border-accent-blue/50 cursor-pointer transition-colors">
+              {activeStrategies.length === 0 && <div className="text-sm text-text-tertiary">No active strategies.</div>}
+              {activeStrategies.map((strat) => (
+                <div key={strat.id} className="p-4 border border-bg-border rounded-lg flex items-center justify-between hover:border-accent-blue/50 transition-colors">
                   <div>
-                    <div className="font-semibold text-sm">{strat}</div>
-                    <div className="text-xs text-accent-green mt-1">Live • +${(Math.random() * 500).toFixed(2)} P&L</div>
+                    <div className="font-semibold text-sm">{strat.name} ({strat.strategy.instruments?.[0]?.symbol})</div>
+                    <div className={`text-xs mt-1 ${strat.status === 'RUNNING' ? 'text-accent-green' : 'text-text-tertiary'}`}>
+                      {strat.status} • {strat.hasTriggeredEntry ? 'Position Open' : 'Waiting for Signal'}
+                    </div>
                   </div>
                   <Settings className="h-4 w-4 text-text-secondary" />
                 </div>
@@ -121,10 +121,32 @@ export default function DashboardPage() {
             </div>
 
             <div className="mt-8 border-t border-bg-border pt-4">
+              <h4 className="text-sm font-semibold text-text-secondary mb-3 flex items-center gap-2"><Briefcase className="h-4 w-4" /> Open Positions</h4>
+              <div className="text-xs flex flex-col gap-2">
+                {positions.length === 0 && <span className="text-text-tertiary">No open positions.</span>}
+                {positions.map((p, i) => {
+                  const val = p.qty * p.currentPrice;
+                  const posPnl = val - (p.qty * p.avgPrice);
+                  return (
+                    <div key={i} className="flex justify-between items-center p-2 rounded bg-black/20">
+                      <span className="font-semibold">{p.qty} {p.symbol}</span>
+                      <span className={posPnl >= 0 ? 'text-accent-green' : 'text-accent-red'}>${val.toFixed(2)}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="mt-8 border-t border-bg-border pt-4">
               <h4 className="text-sm font-semibold text-text-secondary mb-3 flex items-center gap-2"><Activity className="h-4 w-4" /> Recent Trades</h4>
-              <div className="text-xs text-text-tertiary flex flex-col gap-2">
-                <div className="flex justify-between"><span>Buy 50 AAPL @ $150.23</span><span>10:42 AM</span></div>
-                <div className="flex justify-between"><span>Sell 200 TSLA @ $202.10</span><span>09:35 AM</span></div>
+              <div className="text-xs text-text-tertiary flex flex-col gap-2 max-h-[150px] overflow-y-auto">
+                {trades.length === 0 && <span>No trades yet.</span>}
+                {trades.slice(0, 5).map(t => (
+                  <div key={t.id} className="flex justify-between border-b border-bg-border/30 pb-1">
+                    <span className={t.type === 'BUY' ? 'text-accent-green' : 'text-accent-red'}>{t.type} {t.qty} {t.symbol} @ ${t.price.toFixed(2)}</span>
+                    <span>{new Date(t.time).toLocaleTimeString()}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
