@@ -51,14 +51,14 @@ export default function CreatorProfilePage({ params }: { params: { id: string } 
             </div>
           </div>
           <div>
-            <Button size="lg" className="w-48 font-bold">Follow Creator</Button>
+            <Button className="w-48 font-bold">Follow Creator</Button>
           </div>
         </div>
 
         {/* Strategies List */}
         <div>
           <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
-            Published Strategies <Badge variant="secondary">{strategies.length}</Badge>
+            Published Strategies <Badge>{strategies.length}</Badge>
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -66,7 +66,7 @@ export default function CreatorProfilePage({ params }: { params: { id: string } 
               <Link href={`/marketplace/${strategy.id}`} key={strategy.id} className="group flex flex-col bg-bg-surface border border-bg-border rounded-xl overflow-hidden hover:border-accent-blue/50 transition-colors">
                 <div className="p-6 flex-1 flex flex-col">
                   <div className="flex items-start justify-between mb-4">
-                    <Badge variant="secondary" className="bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20">
+                    <Badge className="bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20">
                       {strategy.category}
                     </Badge>
                   </div>

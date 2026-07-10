@@ -55,7 +55,7 @@ export default function StrategyDetailsPage({ params }: { params: { id: string }
         <div className="md:col-span-2 flex flex-col gap-8">
           <div className="flex items-start justify-between">
             <div>
-              <Badge variant="secondary" className="mb-4 bg-accent-blue/10 text-accent-blue">{strategy.category}</Badge>
+              <Badge className="mb-4 bg-accent-blue/10 text-accent-blue">{strategy.category}</Badge>
               <h1 className="text-4xl font-bold mb-4">{strategy.name}</h1>
               <p className="text-text-secondary text-lg">{strategy.description}</p>
             </div>
@@ -92,12 +92,12 @@ export default function StrategyDetailsPage({ params }: { params: { id: string }
           <div className="bg-bg-surface border border-bg-border rounded-2xl p-8">
             <h3 className="text-xl font-bold mb-6">Strategy Architecture</h3>
             <div className="flex flex-wrap gap-2 mb-4">
-              {strategy.strategyDSL.assets.map(a => <Badge key={a} variant="outline">{a}</Badge>)}
+              {strategy.strategyDSL.instruments.map(i => <Badge key={i.symbol}>{i.symbol}</Badge>)}
             </div>
             <div className="space-y-4 text-sm text-text-secondary">
-              <div className="flex gap-2"><CheckCircle2 className="h-5 w-5 text-accent-green shrink-0" /> Uses {strategy.strategyDSL.indicators.length} primary indicators</div>
+              <div className="flex gap-2"><CheckCircle2 className="h-5 w-5 text-accent-green shrink-0" /> Uses technical indicators</div>
               <div className="flex gap-2"><CheckCircle2 className="h-5 w-5 text-accent-green shrink-0" /> Contains strict Entry & Exit conditions</div>
-              <div className="flex gap-2"><CheckCircle2 className="h-5 w-5 text-accent-green shrink-0" /> Built-in Risk Management (Stop Loss: {strategy.strategyDSL.riskParameters?.stopLossPercentage || 0}%)</div>
+              <div className="flex gap-2"><CheckCircle2 className="h-5 w-5 text-accent-green shrink-0" /> Built-in Risk Management</div>
             </div>
           </div>
         </div>
@@ -111,7 +111,6 @@ export default function StrategyDetailsPage({ params }: { params: { id: string }
             </div>
 
             <Button 
-              size="lg" 
               variant="primary" 
               className="w-full h-12 text-md font-bold"
               onClick={handleClone}

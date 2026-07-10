@@ -17,7 +17,7 @@ const StrategyCanvas = dynamic(
 )
 
 export default function BuilderPage() {
-  const { strategyName, strategyStatus, isBacktesting, runBacktest } = useBuilderStore()
+  const { strategyName, strategyStatus, isBacktesting, runBacktest, strategyDSL } = useBuilderStore()
 
   return (
     <div className="flex h-[calc(100vh-64px)] w-full flex-col bg-bg-base overflow-hidden">
@@ -65,7 +65,7 @@ export default function BuilderPage() {
           <div className="h-4 w-px bg-bg-border mx-1" />
           <Button variant="ghost" className="text-[13px] h-8">Save Draft</Button>
           <Button 
-            variant="outline" 
+            variant="ghost" 
             className="text-[13px] h-8 border-accent-blue/30 text-accent-blue hover:bg-accent-blue/10"
             onClick={() => {
               if (strategyDSL) {

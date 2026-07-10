@@ -69,7 +69,7 @@ export default function MarketplacePage() {
               <Link href={`/marketplace/${strategy.id}`} key={strategy.id} className="group flex flex-col bg-bg-surface border border-bg-border rounded-xl overflow-hidden hover:border-accent-blue/50 transition-colors">
                 <div className="p-6 flex-1 flex flex-col">
                   <div className="flex items-start justify-between mb-4">
-                    <Badge variant="secondary" className="bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20">
+                    <Badge className="bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20">
                       {strategy.category}
                     </Badge>
                     <div className="flex items-center gap-1 text-sm font-semibold text-accent-green">

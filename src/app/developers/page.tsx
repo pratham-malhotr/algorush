@@ -32,7 +32,7 @@ export default function DevelopersPage() {
       <main className="flex-1 p-8 max-w-5xl mx-auto w-full flex flex-col gap-8">
         
         <div className="bg-bg-surface border border-bg-border rounded-2xl p-10 flex flex-col items-start">
-          <Badge variant="secondary" className="mb-4 bg-accent-blue/10 text-accent-blue">Enterprise Tier</Badge>
+          <Badge className="mb-4 bg-accent-blue/10 text-accent-blue">Enterprise Tier</Badge>
           <h1 className="text-4xl font-bold mb-4">REST API Access</h1>
           <p className="text-text-secondary text-lg max-w-2xl mb-8">
             Bypass the UI and interact directly with the AlgoText execution and risk engines. Designed for institutional scale and ultra-low latency.
@@ -50,7 +50,7 @@ export default function DevelopersPage() {
             </div>
             
             {apiKey ? (
-              <Button variant="outline" onClick={copyToClipboard}><Copy className="h-4 w-4 mr-2" /> Copy Secret Key</Button>
+              <Button variant="ghost" onClick={copyToClipboard}><Copy className="h-4 w-4 mr-2" /> Copy Secret Key</Button>
             ) : (
               <Button variant="primary" onClick={generateKey}><ShieldCheck className="h-4 w-4 mr-2" /> Generate Key</Button>
             )}
