@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useBuilderStore } from "@/store/useBuilderStore"
 import { Button } from "@/components/ui/button"
+import { AssetSelector } from "./AssetSelector"
 
 export function SettingsPanel() {
   const { 
@@ -32,16 +33,11 @@ export function SettingsPanel() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-[12px] text-text-secondary">Trading Pair</label>
-          <select 
+          <label className="text-[12px] text-text-secondary">Trading Pair / Asset</label>
+          <AssetSelector 
             value={tradingPair}
-            onChange={(e) => setTradingPair(e.target.value)}
-            className="h-10 w-full rounded-md border border-bg-border bg-bg-base px-3 text-[14px] text-text-primary outline-none"
-          >
-            <option value="BTC/USDT">BTC/USDT - $64,230.5</option>
-            <option value="ETH/USDT">ETH/USDT - $3,450.2</option>
-            <option value="SOL/USDT">SOL/USDT - $145.2</option>
-          </select>
+            onChange={setTradingPair}
+          />
         </div>
       </div>
 
