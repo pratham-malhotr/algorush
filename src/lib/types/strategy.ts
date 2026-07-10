@@ -7,7 +7,7 @@ export const InstrumentSchema = z.object({
   assetClass: AssetClassSchema,
 });
 
-export const IndicatorTypeSchema = z.enum(['PRICE', 'SMA', 'EMA', 'RSI', 'MACD', 'BOLLINGER_BANDS', 'VWAP']);
+export const IndicatorTypeSchema = z.enum(['PRICE', 'SMA', 'EMA', 'RSI', 'MACD', 'BOLLINGER_BANDS', 'VWAP', 'TIME', 'DAY_OF_WEEK', 'MARKET_EVENT']);
 
 export const IndicatorSchema = z.object({
   type: IndicatorTypeSchema,
@@ -20,7 +20,7 @@ export const ConditionSchema = z.object({
   id: z.string(),
   left: IndicatorSchema,
   comparator: ComparatorSchema,
-  right: z.union([IndicatorSchema, z.number()]), // compare indicator vs indicator or indicator vs static value
+  right: z.union([IndicatorSchema, z.number(), z.string()]), // string added for "MONDAY", "MARKET_OPEN"
 });
 
 export const ActionTypeSchema = z.enum(['BUY', 'SELL', 'CLOSE_POSITION']);

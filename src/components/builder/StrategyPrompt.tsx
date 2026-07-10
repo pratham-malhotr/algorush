@@ -36,20 +36,66 @@ export function StrategyPrompt() {
         const strat = data.strategy;
         updateStrategy(strat);
         
-        const newNodes = [
-          { id: 'start', type: 'triggerNode', position: { x: 250, y: 50 }, data: { label: 'Start Strategy' } },
-          { id: 'cond1', type: 'conditionNode', position: { x: 250, y: 150 }, data: { category: 'technical', label: `Entry: ${strat.entryConditions?.[0]?.type || 'Custom'}` } },
-          { id: 'exec1', type: 'executeNode', position: { x: 250, y: 250 }, data: { label: `Buy ${strat.assets?.[0] || 'Asset'}` } },
-          { id: 'cond2', type: 'conditionNode', position: { x: 250, y: 350 }, data: { category: 'risk', label: `Exit: ${strat.exitConditions?.[0]?.type || 'Custom'}` } },
-          { id: 'exec2', type: 'executeNode', position: { x: 250, y: 450 }, data: { label: `Close Position` } },
-        ];
-        
-        const newEdges = [
-          { id: 'e1', source: 'start', target: 'cond1', animated: true },
-          { id: 'e2', source: 'cond1', target: 'exec1', animated: true },
-          { id: 'e3', source: 'exec1', target: 'cond2', animated: true },
-          { id: 'e4', source: 'cond2', target: 'exec2', animated: true },
-        ];
+        const newNodes: any[] = [];
+        const newEdges: any[] = [];
+        let yPos = 50;
+
+        // 1. Start Node
+        newNodes.push({ id: 'start', type: 'triggerNode', position: { x: 250, y: yPos }, data: { label: 'Strategy Start' } });
+        yPos += 100;
+
+        // 2. Entry Conditions
+        if (strat.entryConditions?.length) {
+          strat.entryConditions.forEach((cond: any, idx: number) => {
+            const nodeId = `entry-${idx}`;
+            newNodes.push({ 
+              id: nodeId, 
+              type: 'conditionNode', 
+              position: { x: 250, y: yPos }, 
+              data: { category: 'technical', label: `If ${cond.left?.type} == ${cond.right}` } 
+            });
+            newEdges.push({ id: `e-${nodeId}`, source: idx === 0 ? 'start' : `entry-${idx-1}`, target: nodeId, animated: true });
+            yPos += 100;
+          });
+        }
+
+        // 3. Entry Action
+        const exec1Id = 'exec-1';
+        newNodes.push({ 
+          id: exec1Id, 
+          type: 'executeNode', 
+          position: { x: 250, y: yPos }, 
+          data: { label: `${strat.action?.type} ${strat.action?.quantityValue || ''} ${strat.instruments?.[0]?.symbol || 'Asset'}` } 
+        });
+        const lastEntryNode = strat.entryConditions?.length ? `entry-${strat.entryConditions.length - 1}` : 'start';
+        newEdges.push({ id: `e-${exec1Id}`, source: lastEntryNode, target: exec1Id, animated: true });
+        yPos += 100;
+
+        // 4. Exit Conditions
+        if (strat.exitConditions?.length) {
+          strat.exitConditions.forEach((cond: any, idx: number) => {
+            const nodeId = `exit-${idx}`;
+            newNodes.push({ 
+              id: nodeId, 
+              type: 'conditionNode', 
+              position: { x: 250, y: yPos }, 
+              data: { category: 'risk', label: `If ${cond.left?.type} == ${cond.right}` } 
+            });
+            newEdges.push({ id: `e-${nodeId}`, source: idx === 0 ? exec1Id : `exit-${idx-1}`, target: nodeId, animated: true });
+            yPos += 100;
+          });
+        }
+
+        // 5. Exit Action
+        const exec2Id = 'exec-2';
+        newNodes.push({ 
+          id: exec2Id, 
+          type: 'executeNode', 
+          position: { x: 250, y: yPos }, 
+          data: { label: `SELL/CLOSE POSITION` } 
+        });
+        const lastExitNode = strat.exitConditions?.length ? `exit-${strat.exitConditions.length - 1}` : exec1Id;
+        newEdges.push({ id: `e-${exec2Id}`, source: lastExitNode, target: exec2Id, animated: true });
         
         const animateBuild = async () => {
           setNodes([]);

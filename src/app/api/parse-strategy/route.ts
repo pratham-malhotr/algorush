@@ -18,11 +18,17 @@ export async function POST(req: Request) {
       return NextResponse.json({
         status: 'SUCCESS',
         strategy: {
-          assets: ["BTC", "ETH"],
-          timeframe: "1h",
-          indicators: [{ type: "RSI", period: 14 }],
-          entryConditions: [{ type: "RSI_CROSS_UNDER", value: 30 }],
-          exitConditions: [{ type: "RSI_CROSS_OVER", value: 70 }],
+          name: "AAPL Swing Strategy",
+          description: "Buy 50 AAPL today and sell on Monday open.",
+          instruments: [{ symbol: "AAPL", assetClass: "EQUITY" }],
+          action: { type: "BUY", quantityType: "SHARES", quantityValue: 50 },
+          entryConditions: [
+            { id: 'entry-1', left: { type: "MARKET_EVENT" }, comparator: "EQUAL", right: "TODAY" }
+          ],
+          exitConditions: [
+            { id: 'exit-1', left: { type: "DAY_OF_WEEK" }, comparator: "EQUAL", right: "MONDAY" },
+            { id: 'exit-2', left: { type: "MARKET_EVENT" }, comparator: "EQUAL", right: "OPEN" }
+          ],
           riskParameters: { stopLossPercentage: 5, maxPositionSizeUsd: 10000 }
         }
       });
