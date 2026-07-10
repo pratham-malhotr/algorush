@@ -143,7 +143,8 @@ export const usePaperTradingStore = create<PaperTradingState>((set, get) => ({
       const lastPoint = newHistory[newHistory.length - 1];
       
       if (lastPoint && lastPoint.time === nowStr) {
-        lastPoint.value = totalEquity; // Update current minute
+        // Update current minute immutably
+        newHistory[newHistory.length - 1] = { ...lastPoint, value: totalEquity };
       } else {
         newHistory.push({ time: nowStr, value: totalEquity });
         if (newHistory.length > 50) newHistory.shift(); // Keep last 50 points
