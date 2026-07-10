@@ -2,11 +2,16 @@
 
 import * as React from "react"
 import { Send, Sparkles, Loader2, AlertCircle } from "lucide-react"
+import { useBuilderStore } from "@/store/useBuilderStore"
 
 export function StrategyPrompt() {
   const [prompt, setPrompt] = React.useState("")
   const [isLoading, setIsLoading] = React.useState(false)
   const [clarification, setClarification] = React.useState<string | null>(null)
+  
+  const updateStrategy = useBuilderStore(state => state.updateStrategy)
+  const setNodes = useBuilderStore(state => state.setNodes)
+  const setEdges = useBuilderStore(state => state.setEdges)
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,10 +32,29 @@ export function StrategyPrompt() {
       if (data.status === "NEEDS_CLARIFICATION") {
         setClarification(data.clarificationMessage)
       } else if (data.status === "SUCCESS") {
-        // TODO: Map DSL to ReactFlow nodes and update store
-        console.log("Parsed Strategy:", data.strategy)
+        // Map DSL to ReactFlow nodes and update store
+        const strat = data.strategy;
+        updateStrategy(strat);
+        
+        const newNodes = [
+          { id: 'start', type: 'triggerNode', position: { x: 250, y: 50 }, data: { label: 'Start Strategy' } },
+          { id: 'cond1', type: 'conditionNode', position: { x: 250, y: 150 }, data: { category: 'technical', label: `Entry: ${strat.entryConditions?.[0]?.type || 'Custom'}` } },
+          { id: 'exec1', type: 'executeNode', position: { x: 250, y: 250 }, data: { label: `Buy ${strat.assets?.[0] || 'Asset'}` } },
+          { id: 'cond2', type: 'conditionNode', position: { x: 250, y: 350 }, data: { category: 'risk', label: `Exit: ${strat.exitConditions?.[0]?.type || 'Custom'}` } },
+          { id: 'exec2', type: 'executeNode', position: { x: 250, y: 450 }, data: { label: `Close Position` } },
+        ];
+        
+        const newEdges = [
+          { id: 'e1', source: 'start', target: 'cond1', animated: true },
+          { id: 'e2', source: 'cond1', target: 'exec1', animated: true },
+          { id: 'e3', source: 'exec1', target: 'cond2', animated: true },
+          { id: 'e4', source: 'cond2', target: 'exec2', animated: true },
+        ];
+        
+        setNodes(newNodes);
+        setEdges(newEdges);
+
         setPrompt("") // clear on success
-        alert("Strategy parsed successfully! (Check console for DSL)")
       } else {
         console.error("Unknown response", data)
       }
