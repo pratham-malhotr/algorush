@@ -51,8 +51,25 @@ export function StrategyPrompt() {
           { id: 'e4', source: 'cond2', target: 'exec2', animated: true },
         ];
         
-        setNodes(newNodes);
-        setEdges(newEdges);
+        const animateBuild = async () => {
+          setNodes([]);
+          setEdges([]);
+          for (let i = 0; i < newNodes.length; i++) {
+            await new Promise(r => setTimeout(r, 500));
+            setNodes((prev) => {
+              // Prevent duplicates if multiple clicks happen
+              if (prev.find(n => n.id === newNodes[i].id)) return prev;
+              return [...prev, newNodes[i]];
+            });
+            if (i > 0) {
+              setEdges((prev) => {
+                if (prev.find(e => e.id === newEdges[i - 1].id)) return prev;
+                return [...prev, newEdges[i - 1]];
+              });
+            }
+          }
+        };
+        animateBuild();
 
         setPrompt("") // clear on success
       } else {
