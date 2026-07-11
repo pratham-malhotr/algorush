@@ -45,6 +45,9 @@ export function Footer() {
             <Link href="/about" className="text-[14px] text-text-secondary hover:text-accent-blue">About</Link>
             <Link href="/careers" className="text-[14px] text-text-secondary hover:text-accent-blue">Careers</Link>
             <Link href="/press" className="text-[14px] text-text-secondary hover:text-accent-blue">Press</Link>
+            <Link href="/affiliates" className="text-[14px] text-accent-green font-medium hover:text-accent-blue flex items-center gap-2">
+              Affiliate Program <span className="flex h-4 items-center rounded-full bg-accent-green/20 px-1.5 text-[10px] uppercase text-accent-green">New</span>
+            </Link>
             <Link href="/terms" className="text-[14px] text-text-secondary hover:text-accent-blue">Terms</Link>
             <Link href="/privacy" className="text-[14px] text-text-secondary hover:text-accent-blue">Privacy</Link>
             <Link href="/support" className="text-[14px] text-text-secondary hover:text-accent-blue">Support</Link>
