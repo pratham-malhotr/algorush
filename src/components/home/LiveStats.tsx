@@ -4,9 +4,9 @@ import * as React from "react"
 import { useInView } from "framer-motion"
 
 const STATS = [
-  { value: 2400000000, label: "Volume Traded", prefix: "$", suffix: "B+", divisor: 1000000000, decimals: 1 },
-  { value: 48000, label: "Strategies Created", prefix: "", suffix: "+", divisor: 1, decimals: 0 },
-  { value: 12800, label: "Active Traders", prefix: "", suffix: "", divisor: 1, decimals: 0 },
+  { value: 8500000, label: "Volume Traded", prefix: "$", suffix: "M+", divisor: 1000000, decimals: 1 },
+  { value: 1240, label: "Strategies Created", prefix: "", suffix: "+", divisor: 1, decimals: 0 },
+  { value: 432, label: "Active Traders", prefix: "", suffix: "", divisor: 1, decimals: 0 },
   { value: 0.05, label: "Flat Fee", prefix: "", suffix: "%", divisor: 1, decimals: 2 },
 ]
 

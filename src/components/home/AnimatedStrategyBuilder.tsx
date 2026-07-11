@@ -4,27 +4,72 @@ import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Bot, Activity, TrendingDown, TrendingUp, ShoppingCart, ShieldAlert, MessageSquare, BarChart2, DollarSign, PieChart, Sparkles, Crosshair, Zap, Briefcase } from "lucide-react"
 
-const TEXT_TO_TYPE = "Sweep 4H Order Block -> TWAP buy. Hedge if funding > 0.01%. Take profit at 2 VWAP standard deviations. Set ATR trailing stop."
-
-// Node Definitions (Ultra Advanced Algorithmic Concepts)
-const NODES = [
-  { id: 1, x: 500, y: 40, icon: Crosshair, color: "blue", title: "Liquidity Sweep", desc: "4H Order Block", params: ["Source: Book", "Lookback: 24h"] },
-  { id: 2, x: 500, y: 160, icon: Activity, color: "amber", title: "Filter", desc: "RSI Divergence", params: ["RSI < 30", "Timeframe: 15m"] },
-  
-  // Center Branch
-  { id: 3, x: 500, y: 280, icon: Zap, color: "green", title: "Execution", desc: "TWAP Buy", params: ["Size: 2 BTC", "Duration: 2h"] },
-  { id: 4, x: 500, y: 400, icon: ShieldAlert, color: "red", title: "Risk Engine", desc: "Trailing ATR Stop", params: ["Multiplier: 1.5x", "Dynamic"] },
-  { id: 5, x: 500, y: 520, icon: ShieldAlert, color: "red", title: "Global Risk", desc: "Max Drawdown", params: ["Limit: 3%", "Killswitch"] },
-  
-  // Left Branch
-  { id: 6, x: 200, y: 280, icon: BarChart2, color: "amber", title: "Condition", desc: "Funding > 0.01%", params: ["Exchange: Binance", "Premium"] },
-  { id: 7, x: 200, y: 400, icon: Briefcase, color: "purple", title: "Execution", desc: "Hedge Position", params: ["Short ETH", "Beta Weight"] },
-  { id: 8, x: 200, y: 520, icon: MessageSquare, color: "blue", title: "Notification", desc: "Webhook Alert", params: ["Discord", "Priority: High"] },
-  
-  // Right Branch
-  { id: 9, x: 800, y: 280, icon: TrendingUp, color: "amber", title: "Mean Reversion", desc: "Price > VWAP", params: ["Bands: 2 StdDev", "Anchored"] },
-  { id: 10, x: 800, y: 400, icon: PieChart, color: "green", title: "Take Profit 1", desc: "Scale Out", params: ["Sell 50%", "Limit Order"] },
-  { id: 11, x: 800, y: 520, icon: DollarSign, color: "green", title: "Take Profit 2", desc: "Close Position", params: ["Sell 50%", "Market"] },
+// Array of Ultra Advanced Algorithmic Strategies
+const STRATEGIES = [
+  {
+    text: "Sweep 4H Order Block -> TWAP buy. Hedge if funding > 0.01%. Take profit at 2 VWAP standard deviations. Set ATR trailing stop.",
+    nodes: [
+      { id: 1, x: 500, y: 40, icon: Crosshair, color: "blue", title: "Liquidity Sweep", desc: "4H Order Block", params: ["Source: Book", "Lookback: 24h"] },
+      { id: 2, x: 500, y: 160, icon: Activity, color: "amber", title: "Filter", desc: "RSI Divergence", params: ["RSI < 30", "Timeframe: 15m"] },
+      { id: 3, x: 500, y: 280, icon: Zap, color: "green", title: "Execution", desc: "TWAP Buy", params: ["Size: 2 BTC", "Duration: 2h"] },
+      { id: 4, x: 500, y: 400, icon: ShieldAlert, color: "red", title: "Risk Engine", desc: "Trailing ATR Stop", params: ["Multiplier: 1.5x", "Dynamic"] },
+      { id: 5, x: 500, y: 520, icon: ShieldAlert, color: "red", title: "Global Risk", desc: "Max Drawdown", params: ["Limit: 3%", "Killswitch"] },
+      { id: 6, x: 200, y: 280, icon: BarChart2, color: "amber", title: "Condition", desc: "Funding > 0.01%", params: ["Exchange: Binance", "Premium"] },
+      { id: 7, x: 200, y: 400, icon: Briefcase, color: "purple", title: "Execution", desc: "Hedge Position", params: ["Short ETH", "Beta Weight"] },
+      { id: 8, x: 200, y: 520, icon: MessageSquare, color: "blue", title: "Notification", desc: "Webhook Alert", params: ["Discord", "Priority: High"] },
+      { id: 9, x: 800, y: 280, icon: TrendingUp, color: "amber", title: "Mean Reversion", desc: "Price > VWAP", params: ["Bands: 2 StdDev", "Anchored"] },
+      { id: 10, x: 800, y: 400, icon: PieChart, color: "green", title: "Take Profit 1", desc: "Scale Out", params: ["Sell 50%", "Limit Order"] },
+      { id: 11, x: 800, y: 520, icon: DollarSign, color: "green", title: "Take Profit 2", desc: "Close Position", params: ["Sell 50%", "Market"] }
+    ]
+  },
+  {
+    text: "ETH Smart Contract interaction: Monitor Uniswap V3 ETH/USDC pool. If APY > 12%, mint concentrated liquidity position. Auto-rebalance if IL > 2%.",
+    nodes: [
+      { id: 1, x: 500, y: 40, icon: Activity, color: "blue", title: "Smart Contract", desc: "Uniswap V3 Pool", params: ["ETH/USDC", "0.3% Fee"] },
+      { id: 2, x: 500, y: 160, icon: TrendingUp, color: "amber", title: "Yield Check", desc: "APY Monitor", params: ["APY > 12%", "TVL > $10M"] },
+      { id: 3, x: 500, y: 280, icon: Zap, color: "green", title: "Mint Position", desc: "Concentrated Liq", params: ["Range: ±5%", "Auto-comp"] },
+      { id: 4, x: 500, y: 400, icon: ShieldAlert, color: "red", title: "Impermanent Loss", desc: "IL Monitor", params: ["IL > 2%", "Rebalance"] },
+      { id: 5, x: 500, y: 520, icon: MessageSquare, color: "purple", title: "Telegram", desc: "Yield Report", params: ["Daily", "Stats"] },
+      { id: 6, x: 200, y: 280, icon: BarChart2, color: "amber", title: "Condition", desc: "Volatility < 50%", params: ["Source: VIX", "Stable"] },
+      { id: 7, x: 200, y: 400, icon: Briefcase, color: "purple", title: "Flash Loan", desc: "Arbitrage Route", params: ["Aave", "Max Size"] },
+      { id: 8, x: 200, y: 520, icon: ShieldAlert, color: "red", title: "Slippage", desc: "Revert TX", params: ["Max: 0.5%", "Hard"] },
+      { id: 9, x: 800, y: 280, icon: Activity, color: "amber", title: "Condition", desc: "ETH/BTC Ratio", params: ["Trend: UP", "> 0.05"] },
+      { id: 10, x: 800, y: 400, icon: Zap, color: "green", title: "Unstake", desc: "Cooldown Check", params: ["0 Days", "Instant"] },
+      { id: 11, x: 800, y: 520, icon: ShoppingCart, color: "green", title: "Bridge", desc: "Target L2", params: ["Arbitrum", "Hop"] }
+    ]
+  },
+  {
+    text: "TSLA Earnings Play: If Pre-market gap > 3% and Sentiment is Bullish, execute Market On Open. Trail stop by $2. Scale out 50% at 1R.",
+    nodes: [
+      { id: 1, x: 500, y: 40, icon: BarChart2, color: "blue", title: "Earnings Event", desc: "Q3 Report", params: ["Ticker: TSLA", "Date: Today"] },
+      { id: 2, x: 500, y: 160, icon: TrendingUp, color: "amber", title: "Gap Scan", desc: "Pre-market Gap", params: ["Gap > +3%", "High Vol"] },
+      { id: 3, x: 500, y: 280, icon: ShoppingCart, color: "green", title: "Execution", desc: "Market On Open", params: ["Buy 100", "Route: IEX"] },
+      { id: 4, x: 500, y: 400, icon: ShieldAlert, color: "red", title: "Risk Engine", desc: "Trailing Stop", params: ["Offset: $2.00", "Hard"] },
+      { id: 5, x: 500, y: 520, icon: MessageSquare, color: "blue", title: "SMS Alert", desc: "P&L Update", params: ["To: Admin", "Filled"] },
+      { id: 6, x: 200, y: 280, icon: Activity, color: "amber", title: "Sentiment", desc: "Twitter/X Feed", params: ["Score: Bullish", "NLP"] },
+      { id: 7, x: 200, y: 400, icon: Zap, color: "purple", title: "Options", desc: "Buy Call", params: ["Strike: +5%", "OTM"] },
+      { id: 8, x: 200, y: 520, icon: ShieldAlert, color: "red", title: "Theta Guard", desc: "Time Stop", params: ["Hold: 3 Days", "Sell"] },
+      { id: 9, x: 800, y: 280, icon: Crosshair, color: "amber", title: "Sector Check", desc: "EV Industry", params: ["Up > 1%", "QQQ"] },
+      { id: 10, x: 800, y: 400, icon: PieChart, color: "green", title: "Take Profit", desc: "Scale Out", params: ["Sell 50%", "At +1R"] },
+      { id: 11, x: 800, y: 520, icon: DollarSign, color: "green", title: "Runner", desc: "Let Ride", params: ["Hold 50%", "Trailing"] }
+    ]
+  },
+  {
+    text: "AAPL Volatility Crush: Sell Iron Condor 45DTE before Apple event. If IV Rank > 80, open position. Close at 50% max profit or 21 DTE.",
+    nodes: [
+      { id: 1, x: 500, y: 40, icon: Crosshair, color: "blue", title: "Corp Event", desc: "Keynote Stream", params: ["Ticker: AAPL", "Sept 12"] },
+      { id: 2, x: 500, y: 160, icon: Activity, color: "amber", title: "Volatility", desc: "IV Rank", params: ["IVR > 80", "Premium"] },
+      { id: 3, x: 500, y: 280, icon: Briefcase, color: "green", title: "Execution", desc: "Sell Iron Condor", params: ["45 DTE", "16 Delta"] },
+      { id: 4, x: 500, y: 400, icon: ShieldAlert, color: "red", title: "Max Loss", desc: "Auto-Stop", params: ["200% Credit", "BTC"] },
+      { id: 5, x: 500, y: 520, icon: MessageSquare, color: "purple", title: "Email Report", desc: "Daily Summary", params: ["EOD", "Greeks"] },
+      { id: 6, x: 200, y: 280, icon: TrendingDown, color: "amber", title: "Macro Risk", desc: "VIX Spike", params: ["VIX > 25", "Fear"] },
+      { id: 7, x: 200, y: 400, icon: Zap, color: "purple", title: "Defense", desc: "Roll Position", params: ["Out in Time", "Credit"] },
+      { id: 8, x: 200, y: 520, icon: ShieldAlert, color: "red", title: "Assignment", desc: "Early Ex", params: ["Monitor", "Pin Risk"] },
+      { id: 9, x: 800, y: 280, icon: BarChart2, color: "amber", title: "Condition", desc: "Time Decay", params: ["Theta > 10", "Passing"] },
+      { id: 10, x: 800, y: 400, icon: PieChart, color: "green", title: "Take Profit", desc: "Close Condor", params: ["50% Max", "Limit"] },
+      { id: 11, x: 800, y: 520, icon: DollarSign, color: "green", title: "Time Stop", desc: "Close All", params: ["At 21 DTE", "Market"] }
+    ]
+  }
 ]
 
 // Edge Definitions (from_id -> to_id)
@@ -44,6 +89,7 @@ const EDGES = [
 ]
 
 export function AnimatedStrategyBuilder() {
+  const [currentStrategyIndex, setCurrentStrategyIndex] = React.useState(0)
   const [phase, setPhase] = React.useState<"reset" | "typing" | "processing" | "result">("reset")
   const [typedText, setTypedText] = React.useState("")
   const [visibleNodes, setVisibleNodes] = React.useState<number[]>([])
@@ -52,16 +98,20 @@ export function AnimatedStrategyBuilder() {
     let isMounted = true
 
     const runSequence = async () => {
+      let index = 0
       while (isMounted) {
+        setCurrentStrategyIndex(index)
+        const currentStrategy = STRATEGIES[index]
+        
         setPhase("reset")
         setTypedText("")
         setVisibleNodes([])
         await new Promise(r => setTimeout(r, 500))
 
         setPhase("typing")
-        for (let i = 0; i <= TEXT_TO_TYPE.length; i++) {
+        for (let i = 0; i <= currentStrategy.text.length; i++) {
           if (!isMounted) return
-          setTypedText(TEXT_TO_TYPE.slice(0, i))
+          setTypedText(currentStrategy.text.slice(0, i))
           await new Promise(r => setTimeout(r, 10 + Math.random() * 15))
         }
         await new Promise(r => setTimeout(r, 200))
@@ -71,13 +121,16 @@ export function AnimatedStrategyBuilder() {
 
         setPhase("result")
         // Stagger nodes appearing
-        for (const node of NODES) {
+        for (const node of currentStrategy.nodes) {
            if (!isMounted) return
            setVisibleNodes(prev => [...prev, node.id])
            await new Promise(r => setTimeout(r, 60))
         }
         
         await new Promise(r => setTimeout(r, 4000))
+        
+        // Loop to the next strategy
+        index = (index + 1) % STRATEGIES.length
       }
     }
 
@@ -87,6 +140,8 @@ export function AnimatedStrategyBuilder() {
       isMounted = false
     }
   }, [])
+
+  const currentStrategy = STRATEGIES[currentStrategyIndex]
 
   // Helper to map color string to Tailwind classes (All white nodes)
   const getColorClasses = (color: string) => {
@@ -104,8 +159,8 @@ export function AnimatedStrategyBuilder() {
   // Draw smooth cubic bezier paths simulating the user's requested dotted zig-zag style
   const renderLines = () => {
      return EDGES.map((edge, i) => {
-        const fromNode = NODES.find(n => n.id === edge.from)
-        const toNode = NODES.find(n => n.id === edge.to)
+        const fromNode = currentStrategy.nodes.find(n => n.id === edge.from)
+        const toNode = currentStrategy.nodes.find(n => n.id === edge.to)
         if (!fromNode || !toNode) return null
 
         const isVisible = visibleNodes.includes(edge.from) && visibleNodes.includes(edge.to)
@@ -211,7 +266,7 @@ export function AnimatedStrategyBuilder() {
 
           {/* Nodes */}
           <AnimatePresence>
-             {NODES.map((node) => {
+             {currentStrategy.nodes.map((node) => {
                const isVisible = visibleNodes.includes(node.id)
                if (!isVisible) return null
 

@@ -1,11 +1,14 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Play } from "lucide-react"
 import { AnimatedStrategyBuilder } from "./AnimatedStrategyBuilder"
+import { WatchDemoModal } from "./WatchDemoModal"
 
 export function Hero() {
+  const [isDemoOpen, setIsDemoOpen] = React.useState(false)
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
 
   React.useEffect(() => {
@@ -157,10 +160,12 @@ export function Hero() {
         </p>
         
         <div className="flex flex-row items-center gap-4 mt-2">
-          <Button variant="primary" className="px-[32px] py-[24px] text-[16px] shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] transition-shadow">
-            Start Building Free →
-          </Button>
-          <Button variant="secondary" className="px-[32px] py-[24px] text-[16px] bg-white border border-bg-border hover:bg-black/[0.02]">
+          <Link href="/builder">
+            <Button variant="primary" className="px-[32px] py-[24px] text-[16px] shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] transition-shadow">
+              Start Building →
+            </Button>
+          </Link>
+          <Button onClick={() => setIsDemoOpen(true)} variant="secondary" className="px-[32px] py-[24px] text-[16px] bg-white border border-bg-border hover:bg-black/[0.02]">
             <Play className="mr-2 h-4 w-4" /> Watch Demo
           </Button>
         </div>
@@ -184,6 +189,8 @@ export function Hero() {
       <div className="relative z-10 mt-16 w-full max-w-[1100px] px-4 transition-all duration-1000 min-h-[630px] mb-8 sm:mb-12">
         <AnimatedStrategyBuilder />
       </div>
+      
+      <WatchDemoModal isOpen={isDemoOpen} onClose={() => setIsDemoOpen(false)} />
     </div>
   )
 }
