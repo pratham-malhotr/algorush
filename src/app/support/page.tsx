@@ -16,7 +16,7 @@ export default function SupportPage() {
   const [openFaq, setOpenFaq] = React.useState<number | null>(0)
 
   return (
-    <div className="min-h-screen bg-bg-primary pt-24 pb-32">
+    <div className="min-h-screen bg-bg-primary pt-2 pb-32">
       
       {/* Help Center Hero */}
       <section className="mx-auto max-w-[800px] px-6 py-20 text-center">

@@ -29,7 +29,7 @@ export function Hero() {
 
     // Node particle system
     const nodes: { x: number; y: number; vx: number; vy: number; isBlue: boolean; pulse: number; pulseDir: number; baseX: number; baseY: number }[] = []
-    const numNodes = Math.floor(window.innerWidth / 20) // responsive node count
+    const numNodes = Math.min(40, Math.floor(window.innerWidth / 30)) // responsive node count, capped for performance
     
     let mouseX = -1000;
     let mouseY = -1000;

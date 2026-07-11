@@ -4,7 +4,7 @@ import { BackButton } from "@/components/ui/BackButton"
 
 export default function PressPage() {
   return (
-    <div className="min-h-screen bg-bg-primary pt-24 pb-32">
+    <div className="min-h-screen bg-bg-primary pt-2 pb-32">
       <section className="mx-auto max-w-[1000px] px-6 py-20">
         <BackButton />
         <h1 className="mb-6 text-5xl font-bold text-text-primary md:text-7xl tracking-tight">

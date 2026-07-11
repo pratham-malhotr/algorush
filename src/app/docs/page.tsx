@@ -91,7 +91,7 @@ function NavMenuLink({ href, title }: { href: string, title: string }) {
 
 export default function DocsPage() {
   return (
-    <div className="min-h-screen bg-bg-primary pt-24">
+    <div className="min-h-screen bg-bg-primary pt-2">
       
       {/* Docs Header */}
       <div className="border-b border-bg-border bg-bg-surface">

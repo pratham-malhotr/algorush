@@ -8,7 +8,7 @@ import { BackButton } from "@/components/ui/BackButton"
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-bg-primary pt-24 pb-32">
+    <div className="min-h-screen bg-bg-primary pt-2 pb-32">
       {/* Hero */}
       <section className="mx-auto max-w-[800px] px-6 py-20 text-center">
         <div className="flex justify-start"><BackButton /></div>

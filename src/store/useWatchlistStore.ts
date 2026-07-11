@@ -32,7 +32,7 @@ export const useWatchlistStore = create<WatchlistState>()(
       }
     }),
     {
-      name: 'algorush-watchlist',
+      name: 'algotext-watchlist',
     }
   )
 )

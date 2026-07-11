@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, useInView } from "framer-motion"
 import { Bot, Activity, TrendingDown, TrendingUp, ShoppingCart, ShieldAlert, MessageSquare, BarChart2, DollarSign, PieChart, Sparkles, Crosshair, Zap, Briefcase } from "lucide-react"
 
 // Array of Ultra Advanced Algorithmic Strategies
@@ -94,8 +94,12 @@ export function AnimatedStrategyBuilder() {
   const [typedText, setTypedText] = React.useState("")
   const [visibleNodes, setVisibleNodes] = React.useState<number[]>([])
 
+  const containerRef = React.useRef(null)
+  const isInView = useInView(containerRef, { once: false, margin: "-100px" })
+
   React.useEffect(() => {
     let isMounted = true
+    if (!isInView) return
 
     const runSequence = async () => {
       let index = 0
@@ -139,7 +143,7 @@ export function AnimatedStrategyBuilder() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [isInView])
 
   const currentStrategy = STRATEGIES[currentStrategyIndex]
 
@@ -212,7 +216,7 @@ export function AnimatedStrategyBuilder() {
   }
 
   return (
-    <div className="absolute inset-0 flex h-full w-full flex-col p-6 font-sans overflow-hidden bg-transparent">
+    <div ref={containerRef} className="absolute inset-0 flex h-full w-full flex-col p-6 font-sans overflow-hidden bg-transparent">
       
       {/* Search / Prompt Input */}
       <motion.div 

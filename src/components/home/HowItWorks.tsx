@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, useInView } from "framer-motion"
 import { Blocks, LineChart, Shield, Activity, MessageSquare, Bot, Sparkles, Zap, Crosshair, TrendingUp, Briefcase, MousePointer2, BellRing, CheckCircle2, ArrowRightLeft } from "lucide-react"
 
 const STEPS = [
@@ -42,8 +42,13 @@ function TypingMockup() {
   const [typedText, setTypedText] = React.useState("")
   const [phase, setPhase] = React.useState("typing")
   
+  const ref = React.useRef(null)
+  const isInView = useInView(ref)
+
   React.useEffect(() => {
     let isMounted = true
+    if (!isInView) return
+
     const run = async () => {
       let index = 0
       while(isMounted) {
@@ -75,10 +80,10 @@ function TypingMockup() {
     }
     run()
     return () => { isMounted = false }
-  }, [])
+  }, [isInView])
   
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-gray-50 p-6" style={{ backgroundImage: "radial-gradient(circle, #cbd5e1 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
+    <div ref={ref} className="absolute inset-0 flex items-center justify-center bg-gray-50 p-6" style={{ backgroundImage: "radial-gradient(circle, #cbd5e1 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
       <div className="relative z-30 flex w-full max-w-[400px] items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-xl">
         <Bot className="h-6 w-6 text-black shrink-0 mt-1" />
         <div className="flex-1 text-sm text-black font-semibold font-mono whitespace-normal break-words leading-relaxed min-h-[40px] pt-1">
@@ -134,13 +139,17 @@ const BLOCK_CONFIGS = [
 function BlocksMockup() {
   const [index, setIndex] = React.useState(0)
   
+  const ref = React.useRef(null)
+  const isInView = useInView(ref)
+
   React.useEffect(() => {
     let isMounted = true
+    if (!isInView) return
     const interval = setInterval(() => {
       if (isMounted) setIndex(prev => (prev + 1) % BLOCK_CONFIGS.length)
     }, 4500)
     return () => { isMounted = false; clearInterval(interval) }
-  }, [])
+  }, [isInView])
   
   const currentConfig = BLOCK_CONFIGS[index]
   
@@ -156,7 +165,7 @@ function BlocksMockup() {
   }
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-gray-50 p-4" style={{ backgroundImage: "radial-gradient(circle, #cbd5e1 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
+    <div ref={ref} className="absolute inset-0 flex items-center justify-center bg-gray-50 p-4" style={{ backgroundImage: "radial-gradient(circle, #cbd5e1 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
       <div className="relative w-full max-w-[320px] h-[180px]">
         {/* SVG Lines */}
         <svg className="absolute inset-0 h-full w-full pointer-events-none">
@@ -265,8 +274,12 @@ function BacktestMockup() {
   const [phase, setPhase] = React.useState("running")
   const [progress, setProgress] = React.useState(0)
   
+  const ref = React.useRef(null)
+  const isInView = useInView(ref)
+
   React.useEffect(() => {
     let isMounted = true
+    if (!isInView) return
     const run = async () => {
       while(isMounted) {
         setPhase("running")
@@ -291,13 +304,13 @@ function BacktestMockup() {
     }
     run()
     return () => { isMounted = false }
-  }, [])
+  }, [isInView])
   
   const current = BACKTEST_CONFIGS[index]
   const isRunning = phase === "running"
   
   return (
-    <div className="absolute inset-0 flex flex-col bg-bg-surface overflow-hidden">
+    <div ref={ref} className="absolute inset-0 flex flex-col bg-bg-surface overflow-hidden">
       <div className="flex h-12 items-center justify-between border-b border-bg-border bg-bg-elevated px-4 relative z-20">
         <div className="flex items-center gap-2">
            <Activity className="h-4 w-4 text-text-secondary" />
@@ -387,8 +400,12 @@ function BacktestMockup() {
 function WalletMockup() {
   const [phase, setPhase] = React.useState("idle")
   
+  const ref = React.useRef(null)
+  const isInView = useInView(ref)
+
   React.useEffect(() => {
     let isMounted = true
+    if (!isInView) return
     const run = async () => {
       while(isMounted) {
         setPhase("idle")
@@ -417,10 +434,10 @@ function WalletMockup() {
     }
     run()
     return () => { isMounted = false }
-  }, [])
+  }, [isInView])
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-gray-50 p-6 overflow-hidden" style={{ backgroundImage: "radial-gradient(circle, #cbd5e1 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
+    <div ref={ref} className="absolute inset-0 flex items-center justify-center bg-gray-50 p-6 overflow-hidden" style={{ backgroundImage: "radial-gradient(circle, #cbd5e1 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
       
       {/* Background Glow */}
       {phase === "connected" && (
@@ -546,8 +563,12 @@ function WalletMockup() {
 function LiveMockup() {
   const [logs, setLogs] = React.useState<any[]>([])
   
+  const ref = React.useRef(null)
+  const isInView = useInView(ref)
+
   React.useEffect(() => {
     let isMounted = true
+    if (!isInView) return
     const run = async () => {
        while(isMounted) {
          setLogs([{ id: 1, type: "system", msg: "Bot activated: Alpha Strategy", time: "Just now" }])
@@ -568,10 +589,10 @@ function LiveMockup() {
     }
     run()
     return () => { isMounted = false }
-  }, [])
+  }, [isInView])
 
   return (
-    <div className="absolute inset-0 flex flex-col bg-gray-50 overflow-hidden" style={{ backgroundImage: "radial-gradient(circle, #cbd5e1 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
+    <div ref={ref} className="absolute inset-0 flex flex-col bg-gray-50 overflow-hidden" style={{ backgroundImage: "radial-gradient(circle, #cbd5e1 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
       
       {/* Header */}
       <div className="relative z-10 flex h-12 shrink-0 items-center justify-between border-b border-gray-200 bg-white/90 backdrop-blur px-4">
