@@ -17,7 +17,7 @@ function CountUp({ value, divisor, decimals, inView }: { value: number; divisor:
     if (!inView) return
     
     const target = value / divisor
-    const duration = 1500 // 1.5s
+    const duration = 2500 // 2.5s (slightly slower)
     const steps = 60
     const stepTime = duration / steps
     let currentStep = 0
@@ -44,7 +44,8 @@ function CountUp({ value, divisor, decimals, inView }: { value: number; divisor:
 
 export function LiveStats() {
   const ref = React.useRef(null)
-  const isInView = useInView(ref, { once: true, margin: "-100px" })
+  // Ensure 40% of the component is visible before triggering the animation
+  const isInView = useInView(ref, { once: true, amount: 0.4 })
 
   return (
     <div 

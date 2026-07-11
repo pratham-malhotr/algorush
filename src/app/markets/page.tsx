@@ -2,64 +2,81 @@
 
 import * as React from "react"
 import dynamic from "next/dynamic"
-import { TrendingUp, Wallet, ArrowUpRight, ArrowDownRight } from "lucide-react"
+import { Wallet, ArrowUpRight, ArrowDownRight, Search, Plus, Minus, Star } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useAccount, useBalance } from "wagmi"
+import { useState, useEffect, memo, useMemo } from "react"
+import { motion } from "framer-motion"
+
+import { ALL_ASSETS, Asset } from "@/lib/constants/assets"
+import { useWatchlistStore } from "@/store/useWatchlistStore"
 
 const GrowthChart = dynamic(
   () => import("@/components/markets/GrowthChart").then((mod) => mod.GrowthChart),
   { ssr: false, loading: () => <div className="h-full w-full animate-pulse bg-bg-elevated rounded-md" /> }
 )
 
-import { useState, useEffect, memo } from "react"
-import { motion } from "framer-motion"
-
-interface MarketData {
-  pair: string;
+interface MarketDisplayData extends Asset {
   price: number;
   change: number;
   isPositive: boolean;
   volume: string;
 }
 
-const INITIAL_MARKETS: MarketData[] = [
-  { pair: "BTC/USDT", price: 0, change: 0, isPositive: true, volume: "..." },
-  { pair: "ETH/USDT", price: 0, change: 0, isPositive: true, volume: "..." },
-  { pair: "SOL/USDT", price: 0, change: 0, isPositive: true, volume: "..." },
-  { pair: "AVAX/USDT", price: 0, change: 0, isPositive: true, volume: "..." },
-  { pair: "LINK/USDT", price: 0, change: 0, isPositive: true, volume: "..." },
-]
-
-const TickerRow = memo(function TickerRow({ market }: { market: MarketData }) {
+const TickerRow = memo(function TickerRow({ 
+  market, 
+  isWatchlisted, 
+  onToggleWatchlist 
+}: { 
+  market: MarketDisplayData, 
+  isWatchlisted: boolean,
+  onToggleWatchlist: (e: React.MouseEvent, symbol: string) => void
+}) {
   const [flash, setFlash] = useState<string>("transparent")
   const [prevPrice, setPrevPrice] = useState(market.price)
+  const router = useRouter()
 
   useEffect(() => {
-    if (market.price === 0) return; // ignore initial load
-
-    if (market.price > prevPrice) {
-      setFlash("rgba(34, 197, 94, 0.15)") // Green flash
-    } else if (market.price < prevPrice) {
-      setFlash("rgba(239, 68, 68, 0.15)") // Red flash
-    }
+    if (market.price === 0) return; 
+    if (market.price > prevPrice) setFlash("rgba(34, 197, 94, 0.15)") // Green
+    else if (market.price < prevPrice) setFlash("rgba(239, 68, 68, 0.15)") // Red
     setPrevPrice(market.price)
 
-    const timeout = setTimeout(() => {
-      setFlash("transparent")
-    }, 500)
+    const timeout = setTimeout(() => setFlash("transparent"), 500)
     return () => clearTimeout(timeout)
   }, [market.price])
 
+  const handleClick = () => {
+    const routeSymbol = market.symbol.replace('/', '-')
+    router.push(`/markets/${routeSymbol}`)
+  }
+
   return (
     <motion.tr 
+      onClick={handleClick}
       animate={{ backgroundColor: flash }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="group cursor-pointer border-b border-bg-border"
+      className="group cursor-pointer border-b border-bg-border hover:bg-bg-elevated transition-colors"
     >
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-bg-elevated text-[10px] font-bold text-text-secondary">
-            {market.pair.split('/')[0]}
+          <button 
+            onClick={(e) => onToggleWatchlist(e, market.symbol)}
+            className="p-1.5 rounded-md hover:bg-bg-surface transition-colors"
+          >
+            {isWatchlisted ? (
+              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+            ) : (
+              <Star className="h-4 w-4 text-text-tertiary group-hover:text-text-secondary" />
+            )}
+          </button>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-bg-surface border border-bg-border text-[10px] font-bold text-text-secondary">
+            {market.symbol.split('/')[0].slice(0, 3)}
           </div>
-          <span className="font-semibold text-text-primary">{market.pair}</span>
+          <div className="flex flex-col">
+            <span className="font-semibold text-text-primary">{market.symbol}</span>
+            <span className="text-[11px] text-text-tertiary uppercase">{market.market.replace('_', ' ')}</span>
+          </div>
         </div>
       </td>
       <td className="px-6 py-4 font-mono text-[15px] text-text-primary">
@@ -77,48 +94,105 @@ const TickerRow = memo(function TickerRow({ market }: { market: MarketData }) {
 })
 
 export default function MarketsPage() {
-  const [markets, setMarkets] = useState<MarketData[]>(INITIAL_MARKETS)
+  const { address, isConnected } = useAccount()
+  const { data: balanceData } = useBalance({ address })
+  
+  const { watchlistedSymbols, addWatchlist, removeWatchlist, isWatchlisted } = useWatchlistStore()
+  
+  const [searchQuery, setSearchQuery] = useState("")
+  const [activeTab, setActiveTab] = useState<'WATCHLIST' | 'ALL'>('ALL')
+  
+  // Initialize market states with dummy data before Binance populates it
+  const [marketDataMap, setMarketDataMap] = useState<Record<string, MarketDisplayData>>(() => {
+    const initialMap: Record<string, MarketDisplayData> = {}
+    ALL_ASSETS.forEach(asset => {
+      initialMap[asset.symbol] = {
+        ...asset,
+        price: asset.price || 100,
+        change: (Math.random() * 4) - 2, // Random initial change
+        isPositive: true,
+        volume: `$${(Math.random() * 10 + 1).toFixed(1)}B`
+      }
+    })
+    return initialMap
+  })
 
+  // Poll live data
   useEffect(() => {
     const fetchMarkets = async () => {
       try {
-        const symbols = '["BTCUSDT","ETHUSDT","SOLUSDT","AVAXUSDT","LINKUSDT"]'
-        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=${symbols}`)
+        // Fetch real crypto prices from Binance
+        const cryptoAssets = ALL_ASSETS.filter(a => a.market === 'CRYPTO')
+        const binancePairs = cryptoAssets.map(m => `"${m.symbol.replace('/', '')}"`).join(',')
+        
+        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=[${binancePairs}]`)
         const data = await response.json()
 
-        if (Array.isArray(data)) {
-          const formatted = data.map((item: any) => {
-            const pair = item.symbol.replace("USDT", "/USDT")
-            const change = parseFloat(item.priceChangePercent)
-            // format volume (e.g. 1.2B or 450M)
-            const volNum = parseFloat(item.quoteVolume)
-            const volume = volNum > 1e9 ? `$${(volNum / 1e9).toFixed(1)}B` : `$${(volNum / 1e6).toFixed(0)}M`
-
-            return {
-              pair,
-              price: parseFloat(item.lastPrice),
-              change: change,
-              isPositive: change >= 0,
-              volume: volume
+        setMarketDataMap(prev => {
+          const newMap = { ...prev }
+          
+          // Update Cryptos
+          if (Array.isArray(data)) {
+            data.forEach((item: any) => {
+              const pair = item.symbol.replace("USDT", "/USDT")
+              if (newMap[pair]) {
+                const change = parseFloat(item.priceChangePercent)
+                const volNum = parseFloat(item.quoteVolume)
+                newMap[pair].price = parseFloat(item.lastPrice)
+                newMap[pair].change = change
+                newMap[pair].isPositive = change >= 0
+                newMap[pair].volume = volNum > 1e9 ? `$${(volNum / 1e9).toFixed(1)}B` : `$${(volNum / 1e6).toFixed(0)}M`
+              }
+            })
+          }
+          
+          // Simulate volatility for equities
+          Object.values(newMap).forEach(market => {
+            if (market.market !== 'CRYPTO') {
+              const volatility = 0.001
+              market.price = market.price * (1 + ((Math.random() * volatility * 2) - volatility))
             }
           })
           
-          // Order by initial array
-          const ordered = INITIAL_MARKETS.map(init => formatted.find(f => f.pair === init.pair) || init)
-          setMarkets(ordered as MarketData[])
-        }
+          return newMap
+        })
       } catch (e) {
         console.error("Failed to fetch markets", e)
       }
     }
 
-    // Initial fetch
     fetchMarkets()
-    
-    // Poll every 5 seconds
     const interval = setInterval(fetchMarkets, 5000)
     return () => clearInterval(interval)
   }, [])
+
+  // Filter logic
+  const displayedMarkets = useMemo(() => {
+    let filtered = Object.values(marketDataMap)
+    
+    if (activeTab === 'WATCHLIST') {
+      filtered = filtered.filter(m => watchlistedSymbols.includes(m.symbol))
+    }
+    
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      filtered = filtered.filter(m => 
+        m.symbol.toLowerCase().includes(q) || 
+        m.name.toLowerCase().includes(q)
+      )
+    } else if (activeTab === 'ALL') {
+      // Limit to 50 when not searching to prevent lag
+      filtered = filtered.slice(0, 50)
+    }
+    
+    return filtered
+  }, [marketDataMap, searchQuery, activeTab, watchlistedSymbols])
+
+  const handleToggleWatchlist = (e: React.MouseEvent, symbol: string) => {
+    e.stopPropagation()
+    if (isWatchlisted(symbol)) removeWatchlist(symbol)
+    else addWatchlist(symbol)
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full flex-col bg-white p-6 lg:p-10">
@@ -134,10 +208,11 @@ export default function MarketsPage() {
               <span className="text-[14px] font-semibold text-text-secondary">Estimated Balance</span>
             </div>
             <div className="mt-6 flex flex-col">
-              <span className="font-mono text-[36px] font-bold text-text-primary">$13,850.00</span>
-              <span className="flex items-center text-[13px] text-accent-green">
-                <ArrowUpRight className="mr-1 h-4 w-4" />
-                +$1,450.00 (11.7%) this week
+              <span className="font-mono text-[36px] font-bold text-text-primary">
+                {isConnected && balanceData ? `${Number(balanceData.formatted).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${balanceData.symbol}` : "$0.00"}
+              </span>
+              <span className="flex items-center text-[13px] text-text-tertiary">
+                {isConnected ? "Wallet Connected" : "Connect wallet to view balance"}
               </span>
             </div>
           </div>
@@ -145,13 +220,6 @@ export default function MarketsPage() {
           <div className="col-span-1 rounded-[var(--radius-lg)] border border-bg-border bg-bg-surface p-6 shadow-[var(--shadow-card)] md:col-span-2">
             <div className="mb-4 flex items-center justify-between">
               <span className="text-[14px] font-semibold text-text-secondary">Portfolio Growth</span>
-              <div className="flex gap-2">
-                {["1W", "1M", "1Y", "ALL"].map((tf, i) => (
-                  <button key={tf} className={`rounded px-2 py-1 text-[12px] font-medium transition-colors ${i === 0 ? "bg-bg-elevated text-text-primary" : "text-text-tertiary hover:text-text-secondary"}`}>
-                    {tf}
-                  </button>
-                ))}
-              </div>
             </div>
             <div className="h-[140px] w-full">
               <GrowthChart />
@@ -159,32 +227,74 @@ export default function MarketsPage() {
           </div>
         </div>
 
-        {/* Live Markets Table */}
+        {/* Live Markets & Watchlist Table */}
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-bg-border bg-bg-surface shadow-[var(--shadow-card)]">
-          <div className="border-b border-bg-border bg-bg-surface px-6 py-4">
-            <h2 className="text-[18px] font-bold text-text-primary flex items-center gap-2">
-              Live Markets
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-green opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-green"></span>
-              </span>
-            </h2>
+          <div className="border-b border-bg-border bg-bg-surface px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            
+            <div className="flex items-center gap-4">
+              <h2 className="text-[18px] font-bold text-text-primary flex items-center gap-2">
+                Markets
+                <span className="relative flex h-2 w-2 ml-1">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-green opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-green"></span>
+                </span>
+              </h2>
+              <div className="flex bg-bg-elevated rounded-lg p-1">
+                <button 
+                  onClick={() => setActiveTab('WATCHLIST')}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'WATCHLIST' ? 'bg-bg-surface text-text-primary shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}
+                >
+                  Watchlist ({watchlistedSymbols.length})
+                </button>
+                <button 
+                  onClick={() => setActiveTab('ALL')}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'ALL' ? 'bg-bg-surface text-text-primary shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}
+                >
+                  Discover
+                </button>
+              </div>
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
+              <input 
+                type="text" 
+                placeholder="Search symbol (e.g. SBI, BTC, INTU)..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full sm:w-[280px] pl-9 pr-4 py-2 bg-bg-elevated border border-bg-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-blue transition-shadow placeholder:text-text-tertiary"
+              />
+            </div>
           </div>
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-bg-border text-[12px] uppercase tracking-wider text-text-secondary">
-                <th className="px-6 py-4 font-semibold">Trading Pair</th>
-                <th className="px-6 py-4 font-semibold">Last Price</th>
-                <th className="px-6 py-4 font-semibold">24h Change</th>
-                <th className="px-6 py-4 text-right font-semibold">24h Volume</th>
-              </tr>
-            </thead>
-            <tbody>
-              {markets.map((market) => (
-                <TickerRow key={market.pair} market={market} />
-              ))}
-            </tbody>
-          </table>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left min-w-[600px]">
+              <thead>
+                <tr className="border-b border-bg-border text-[12px] uppercase tracking-wider text-text-secondary bg-bg-surface">
+                  <th className="px-6 py-4 font-semibold">Asset</th>
+                  <th className="px-6 py-4 font-semibold">Last Price</th>
+                  <th className="px-6 py-4 font-semibold">24h Change</th>
+                  <th className="px-6 py-4 text-right font-semibold">24h Volume</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayedMarkets.length > 0 ? displayedMarkets.map((market) => (
+                  <TickerRow 
+                    key={market.symbol} 
+                    market={market} 
+                    isWatchlisted={isWatchlisted(market.symbol)}
+                    onToggleWatchlist={handleToggleWatchlist}
+                  />
+                )) : (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-12 text-center text-text-tertiary">
+                      {searchQuery ? 'No assets found matching your search.' : 'Your watchlist is empty.'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
