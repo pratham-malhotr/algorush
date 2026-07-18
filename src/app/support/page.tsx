@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, Book, MessageCircle, FileText, ChevronDown } from "lucide-react"
+import { Search, Book, MessageCircle, FileText, ChevronDown, CheckCircle2, Mail, ExternalLink } from "lucide-react"
 import { BackButton } from "@/components/ui/BackButton"
 
 const FAQS = [
@@ -16,69 +16,101 @@ export default function SupportPage() {
   const [openFaq, setOpenFaq] = React.useState<number | null>(0)
 
   return (
-    <div className="min-h-screen bg-bg-primary pt-2 pb-32">
+    <div className="min-h-screen bg-white pt-2 pb-32">
       
+      {/* Navigation & Status Bar */}
+      <div className="mx-auto max-w-[1200px] px-6 py-6 flex items-center justify-between">
+        <BackButton />
+        <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 shadow-sm">
+          <CheckCircle2 className="h-4 w-4" />
+          All Systems Operational
+        </div>
+      </div>
+
       {/* Help Center Hero */}
-      <section className="mx-auto max-w-[800px] px-6 py-20 text-center">
-        <div className="flex justify-start"><BackButton /></div>
-        <h1 className="mb-6 text-4xl font-bold text-text-primary md:text-6xl tracking-tight">
+      <section className="mx-auto max-w-[800px] px-6 py-16 text-center">
+        <h1 className="mb-6 text-5xl font-extrabold text-gray-900 md:text-7xl tracking-tight">
           How can we help?
         </h1>
-        <div className="relative mx-auto mt-10 max-w-[600px]">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-text-tertiary" />
+        <div className="relative mx-auto mt-10 max-w-[600px] shadow-xl rounded-full">
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-gray-400" />
           <input 
             type="text" 
             placeholder="Search for articles, guides, or issues..." 
-            className="w-full rounded-full border border-bg-border bg-bg-surface py-4 pl-12 pr-6 text-text-primary placeholder-text-tertiary outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue transition-all"
+            className="w-full rounded-full border-2 border-transparent bg-white py-5 pl-16 pr-6 text-lg text-gray-900 placeholder-gray-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all shadow-sm ring-1 ring-gray-200"
           />
         </div>
       </section>
 
-      {/* Quick Links */}
-      <section className="mx-auto max-w-[1000px] px-6 py-12">
-        <div className="grid gap-6 sm:grid-cols-3">
-          <div className="flex flex-col items-center text-center rounded-2xl border border-bg-border bg-bg-surface p-8 hover:border-accent-blue transition-colors cursor-pointer">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent-blue/10">
-              <Book className="h-6 w-6 text-accent-blue" />
+      {/* Categorized Support Links */}
+      <section className="mx-auto max-w-[1200px] px-6 py-16">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="group rounded-3xl border border-gray-200 bg-gray-50 p-8 hover:shadow-xl hover:border-blue-200 transition-all cursor-pointer">
+            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 group-hover:bg-blue-600 transition-colors">
+              <Book className="h-7 w-7 text-blue-600 group-hover:text-white transition-colors" />
             </div>
-            <h3 className="mb-2 font-bold text-text-primary">Documentation</h3>
-            <p className="text-sm text-text-secondary">Read our comprehensive guides and API references.</p>
+            <h3 className="mb-2 text-xl font-bold text-gray-900">Getting Started</h3>
+            <p className="text-gray-600 mb-6 leading-relaxed">Learn the basics of prompt engineering and how to deploy your first strategy.</p>
+            <div className="text-blue-600 font-semibold text-sm flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+              Read Guide <ExternalLink className="h-4 w-4" />
+            </div>
           </div>
-          <div className="flex flex-col items-center text-center rounded-2xl border border-bg-border bg-bg-surface p-8 hover:border-accent-green transition-colors cursor-pointer">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent-green/10">
-              <FileText className="h-6 w-6 text-accent-green" />
+
+          <div className="group rounded-3xl border border-gray-200 bg-gray-50 p-8 hover:shadow-xl hover:border-emerald-200 transition-all cursor-pointer">
+            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 group-hover:bg-emerald-600 transition-colors">
+              <FileText className="h-7 w-7 text-emerald-600 group-hover:text-white transition-colors" />
             </div>
-            <h3 className="mb-2 font-bold text-text-primary">Submit a Ticket</h3>
-            <p className="text-sm text-text-secondary">Can't find the answer? Reach out to our technical support team.</p>
+            <h3 className="mb-2 text-xl font-bold text-gray-900">API Documentation</h3>
+            <p className="text-gray-600 mb-6 leading-relaxed">Detailed references for our REST API, Webhooks, and Python SDK.</p>
+            <div className="text-emerald-600 font-semibold text-sm flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+              View API Docs <ExternalLink className="h-4 w-4" />
+            </div>
           </div>
-          <div className="flex flex-col items-center text-center rounded-2xl border border-bg-border bg-bg-surface p-8 hover:border-purple-500 transition-colors cursor-pointer">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-purple-500/10">
-              <MessageCircle className="h-6 w-6 text-purple-500" />
+
+          <div className="group rounded-3xl border border-gray-200 bg-gray-50 p-8 hover:shadow-xl hover:border-amber-200 transition-all cursor-pointer">
+            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 group-hover:bg-amber-600 transition-colors">
+              <Mail className="h-7 w-7 text-amber-600 group-hover:text-white transition-colors" />
             </div>
-            <h3 className="mb-2 font-bold text-text-primary">Community Discord</h3>
-            <p className="text-sm text-text-secondary">Join thousands of quants and traders in our active community.</p>
+            <h3 className="mb-2 text-xl font-bold text-gray-900">Email Support</h3>
+            <p className="text-gray-600 mb-6 leading-relaxed">Have a billing issue or need enterprise-grade assistance? Send us a ticket.</p>
+            <div className="text-amber-600 font-semibold text-sm flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+              Contact Us <ExternalLink className="h-4 w-4" />
+            </div>
+          </div>
+
+          <div className="group rounded-3xl border border-gray-200 bg-gray-50 p-8 hover:shadow-xl hover:border-purple-200 transition-all cursor-pointer">
+            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-100 group-hover:bg-purple-600 transition-colors">
+              <MessageCircle className="h-7 w-7 text-purple-600 group-hover:text-white transition-colors" />
+            </div>
+            <h3 className="mb-2 text-xl font-bold text-gray-900">Community Discord</h3>
+            <p className="text-gray-600 mb-6 leading-relaxed">Join thousands of quants sharing strategies and helping each other out.</p>
+            <div className="text-purple-600 font-semibold text-sm flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+              Join Discord <ExternalLink className="h-4 w-4" />
+            </div>
           </div>
         </div>
       </section>
 
       {/* FAQ Accordion */}
-      <section className="mx-auto max-w-[800px] px-6 py-20">
-        <h2 className="mb-8 text-3xl font-bold text-text-primary text-center">Frequently Asked Questions</h2>
+      <section className="mx-auto max-w-[800px] px-6 py-16">
+        <h2 className="mb-10 text-3xl font-bold text-gray-900 text-center">Frequently Asked Questions</h2>
         <div className="flex flex-col gap-4">
           {FAQS.map((faq, i) => (
             <div 
               key={i} 
-              className="rounded-2xl border border-bg-border bg-bg-surface overflow-hidden"
+              className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow"
             >
               <button 
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="flex w-full items-center justify-between p-6 text-left"
+                className="flex w-full items-center justify-between p-6 text-left focus:outline-none"
               >
-                <span className="font-bold text-text-primary">{faq.q}</span>
-                <ChevronDown className={`h-5 w-5 text-text-secondary transition-transform ${openFaq === i ? 'rotate-180' : ''}`} />
+                <span className="font-semibold text-gray-900 text-lg">{faq.q}</span>
+                <div className={`flex items-center justify-center h-8 w-8 rounded-full bg-gray-50 transition-transform ${openFaq === i ? 'rotate-180 bg-blue-50 text-blue-600' : 'text-gray-400'}`}>
+                  <ChevronDown className="h-5 w-5" />
+                </div>
               </button>
               {openFaq === i && (
-                <div className="px-6 pb-6 text-text-secondary leading-relaxed border-t border-bg-border pt-4">
+                <div className="px-6 pb-6 pt-2 text-gray-600 text-lg leading-relaxed">
                   {faq.a}
                 </div>
               )}

@@ -59,13 +59,13 @@ export default function PricingPage() {
           <div className="bg-bg-surface/80 backdrop-blur-xl border border-bg-border p-1.5 rounded-full flex items-center relative shadow-xl">
             <button 
               onClick={() => setIsAnnual(false)}
-              className={`relative w-36 py-3 text-sm font-bold rounded-full z-10 transition-colors duration-300 ${!isAnnual ? 'bg-text-primary text-bg-primary shadow-md' : 'text-text-secondary hover:text-text-primary'}`}
+              className={`relative w-36 py-3 text-sm font-bold rounded-full z-10 transition-colors duration-300 ${!isAnnual ? 'bg-text-primary text-white shadow-md' : 'text-text-secondary hover:text-text-primary'}`}
             >
               Pay Monthly
             </button>
             <button 
               onClick={() => setIsAnnual(true)}
-              className={`relative w-36 py-3 text-sm font-bold rounded-full z-10 transition-colors duration-300 flex items-center justify-center gap-1 ${isAnnual ? 'bg-text-primary text-bg-primary shadow-md' : 'text-text-secondary hover:text-text-primary'}`}
+              className={`relative w-36 py-3 text-sm font-bold rounded-full z-10 transition-colors duration-300 flex items-center justify-center gap-1 ${isAnnual ? 'bg-text-primary text-white shadow-md' : 'text-text-secondary hover:text-text-primary'}`}
             >
               Pay Annually
             </button>
