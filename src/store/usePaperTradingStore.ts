@@ -44,6 +44,7 @@ interface PaperTradingState {
   executeTrade: (type: 'BUY' | 'SELL', symbol: string, qty: number, price: number) => void;
   updateMarketPrices: (prices: Record<string, number>) => void;
   markStrategyTriggered: (id: string, state: boolean) => void;
+  haltAllTrading: () => void;
 }
 
 export const usePaperTradingStore = create<PaperTradingState>((set, get) => ({
@@ -156,5 +157,40 @@ export const usePaperTradingStore = create<PaperTradingState>((set, get) => ({
         equityHistory: newHistory
       };
     })
+  },
+  
+  haltAllTrading: () => {
+    set((state) => {
+      let newBalance = state.balance;
+      const newTrades = [...state.trades];
+      
+      // Close all open positions at current prices
+      state.positions.forEach(pos => {
+        const cost = pos.qty * pos.currentPrice;
+        newBalance += cost;
+        
+        newTrades.unshift({
+          id: Math.random().toString(36).substring(7),
+          symbol: pos.symbol,
+          type: 'SELL',
+          qty: pos.qty,
+          price: pos.currentPrice,
+          time: new Date().toISOString()
+        });
+      });
+
+      // Stop all active strategies
+      const newStrategies = state.activeStrategies.map(s => ({
+        ...s,
+        status: 'STOPPED' as const
+      }));
+
+      return {
+        balance: newBalance,
+        positions: [],
+        trades: newTrades,
+        activeStrategies: newStrategies
+      };
+    });
   }
 }))

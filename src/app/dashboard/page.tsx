@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
-  const { balance, equityHistory, activeStrategies, trades, positions, currentPrices } = usePaperTradingStore();
+  const { balance, equityHistory, activeStrategies, trades, positions, currentPrices, haltAllTrading } = usePaperTradingStore();
 
   const totalEquity = equityHistory.length > 0 ? equityHistory[equityHistory.length - 1].value : balance;
   const pnl = totalEquity - 100000;
@@ -68,6 +68,7 @@ export default function DashboardPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'engage' })
                   });
+                  haltAllTrading();
                   alert('CRITICAL: Kill Switch Engaged. All trading halted across all strategies.');
                 } catch (e) {
                   alert('Error engaging Kill Switch!');
