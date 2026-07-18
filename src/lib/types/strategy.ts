@@ -7,7 +7,7 @@ export const InstrumentSchema = z.object({
   assetClass: AssetClassSchema,
 });
 
-export const IndicatorTypeSchema = z.enum(['PRICE', 'SMA', 'EMA', 'RSI', 'MACD', 'BOLLINGER_BANDS', 'VWAP', 'TIME', 'DAY_OF_WEEK', 'MARKET_EVENT']);
+export const IndicatorTypeSchema = z.enum(['PRICE', 'SMA', 'EMA', 'RSI', 'MACD', 'BOLLINGER_BANDS', 'VWAP', 'TIME', 'DAY_OF_WEEK', 'MARKET_EVENT', 'TIME_SINCE_ENTRY', 'TIME_SINCE_LAST_TRADE', 'LOOP_COUNT']);
 
 export const IndicatorSchema = z.object({
   type: IndicatorTypeSchema,

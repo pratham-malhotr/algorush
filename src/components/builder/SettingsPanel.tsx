@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { AssetSelector } from "./AssetSelector"
 import { usePaperTradingStore } from "@/store/usePaperTradingStore"
 import { useRouter } from "next/navigation"
+import { NodePropertiesPanel } from "./NodePropertiesPanel"
 
 export function SettingsPanel() {
   const router = useRouter()
@@ -13,8 +14,17 @@ export function SettingsPanel() {
     tradingPair, setTradingPair,
     allocation, setAllocation,
     maxPerTrade, setMaxPerTrade,
-    strategyDSL
+    strategyDSL,
+    selectedNodeId
   } = useBuilderStore()
+
+  if (selectedNodeId) {
+    return (
+      <div className="flex h-full w-[320px] shrink-0 flex-col overflow-y-auto border-l border-bg-border bg-bg-surface">
+        <NodePropertiesPanel />
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full w-[320px] shrink-0 flex-col overflow-y-auto border-l border-bg-border bg-bg-surface p-5">

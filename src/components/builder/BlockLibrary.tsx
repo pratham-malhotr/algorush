@@ -9,12 +9,8 @@ const CATEGORIES = [
     color: "text-accent-blue",
     bgColor: "bg-accent-blue",
     blocks: [
-      "RSI Crosses Below",
-      "RSI Crosses Above",
-      "Price Crosses Above MA",
-      "Price Crosses Below MA",
-      "MACD Bullish Crossover",
-      "Bollinger Lower Breakout"
+      { label: "Technical Indicator", type: "conditionNode", dsl: { left: { type: 'RSI', parameters: { period: 14 } }, comparator: 'LESS_THAN', right: 30 } },
+      { label: "Price Action", type: "conditionNode", dsl: { left: { type: 'PRICE' }, comparator: 'GREATER_THAN', right: 50000 } },
     ]
   },
   {
@@ -22,11 +18,17 @@ const CATEGORIES = [
     color: "text-accent-green",
     bgColor: "bg-accent-green",
     blocks: [
-      "Take Profit %",
-      "Stop Loss %",
-      "Trailing Stop %",
-      "RSI Overbought Exit",
-      "Opposite MACD Signal"
+      { label: "Technical Indicator", type: "conditionNode", dsl: { left: { type: 'RSI', parameters: { period: 14 } }, comparator: 'GREATER_THAN', right: 70 } },
+    ]
+  },
+  {
+    name: "EXECUTION",
+    color: "text-purple-500",
+    bgColor: "bg-purple-500",
+    blocks: [
+      { label: "Buy Position", type: "executeNode", dsl: { type: 'BUY', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 50 } },
+      { label: "Sell Position", type: "executeNode", dsl: { type: 'SELL', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 50 } },
+      { label: "Close Position", type: "executeNode", dsl: { type: 'CLOSE_POSITION' } },
     ]
   },
   {
@@ -34,9 +36,7 @@ const CATEGORIES = [
     color: "text-accent-amber",
     bgColor: "bg-accent-amber",
     blocks: [
-      "Max Capital Per Trade",
-      "Max Open Positions",
-      "Daily Loss Limit"
+      { label: "Stop Loss / Take Profit", type: "riskNode", dsl: { stopLossPercentage: 5, takeProfitPercentage: 10 } },
     ]
   }
 ]
@@ -44,17 +44,20 @@ const CATEGORIES = [
 export function BlockLibrary() {
   const [openCategories, setOpenCategories] = React.useState<Record<string, boolean>>({
     "ENTRY CONDITIONS": true,
-    "EXIT CONDITIONS": true
+    "EXIT CONDITIONS": true,
+    "EXECUTION": true,
+    "RISK MANAGEMENT": true,
   })
 
   const toggleCategory = (name: string) => {
     setOpenCategories(prev => ({ ...prev, [name]: !prev[name] }))
   }
 
-  const onDragStart = (event: React.DragEvent, nodeType: string, label: string, category: string) => {
+  const onDragStart = (event: React.DragEvent, nodeType: string, label: string, category: string, dslData: any) => {
     event.dataTransfer.setData('application/reactflow', nodeType)
     event.dataTransfer.setData('application/label', label)
     event.dataTransfer.setData('application/category', category)
+    event.dataTransfer.setData('application/dsl', JSON.stringify(dslData))
     event.dataTransfer.effectAllowed = 'move'
   }
 
@@ -72,7 +75,7 @@ export function BlockLibrary() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 pb-4">
+      <div className="flex-1 overflow-y-auto px-2 pb-4 scrollbar-none">
         {CATEGORIES.map((cat) => (
           <div key={cat.name} className="mb-2">
             <button
@@ -93,17 +96,17 @@ export function BlockLibrary() {
               <div className="mt-1 flex flex-col gap-2 pl-2 pr-1 pb-3">
                 {cat.blocks.map((block) => (
                   <div
-                    key={block}
+                    key={block.label}
                     className="group relative flex h-[52px] w-full cursor-grab items-center justify-between rounded-lg border border-bg-border bg-black/5 backdrop-blur-md px-3 active:cursor-grabbing hover:border-accent-blue/50 hover:bg-bg-surface hover:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all"
                     draggable
-                    onDragStart={(e) => onDragStart(e, 'conditionNode', block, cat.name)}
+                    onDragStart={(e) => onDragStart(e, block.type, block.label, cat.name, block.dsl)}
                   >
                     <div className="absolute inset-0 -z-10 rounded-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{ background: `linear-gradient(to right, transparent, rgba(59,130,246,0.05))` }} />
                     <div className="flex items-center gap-3">
                       <div className={`flex h-6 w-6 items-center justify-center rounded-md bg-bg-elevated group-hover:bg-accent-blue/10 transition-colors`}>
                         <div className={`h-2 w-2 rounded-full ${cat.bgColor} shadow-[0_0_8px_currentColor]`} />
                       </div>
-                      <span className="text-[13px] font-medium text-text-primary group-hover:text-text-primary transition-colors">{block}</span>
+                      <span className="text-[13px] font-medium text-text-primary group-hover:text-text-primary transition-colors">{block.label}</span>
                     </div>
                     <GripVertical className="h-4 w-4 text-text-tertiary opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>

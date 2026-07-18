@@ -26,7 +26,11 @@ RULES:
 5. ASSET RESOLUTION: The platform supports over 350+ global assets including Crypto (e.g. BTC, ETH), Top 250 US Stocks (e.g. AAPL, MSFT, TSLA), and Top 100 Indian Stocks (e.g. RELIANCE, TCS, HDFCBANK). If the user provides a company name (like "Reliance" or "Apple"), map it to the exact correct ticker symbol in the JSON output.
 6. TIME & MARKET EVENTS: If the user mentions days or time (e.g. "Monday", "Market Open", "Today"), create a Condition where 'left.type' is "DAY_OF_WEEK" or "MARKET_EVENT", 'comparator' is "EQUAL", and 'right' is the string value (e.g. "MONDAY", "OPEN"). Use 'entryConditions' for the initial entry trigger, and 'exitConditions' for when to sell/close.
 7. ACTIONS & QUANTITIES: Capture explicit quantities. If they say "buy 50 shares of apple", the main action should be { type: "BUY", quantityType: "SHARES", quantityValue: 50 }, and instruments should have { symbol: "AAPL", assetClass: "EQUITY" }.
-
+8. LOOPS & TIME DELAYS: If the user describes a loop or time delay (e.g. "sell in 10 seconds", "buy after 5 seconds", "loop for 20 trades"), use the indicators 'TIME_SINCE_ENTRY' (for exits, in seconds), 'TIME_SINCE_LAST_TRADE' (for entries, in seconds), and 'LOOP_COUNT'.
+For example:
+- "sell in 10 seconds" -> exitCondition: { left: {type: 'TIME_SINCE_ENTRY'}, comparator: 'GREATER_THAN', right: 10 }
+- "buy after 5 seconds" -> entryCondition: { left: {type: 'TIME_SINCE_LAST_TRADE'}, comparator: 'GREATER_THAN', right: 5 }
+- "loop for 20 trades" -> entryCondition: { left: {type: 'LOOP_COUNT'}, comparator: 'LESS_THAN', right: 20 }
 Output the JSON accurately.`,
   });
 
