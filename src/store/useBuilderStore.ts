@@ -125,7 +125,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   addChatMessage: (msg) => set(state => ({ chatHistory: [...state.chatHistory, msg] })),
 
   compileGraphToDSL: () => {
-    const { nodes, strategyName, tradingPair, allocation, maxPerTrade } = get();
+    const { nodes, edges, strategyName, tradingPair, allocation, maxPerTrade } = get();
     
     // Very basic compilation logic based on node categories and data
     const entryConditions: any[] = [];
@@ -133,16 +133,37 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     let action: any = { type: 'BUY', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: allocation };
     let riskParams: any = {};
 
-    nodes.forEach(node => {
+    // Traverse graph from trigger nodes to only process connected blocks
+    const reachableNodeIds = new Set<string>();
+    const queue = nodes.filter(n => n.type === 'triggerNode').map(n => n.id);
+    
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      if (!reachableNodeIds.has(currentId)) {
+        reachableNodeIds.add(currentId);
+        const outgoing = edges.filter(e => e.source === currentId).map(e => e.target);
+        queue.push(...outgoing);
+      }
+    }
+
+    const connectedNodes = nodes.filter(n => reachableNodeIds.has(n.id));
+
+    connectedNodes.forEach(node => {
       if (node.type === 'conditionNode' && node.data.dslCondition) {
-        if (node.data.category === 'ENTRY CONDITIONS') {
-          entryConditions.push(node.data.dslCondition);
-        } else if (node.data.category === 'EXIT CONDITIONS') {
+        if (node.data.category === 'EXIT CONDITIONS') {
           exitConditions.push(node.data.dslCondition);
+        } else {
+          entryConditions.push(node.data.dslCondition);
         }
       }
       if (node.type === 'executeNode' && node.data.dslAction) {
-        action = { ...action, ...node.data.dslAction };
+        if (node.data.dslAction.type !== 'CLOSE_POSITION') {
+           action = { ...node.data.dslAction };
+           action.quantityType = 'PERCENT_OF_ACCOUNT';
+           if (!action.quantityValue) {
+              action.quantityValue = allocation;
+           }
+        }
       }
       if (node.type === 'riskNode' && node.data.dslRisk) {
         riskParams = { ...riskParams, ...node.data.dslRisk };

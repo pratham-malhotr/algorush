@@ -74,13 +74,13 @@ const mockStrategies: PublishedStrategy[] = [
     id: 's_2',
     creatorId: 'c_2',
     name: 'Tech Sector Momentum',
-    description: 'Follows strong momentum in AAPL and MSFT using MACD crossovers.',
-    category: 'Equities',
+    description: 'Follows strong momentum in BTC and ETH using MACD crossovers.',
+    category: 'Crypto',
     price: 0, // Free
     metrics: { sharpe: 1.4, maxDrawdown: 18.2, monthlyReturn: 2.1, liveDays: 45 },
     clones: 120,
     strategyDSL: {
-      assets: ['AAPL', 'MSFT'],
+      assets: ['BTC', 'ETH'],
       indicators: [{ name: 'MACD', timeframe: '1d', parameters: { fast: 12, slow: 26, signal: 9 } }],
       rules: {
         entry: [{ indicator: 'MACD_Line', operator: 'crosses_above', value: 'MACD_Signal' }],

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
+import { useRouter } from 'next/navigation';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -34,6 +35,7 @@ const plans = [
 export default function BillingPage() {
   const { user } = useAuthStore();
   const [loadingPlan, setLoadingPlan] = React.useState<string | null>(null);
+  const router = useRouter();
 
   const handleCheckout = async (priceId: string) => {
     if (priceId.startsWith('mock_')) {
@@ -50,7 +52,7 @@ export default function BillingPage() {
       const { sessionId, mockMode } = await response.json();
       
       if (mockMode) {
-        window.location.href = '/billing?success=true';
+        router.push('/billing?success=true');
         return;
       }
 

@@ -64,8 +64,8 @@ export default function DevelopersPage() {
             <p className="text-sm text-text-secondary mb-6">POST <code className="bg-bg-surface px-2 py-1 rounded text-accent-green">/api/v1/orders</code></p>
             <pre className="bg-bg-surface p-4 rounded-xl text-xs font-mono text-text-tertiary overflow-x-auto">
 {`{
-  "symbol": "AAPL",
-  "qty": 100,
+  "symbol": "BTC",
+  "assetClass": "CRYPTO",
   "side": "buy",
   "type": "market",
   "time_in_force": "day"

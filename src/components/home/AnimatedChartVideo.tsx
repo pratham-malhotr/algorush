@@ -63,20 +63,12 @@ export function AnimatedChartVideo() {
         ctx.stroke()
       }
 
-      // Draw Candlesticks & Line
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.moveTo(0, points[0].y)
-
-      for (let i = 0; i < points.length; i++) {
+      // Draw Candlesticks
+      for (let i = 1; i < points.length; i++) {
         const p = points[i]
         const drawX = p.x - offset
         
-        // Line chart connecting closes
-        ctx.lineTo(drawX, p.y)
-        
-        // Candlestick bodies
-        if (i > 0 && drawX > 0 && drawX < canvas.width) {
+        if (drawX > 0 && drawX < canvas.width + (canvas.width/50)) {
           const prev = points[i-1]
           const color = p.isGreen ? "#22c55e" : "#ef4444"
           ctx.fillStyle = color
@@ -86,6 +78,7 @@ export function AnimatedChartVideo() {
           ctx.beginPath()
           ctx.moveTo(drawX - (canvas.width/50)/2, Math.min(prev.y, p.y) - 20)
           ctx.lineTo(drawX - (canvas.width/50)/2, Math.max(prev.y, p.y) + 20)
+          ctx.lineWidth = 2
           ctx.stroke()
           
           // Body
@@ -95,6 +88,13 @@ export function AnimatedChartVideo() {
         }
       }
 
+      // Draw Line Chart
+      ctx.beginPath()
+      ctx.moveTo(points[0].x - offset, points[0].y)
+      for (let i = 1; i < points.length; i++) {
+        const p = points[i]
+        ctx.lineTo(p.x - offset, p.y)
+      }
       ctx.strokeStyle = "rgba(59, 130, 246, 0.5)"
       ctx.lineWidth = 3
       ctx.stroke()
@@ -104,8 +104,9 @@ export function AnimatedChartVideo() {
       gradient.addColorStop(0, "rgba(59, 130, 246, 0.2)")
       gradient.addColorStop(1, "rgba(59, 130, 246, 0)")
       
-      ctx.lineTo(canvas.width, canvas.height)
-      ctx.lineTo(0, canvas.height)
+      ctx.lineTo(points[points.length - 1].x - offset, canvas.height)
+      ctx.lineTo(points[0].x - offset, canvas.height)
+      ctx.closePath()
       ctx.fillStyle = gradient
       ctx.fill()
 

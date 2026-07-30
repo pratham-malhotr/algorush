@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 export async function GET(req: Request) {
   const authHeader = req.headers.get('authorization');
   
-  if (!authHeader || !authHeader.startsWith('Bearer at_live_')) {
-    return NextResponse.json({ error: 'Unauthorized. Invalid API Key.' }, { status: 401 });
+  if (!authHeader || !authHeader.startsWith('Bearer at_live_') || authHeader.length < 24) {
+    return NextResponse.json({ error: 'Unauthorized. Invalid or missing API Key.' }, { status: 401 });
   }
 
   // Mock returning the user's active strategies

@@ -13,14 +13,14 @@ const GLOBAL_DRAWDOWN_LIMIT = 15; // 15%
 
 // Mock state of active positions across all strategies
 const activePositions = [
-  { symbol: 'AAPL', allocationUsd: 5000, strategyId: 'strat_1' }
+  { symbol: 'BTC', allocationUsd: 5000, strategyId: 'strat_1' }
 ];
 
 // Mock correlation matrix (1.0 = identical, -1.0 = opposite)
 const correlationMatrix: Record<string, Record<string, number>> = {
-  'AAPL': { 'MSFT': 0.85, 'TSLA': 0.4 },
-  'MSFT': { 'AAPL': 0.85, 'TSLA': 0.3 },
-  'TSLA': { 'AAPL': 0.4, 'MSFT': 0.3 }
+  'BTC': { 'ETH': 0.85, 'SOL': 0.4 },
+  'ETH': { 'BTC': 0.85, 'SOL': 0.3 },
+  'SOL': { 'BTC': 0.4, 'ETH': 0.3 }
 };
 
 export function engageKillSwitch() {
@@ -63,7 +63,7 @@ export function runRiskChecks(strategy: StrategyDSL, order: OrderRequest): RiskC
 
   // 3. Max Position Size Check
   if (riskParameters?.maxPositionSizeUSD) {
-    // For mock, assuming price is 150 for AAPL
+    // For mock, assuming price is 60000 for BTC
     const estimatedValue = order.qty * 150; 
     if (estimatedValue > riskParameters.maxPositionSizeUSD) {
       return { 

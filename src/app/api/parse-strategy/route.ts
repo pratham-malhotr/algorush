@@ -3,6 +3,11 @@ import { parseStrategyDescription } from '@/lib/parser/agent';
 
 export async function POST(req: Request) {
   try {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.length < 20) {
+      return NextResponse.json({ error: 'Unauthorized. Valid API Key required.' }, { status: 401 });
+    }
+
     const { text } = await req.json();
 
     if (!text || typeof text !== 'string') {
@@ -19,8 +24,8 @@ export async function POST(req: Request) {
       const textLower = text.toLowerCase();
       
       // Naive symbol extraction
-      let symbol = "AAPL";
-      let assetClass = "EQUITY";
+      let symbol = "BTC";
+      let assetClass = "CRYPTO";
       
       if (textLower.includes("bitcoin") || textLower.includes("btc")) {
          symbol = "BTC/USDT";
@@ -28,18 +33,45 @@ export async function POST(req: Request) {
       } else if (textLower.includes("ethereum") || textLower.includes("eth")) {
          symbol = "ETH/USDT";
          assetClass = "CRYPTO";
-      } else if (textLower.includes("tsla") || textLower.includes("tesla")) {
-         symbol = "TSLA";
-         assetClass = "EQUITY";
-      } else if (textLower.includes("msft") || textLower.includes("microsoft")) {
-         symbol = "MSFT";
-         assetClass = "EQUITY";
+      } else if (textLower.includes("sol") || textLower.includes("solana")) {
+         symbol = "SOL";
+         assetClass = "CRYPTO";
       }
 
       // Naive action extraction
       let actionType = "BUY";
       if (textLower.includes("sell") || textLower.includes("short")) {
          actionType = "SELL";
+      }
+
+      let entryConditions: any[] = [
+        { id: 'entry-1', left: { type: "MARKET_EVENT" }, comparator: "EQUAL", right: "TODAY" }
+      ];
+      let exitConditions: any[] = [
+        { id: 'exit-1', left: { type: "MARKET_EVENT" }, comparator: "EQUAL", right: "OPEN" }
+      ];
+
+      if (textLower.includes("loop") || textLower.includes("second") || textLower.includes("minute")) {
+        entryConditions = [];
+        exitConditions = [];
+        let eIdx = 1;
+        let xIdx = 1;
+
+        if (textLower.includes("buy it after 5 second") || textLower.includes("buy after 5 second")) {
+          entryConditions.push({ id: `entry-${eIdx++}`, left: { type: "TIME_SINCE_LAST_TRADE" }, comparator: "GREATER_THAN", right: 5 });
+        } else {
+           entryConditions.push({ id: `entry-${eIdx++}`, left: { type: "MARKET_EVENT" }, comparator: "EQUAL", right: "NOW" });
+        }
+
+        if (textLower.includes("loop for 20")) {
+          entryConditions.push({ id: `entry-${eIdx++}`, left: { type: "LOOP_COUNT" }, comparator: "LESS_THAN", right: 20 });
+        }
+
+        if (textLower.includes("sell in 10 second") || textLower.includes("sell it in 10 second")) {
+          exitConditions.push({ id: `exit-${xIdx++}`, left: { type: "TIME_SINCE_ENTRY" }, comparator: "GREATER_THAN", right: 10 });
+        } else {
+          exitConditions.push({ id: `exit-${xIdx++}`, left: { type: "PRICE" }, comparator: "GREATER_THAN", right: 0 }); // generic
+        }
       }
 
       return NextResponse.json({
@@ -49,12 +81,8 @@ export async function POST(req: Request) {
           description: text,
           instruments: [{ symbol, assetClass }],
           action: { type: actionType, quantityType: "SHARES", quantityValue: 1 },
-          entryConditions: [
-            { id: 'entry-1', left: { type: "MARKET_EVENT" }, comparator: "EQUAL", right: "TODAY" }
-          ],
-          exitConditions: [
-            { id: 'exit-1', left: { type: "MARKET_EVENT" }, comparator: "EQUAL", right: "OPEN" }
-          ],
+          entryConditions,
+          exitConditions,
           riskParameters: { stopLossPercentage: 5, maxPositionSizeUsd: 10000 }
         }
       });

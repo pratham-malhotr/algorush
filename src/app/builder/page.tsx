@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { useBuilderStore } from "@/store/useBuilderStore"
 import { usePaperTradingStore } from "@/store/usePaperTradingStore"
 import { Badge } from "@/components/ui/badge"
@@ -18,9 +19,11 @@ const StrategyCanvas = dynamic(
 )
 
 export default function BuilderPage() {
-  const { strategyName, strategyStatus, isBacktesting, runBacktest, strategyDSL, setStrategyStatus } = useBuilderStore()
-  const { haltAllTrading } = usePaperTradingStore()
+  const router = useRouter()
+  const { strategyName, strategyStatus, isBacktesting, runBacktest, strategyDSL, setStrategyStatus, setStrategyName } = useBuilderStore()
+  const { haltAllTrading, deployStrategy } = usePaperTradingStore()
   const [showCode, setShowCode] = React.useState(true)
+  const [isPaper, setIsPaper] = React.useState(true)
 
   return (
     <div className="flex h-[calc(100vh-64px)] w-full flex-col bg-bg-base overflow-hidden">
@@ -29,18 +32,25 @@ export default function BuilderPage() {
         <div className="flex items-center gap-4">
           <input 
             type="text" 
-            defaultValue={strategyName} 
+            value={strategyName}
+            onChange={(e) => setStrategyName(e.target.value)}
             className="bg-transparent text-[16px] font-semibold text-text-primary outline-none hover:bg-black/5 focus:bg-black/5 px-2 py-1 rounded"
           />
           <Badge variant={strategyStatus.toLowerCase() as any}>{strategyStatus}</Badge>
           
           {/* Simulation Toggle */}
           <div className="flex items-center ml-4 rounded-md bg-bg-elevated p-1 border border-bg-border">
-            <button className="flex items-center gap-2 rounded px-3 py-1 text-[12px] font-medium text-accent-blue bg-accent-blue/10">
+            <button 
+              onClick={() => setIsPaper(true)}
+              className={`flex items-center gap-2 rounded px-3 py-1 text-[12px] font-medium transition-colors ${isPaper ? 'text-accent-blue bg-accent-blue/10' : 'text-text-secondary hover:text-text-primary'}`}
+            >
               <FlaskConical className="h-3 w-3" />
               Paper Trading
             </button>
-            <button className="flex items-center gap-2 rounded px-3 py-1 text-[12px] font-medium text-text-secondary hover:text-text-primary">
+            <button 
+              onClick={() => setIsPaper(false)}
+              className={`flex items-center gap-2 rounded px-3 py-1 text-[12px] font-medium transition-colors ${!isPaper ? 'text-accent-red bg-accent-red/10' : 'text-text-secondary hover:text-text-primary'}`}
+            >
               Live
             </button>
           </div>
@@ -77,12 +87,22 @@ export default function BuilderPage() {
             Kill Switch
           </Button>
           <div className="h-4 w-px bg-bg-border mx-1" />
-          <Button variant="ghost" className="text-[13px] h-8">Save Draft</Button>
+          <Button 
+            variant="ghost" 
+            className="text-[13px] h-8"
+            onClick={() => {
+              setStrategyStatus("Draft");
+              alert("Strategy saved as draft successfully!");
+            }}
+          >
+            Save Draft
+          </Button>
           <Button 
             variant="ghost" 
             className="text-[13px] h-8 border-accent-blue/30 text-accent-blue hover:bg-accent-blue/10"
             onClick={() => {
               if (strategyDSL) {
+                setStrategyStatus("Live");
                 alert("Submitting strategy to marketplace for 30-day live validation...\nOnce verified, it will appear publicly.");
               } else {
                 alert("Build a strategy first!");
@@ -110,7 +130,9 @@ export default function BuilderPage() {
             className="text-[13px] h-8 flex items-center gap-2"
             onClick={() => {
               if (strategyDSL) {
-                alert("Strategy deployed to Alpaca Paper Trading environment successfully!\nYou can monitor it on your Dashboard.");
+                deployStrategy(strategyDSL);
+                alert("Strategy deployed to Alpaca Paper Trading environment successfully!");
+                router.push("/dashboard");
               } else {
                 alert("Build a strategy first!");
               }

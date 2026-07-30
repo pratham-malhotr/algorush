@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const AssetClassSchema = z.enum(['EQUITY', 'CRYPTO', 'FOREX', 'OPTIONS', 'FUTURES']);
+export const AssetClassSchema = z.enum(['CRYPTO']);
 
 export const InstrumentSchema = z.object({
   symbol: z.string(),

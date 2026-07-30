@@ -1,0 +1,262 @@
+
+> algotext-ai@0.1.0 lint
+> eslint
+
+
+/Users/prathammalhotra/Desktop/algorush/fix_opacities.js
+  1:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/prathammalhotra/Desktop/algorush/fix_white.js
+  1:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/prathammalhotra/Desktop/algorush/generate_assets.js
+  1:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/prathammalhotra/Desktop/algorush/redesign.js
+  1:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  2:14  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/prathammalhotra/Desktop/algorush/services/backtest-worker/index.ts
+   9:11  warning  'strategy' is assigned a value but never used                                                                        @typescript-eslint/no-unused-vars
+  25:1   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+/Users/prathammalhotra/Desktop/algorush/services/execution-engine/index.ts
+   6:7   warning  'worker' is assigned a value but never used                                                                          @typescript-eslint/no-unused-vars
+   9:11  warning  'strategyId' is assigned a value but never used                                                                      @typescript-eslint/no-unused-vars
+   9:23  warning  'signal' is assigned a value but never used                                                                          @typescript-eslint/no-unused-vars
+  23:1   error    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+/Users/prathammalhotra/Desktop/algorush/services/risk-engine/index.ts
+  12:5   error    'globalDailyDrawdown' is never reassigned. Use 'const' instead  prefer-const
+  16:23  warning  'orderDetails' is assigned a value but never used               @typescript-eslint/no-unused-vars
+
+/Users/prathammalhotra/Desktop/algorush/src/app/about/page.tsx
+   6:8   warning  'Image' is defined but never used                                @typescript-eslint/no-unused-vars
+  64:67  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/prathammalhotra/Desktop/algorush/src/app/affiliates/page.tsx
+  5:17   warning  'DollarSign' is defined but never used  @typescript-eslint/no-unused-vars
+  5:29   warning  'Activity' is defined but never used    @typescript-eslint/no-unused-vars
+  5:59   warning  'LinkIcon' is defined but never used    @typescript-eslint/no-unused-vars
+  5:101  warning  'Shield' is defined but never used      @typescript-eslint/no-unused-vars
+  5:109  warning  'Zap' is defined but never used         @typescript-eslint/no-unused-vars
+
+/Users/prathammalhotra/Desktop/algorush/src/app/api/checkout/route.ts
+  36:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/app/api/kill-switch/route.ts
+  17:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/prathammalhotra/Desktop/algorush/src/app/api/parse-strategy/route.ts
+  42:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  45:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  88:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/app/api/v1/orders/route.ts
+  26:12  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  26:17  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/app/billing/page.tsx
+  53:9  error  Error: This value cannot be modified
+
+Modifying a variable defined outside a component or hook is not allowed. Consider using an effect.
+
+/Users/prathammalhotra/Desktop/algorush/src/app/billing/page.tsx:53:9
+  51 |       
+  52 |       if (mockMode) {
+> 53 |         window.location.href = '/billing?success=true';
+     |         ^^^^^^^^^^^^^^^ value cannot be modified
+  54 |         return;
+  55 |       }
+  56 |  react-hooks/immutability
+  59:9  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free                                                                                                                                                                                                                                                                                                             @typescript-eslint/ban-ts-comment
+
+/Users/prathammalhotra/Desktop/algorush/src/app/builder/page.tsx
+  37:59  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  73:24  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+
+/Users/prathammalhotra/Desktop/algorush/src/app/careers/page.tsx
+    2:8   warning  'Link' is defined but never used                                 @typescript-eslint/no-unused-vars
+   54:23  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+   87:57  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  122:43  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/prathammalhotra/Desktop/algorush/src/app/dashboard/page.tsx
+  12:72  warning  'currentPrices' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  73:26  warning  'e' is defined but never used                       @typescript-eslint/no-unused-vars
+
+/Users/prathammalhotra/Desktop/algorush/src/app/developers/page.tsx
+   58:109  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  106:39   warning  'variant' is assigned a value but never used                     @typescript-eslint/no-unused-vars
+  106:62   error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/app/docs/page.tsx
+    4:8    warning  'Link' is defined but never used                                 @typescript-eslint/no-unused-vars
+    5:10   warning  'motion' is defined but never used                               @typescript-eslint/no-unused-vars
+    7:13   warning  'Terminal' is defined but never used                             @typescript-eslint/no-unused-vars
+    7:33   warning  'ChevronRight' is defined but never used                         @typescript-eslint/no-unused-vars
+  245:79   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  245:110  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  245:115  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  245:134  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+/Users/prathammalhotra/Desktop/algorush/src/app/leaderboard/page.tsx
+  55:49  warning  'strategyName' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/prathammalhotra/Desktop/algorush/src/app/marketplace/[id]/page.tsx
+  7:34  warning  'Download' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/prathammalhotra/Desktop/algorush/src/app/marketplace/page.tsx
+  5:53  warning  'Star' is defined but never used    @typescript-eslint/no-unused-vars
+  7:10  warning  'Button' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/prathammalhotra/Desktop/algorush/src/app/markets/[symbol]/page.tsx
+  113:19  error  Expected a `const` assertion instead of a literal type annotation  @typescript-eslint/prefer-as-const
+  132:55  error  Unexpected any. Specify a different type                           @typescript-eslint/no-explicit-any
+  133:24  error  Unexpected any. Specify a different type                           @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/app/markets/page.tsx
+    5:56  warning  'Plus' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+    5:62  warning  'Minus' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+   41:35  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/prathammalhotra/Desktop/algorush/src/app/markets/page.tsx:41:35
+  39 |   useEffect(() => {
+  40 |     if (market.price === 0) return; 
+> 41 |     if (market.price > prevPrice) setFlash("rgba(34, 197, 94, 0.15)") // Green
+     |                                   ^^^^^^^^ Avoid calling setState() directly within an effect
+  42 |     else if (market.price < prevPrice) setFlash("rgba(239, 68, 68, 0.15)") // Red
+  43 |     setPrevPrice(market.price)
+  44 |  react-hooks/set-state-in-effect
+   47:6   warning  React Hook useEffect has a missing dependency: 'prevPrice'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react-hooks/exhaustive-deps
+  137:33  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/app/not-found.tsx
+  20:38  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  20:59  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/prathammalhotra/Desktop/algorush/src/app/onboarding/page.tsx
+   49:73  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  167:23  error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/app/pricing/page.tsx
+    5:64   warning  'Clock' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+    5:71   warning  'Award' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+    5:78   warning  'Building2' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+    5:89   warning  'TrendingUp' is defined but never used                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+    5:117  warning  'QrCode' is defined but never used                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  422:21   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/prathammalhotra/Desktop/algorush/src/app/terms/page.tsx
+  80:62  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  80:70  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+/Users/prathammalhotra/Desktop/algorush/src/components/builder/AICopilot.tsx
+   48:25  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   49:25  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   57:48  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   84:47  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  133:14  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+
+/Users/prathammalhotra/Desktop/algorush/src/components/builder/AssetSelector.tsx
+  75:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/components/builder/BlockLibrary.tsx
+  56:108  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/components/builder/CodeViewer.tsx
+  19:73  warning  'riskParameters' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  43:13  error    'pyCond' is never reassigned. Use 'const' instead    prefer-const
+  55:13  error    'pyCond' is never reassigned. Use 'const' instead    prefer-const
+
+/Users/prathammalhotra/Desktop/algorush/src/components/builder/NodePropertiesPanel.tsx
+   17:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   51:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   51:80  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   54:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:78  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  164:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  164:75  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  167:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/components/builder/StrategyCanvas.tsx
+    2:43  warning  'Edge' is defined but never used          @typescript-eslint/no-unused-vars
+   20:68  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  101:56  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/components/builder/StrategyPrompt.tsx
+  39:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  50:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/components/builder/nodes/ConditionNode.tsx
+  12:75  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/components/builder/nodes/ExecuteNode.tsx
+  6:73  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/components/builder/nodes/RiskNode.tsx
+  6:70  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/components/builder/nodes/TriggerNode.tsx
+  4:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/components/home/FeaturesGrid.tsx
+  112:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/components/home/FeeTransparency.tsx
+  2:10  warning  'Check' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/prathammalhotra/Desktop/algorush/src/components/home/HowItWorks.tsx
+   83:6   warning  React Hook React.useEffect has a missing dependency: 'PROMPTS'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  564:42  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/components/layout/LiveTicker.tsx
+  36:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/components/layout/Navbar.tsx
+  6:10  warning  'Bell' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/prathammalhotra/Desktop/algorush/src/components/trading/PaperTradingEngine.tsx
+    9:9  warning  'activeStrategies' is assigned a value but never used                                                                                                @typescript-eslint/no-unused-vars
+   11:9  warning  'currentPrices' is assigned a value but never used                                                                                                   @typescript-eslint/no-unused-vars
+   41:6  warning  React Hook React.useEffect has a missing dependency: 'updateMarketPrices'. Either include it or remove the dependency array                          react-hooks/exhaustive-deps
+  111:6  warning  React Hook React.useEffect has missing dependencies: 'executeTrade' and 'markStrategyTriggered'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/prathammalhotra/Desktop/algorush/src/lib/logger.ts
+  10:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/lib/risk/engine.ts
+  11:5  error  'globalDailyDrawdown' is never reassigned. Use 'const' instead  prefer-const
+
+/Users/prathammalhotra/Desktop/algorush/src/scripts/bitcoinAlgo.ts
+  90:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/store/useBuilderStore.ts
+   46:38  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  128:66  warning  'maxPerTrade' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  131:28  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  132:27  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  133:17  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  134:21  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+
+/Users/prathammalhotra/Desktop/algorush/src/store/useMarketplaceStore.ts
+  1:1  error  Do not use "@ts-nocheck" because it alters compilation errors  @typescript-eslint/ban-ts-comment
+
+/Users/prathammalhotra/Desktop/algorush/src/store/usePaperTradingStore.ts
+   50:69  warning  'get' is defined but never used                          @typescript-eslint/no-unused-vars
+   84:11  error    'newPositions' is never reassigned. Use 'const' instead  prefer-const
+  143:11  error    'newHistory' is never reassigned. Use 'const' instead    prefer-const
+
+✖ 126 problems (79 errors, 47 warnings)
+  6 errors and 0 warnings potentially fixable with the `--fix` option.
+

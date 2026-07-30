@@ -35,9 +35,9 @@ const STEPS = [
 function TypingMockup() {
   const PROMPTS = [
     "Buy BTC if 15m RSI < 30 and MACD crosses up. Set ATR trailing stop.",
-    "Short TSLA if it gaps up > 3% pre-market. Target 2R profit.",
+    "Short SOL if it rallies > 3% in 5m. Target 2R profit.",
     "Yield farm ETH/USDC on Uniswap V3. Auto-rebalance if IL > 2%.",
-    "Sell AAPL Iron Condor 45 DTE. Close at 50% max profit."
+    "Sell BTC Iron Condor 45 DTE. Close at 50% max profit."
   ]
   const [typedText, setTypedText] = React.useState("")
   const [phase, setPhase] = React.useState("typing")
@@ -246,7 +246,7 @@ const BACKTEST_CONFIGS = [
     fillPath: "M0 150 Q 50 100, 100 120 T 200 80 T 300 40 L300 200 L0 200 Z"
   },
   {
-    asset: "TSLA-OPT",
+    asset: "SOL-PERP",
     period: "2024 YTD",
     return: "+84.1%",
     winRate: "75%",
@@ -526,7 +526,7 @@ function WalletMockup() {
         
         {/* Animated Mouse Cursor with Ripple */}
         <AnimatePresence>
-           {(phase === "idle" || phase === "open") && (
+           {phase !== "connected" && (
              <motion.div
                initial={{ x: 100, y: 150, opacity: 0 }}
                animate={

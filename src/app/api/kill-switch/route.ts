@@ -3,6 +3,11 @@ import { engageKillSwitch, disengageKillSwitch } from '@/lib/risk/engine';
 
 export async function POST(req: Request) {
   try {
+    const authHeader = req.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.ADMIN_API_KEY || 'at_admin_master_secret'}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { action } = await req.json();
 
     if (action === 'engage') {

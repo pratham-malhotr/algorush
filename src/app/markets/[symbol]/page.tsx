@@ -58,7 +58,7 @@ const SymbolInfoWidget = ({ symbol }: { symbol: string }) => {
   return <div id={cleanId} className="w-full pointer-events-none" />
 }
 
-const FearAndGreedIndex = ({ symbol, type }: { symbol: string, type: 'CRYPTO' | 'EQUITY' }) => {
+const FearAndGreedIndex = ({ symbol, type }: { symbol: string, type: 'CRYPTO' }) => {
   // Deterministic mock based on symbol
   const hash = symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const score = (hash % 80) + 10; 
@@ -110,25 +110,17 @@ export default function AssetDashboardPage() {
   
   const asset = ALL_ASSETS.find(a => a.symbol === symbolRaw)
   let fullSymbol = tvSymbolBase
-  let marketType: 'CRYPTO' | 'EQUITY' = 'EQUITY'
+  let marketType: 'CRYPTO' = 'CRYPTO'
   
   if (asset) {
     if (asset.market === 'CRYPTO') {
        fullSymbol = `OKX:${tvSymbolBase}`
        marketType = 'CRYPTO'
-    } else if (asset.market === 'IN_EQUITY') {
-       fullSymbol = `BSE:${tvSymbolBase}`
-    } else if (asset.market === 'US_EQUITY') {
-       fullSymbol = tvSymbolBase // Let TradingView auto-resolve NYSE/NASDAQ
     }
   } else {
     // Fallback logic
-    if (symbolRaw.includes('USDT') || symbolRaw.includes('USD')) {
-       fullSymbol = `OKX:${tvSymbolBase}`
-       marketType = 'CRYPTO'
-    } else {
-       fullSymbol = tvSymbolBase
-    }
+    fullSymbol = `OKX:${tvSymbolBase}`
+    marketType = 'CRYPTO'
   }
 
   useEffect(() => {

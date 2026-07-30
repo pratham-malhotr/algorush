@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const authHeader = req.headers.get('authorization');
+  if (authHeader !== `Bearer ${process.env.METRICS_API_KEY || 'at_metrics_internal_token'}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   // Mock Prometheus-formatted metrics output
   const metrics = `
 # HELP algotext_active_strategies Number of active strategies currently running

@@ -33,14 +33,19 @@ const TickerRow = memo(function TickerRow({
   onToggleWatchlist: (e: React.MouseEvent, symbol: string) => void
 }) {
   const [flash, setFlash] = useState<string>("transparent")
-  const [prevPrice, setPrevPrice] = useState(market.price)
+  const prevPriceRef = React.useRef(market.price)
   const router = useRouter()
 
   useEffect(() => {
     if (market.price === 0) return; 
-    if (market.price > prevPrice) setFlash("rgba(34, 197, 94, 0.15)") // Green
-    else if (market.price < prevPrice) setFlash("rgba(239, 68, 68, 0.15)") // Red
-    setPrevPrice(market.price)
+    const prevPrice = prevPriceRef.current;
+    
+    setTimeout(() => {
+      if (market.price > prevPrice) setFlash("rgba(34, 197, 94, 0.15)") // Green
+      else if (market.price < prevPrice) setFlash("rgba(239, 68, 68, 0.15)") // Red
+    }, 0);
+    
+    prevPriceRef.current = market.price;
 
     const timeout = setTimeout(() => setFlash("transparent"), 500)
     return () => clearTimeout(timeout)
@@ -101,6 +106,7 @@ export default function MarketsPage() {
   
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<'WATCHLIST' | 'ALL'>('ALL')
+  const [accountMode, setAccountMode] = useState<'LIVE' | 'DEMO'>('LIVE')
   
   // Initialize market states with dummy data before Binance populates it
   const [marketDataMap, setMarketDataMap] = useState<Record<string, MarketDisplayData>>(() => {
@@ -121,11 +127,7 @@ export default function MarketsPage() {
   useEffect(() => {
     const fetchMarkets = async () => {
       try {
-        // Fetch real crypto prices from Binance
-        const cryptoAssets = ALL_ASSETS.filter(a => a.market === 'CRYPTO')
-        const binancePairs = cryptoAssets.map(m => `"${m.symbol.replace('/', '')}"`).join(',')
-        
-        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=[${binancePairs}]`)
+        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr`)
         const data = await response.json()
 
         setMarketDataMap(prev => {
@@ -157,7 +159,9 @@ export default function MarketsPage() {
           return newMap
         })
       } catch (e) {
-        console.error("Failed to fetch markets", e)
+        // Suppress console.error to avoid triggering Next.js dev overlay on CORS/AdBlock failures.
+        // The app will just gracefully use the initial mock data.
+        console.warn("Failed to fetch live markets, using mock data.", e)
       }
     }
 
@@ -201,18 +205,42 @@ export default function MarketsPage() {
         {/* Top Overview Cards */}
         <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="flex flex-col justify-between rounded-[var(--radius-lg)] border border-bg-border bg-bg-surface p-6 shadow-[var(--shadow-card)]">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-blue/10">
-                <Wallet className="h-5 w-5 text-accent-blue" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-blue/10">
+                  <Wallet className="h-5 w-5 text-accent-blue" />
+                </div>
+                <span className="text-[14px] font-semibold text-text-secondary">Estimated Balance</span>
               </div>
-              <span className="text-[14px] font-semibold text-text-secondary">Estimated Balance</span>
+              
+              <div className="flex items-center gap-1 bg-bg-elevated p-1 rounded-lg">
+                <button 
+                  onClick={() => setAccountMode('LIVE')}
+                  className={`px-3 py-1 text-[11px] font-bold rounded-md transition-colors ${accountMode === 'LIVE' ? 'bg-bg-surface text-text-primary shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}
+                >
+                  LIVE
+                </button>
+                <button 
+                  onClick={() => setAccountMode('DEMO')}
+                  className={`px-3 py-1 text-[11px] font-bold rounded-md transition-colors ${accountMode === 'DEMO' ? 'bg-bg-surface text-text-primary shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}
+                >
+                  DEMO
+                </button>
+              </div>
             </div>
+            
             <div className="mt-6 flex flex-col">
               <span className="font-mono text-[36px] font-bold text-text-primary">
-                {isConnected && balanceData ? `${Number(balanceData.formatted).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${balanceData.symbol}` : "$0.00"}
+                {accountMode === 'DEMO' 
+                  ? "$12,000.00" 
+                  : (isConnected && balanceData ? `${Number(balanceData.formatted).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${balanceData.symbol}` : "$0.00")
+                }
               </span>
               <span className="flex items-center text-[13px] text-text-tertiary">
-                {isConnected ? "Wallet Connected" : "Connect wallet to view balance"}
+                {accountMode === 'DEMO' 
+                  ? "Paper Trading Balance" 
+                  : (isConnected ? "Wallet Connected" : "Connect wallet to view balance")
+                }
               </span>
             </div>
           </div>

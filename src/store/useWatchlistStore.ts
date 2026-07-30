@@ -11,7 +11,7 @@ interface WatchlistState {
 export const useWatchlistStore = create<WatchlistState>()(
   persist(
     (set, get) => ({
-      watchlistedSymbols: ['BTC/USDT', 'AAPL', 'RELIANCE'], // Defaults
+      watchlistedSymbols: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'], // Defaults
       
       addWatchlist: (symbol) => {
         set((state) => ({

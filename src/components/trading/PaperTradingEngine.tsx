@@ -50,7 +50,7 @@ export function PaperTradingEngine() {
         if (activeStrat.status !== 'RUNNING') return;
 
         const strat = activeStrat.strategy;
-        const targetAsset = strat.instruments?.[0]?.symbol || 'AAPL';
+        const targetAsset = strat.instruments?.[0]?.symbol || 'BTC/USDT';
         const currentPrice = prices[targetAsset];
         if (!currentPrice) return;
 
@@ -95,10 +95,10 @@ export function PaperTradingEngine() {
             const exitType = entryType === 'BUY' ? 'SELL' : 'BUY';
             executeTrade(exitType, targetAsset, qty, currentPrice);
             
-            // Mark stopped
+            // Reset state to look for the next entry
             usePaperTradingStore.setState(s => ({
               activeStrategies: s.activeStrategies.map(ast => 
-                ast.id === activeStrat.id ? { ...ast, status: 'STOPPED' } : ast
+                ast.id === activeStrat.id ? { ...ast, hasTriggeredEntry: false } : ast
               )
             }));
           }

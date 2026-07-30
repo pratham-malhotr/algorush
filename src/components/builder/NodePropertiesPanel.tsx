@@ -145,16 +145,18 @@ function ExecuteProperties({ data, onChange }: { data: any, onChange: (data: any
         </select>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[12px] text-text-secondary font-bold">Quantity (%)</label>
-        <input 
-          type="number" 
-          min="1" max="100"
-          value={dsl.quantityValue}
-          onChange={(e) => updateDSL('quantityValue', Number(e.target.value))}
-          className="h-9 w-full rounded border border-bg-border bg-bg-base px-2 text-[13px] text-text-primary outline-none focus:border-accent-blue"
-        />
-      </div>
+      {dsl.type !== 'CLOSE_POSITION' && (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[12px] text-text-secondary font-bold">Quantity (%)</label>
+          <input 
+            type="number" 
+            min="1" max="100"
+            value={dsl.quantityValue || 0}
+            onChange={(e) => updateDSL('quantityValue', Number(e.target.value))}
+            className="h-9 w-full rounded border border-bg-border bg-bg-base px-2 text-[13px] text-text-primary outline-none focus:border-accent-blue"
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -12,12 +12,12 @@ export function CodeViewer() {
     if (!strategyDSL) {
       return `# No strategy configured yet.
 # Use the AI Copilot on the left to generate a strategy.
-# Example: "Buy TSLA when RSI drops below 30"
+# Example: "Buy BTC when RSI drops below 30"
 `;
     }
 
     const { name, instruments, entryConditions, exitConditions, action, riskParameters } = strategyDSL;
-    const symbol = instruments?.[0]?.symbol || 'AAPL';
+    const symbol = instruments?.[0]?.symbol || 'BTC';
     
     let pythonCode = `"""
 Strategy: ${name}

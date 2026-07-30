@@ -150,7 +150,7 @@ export function StrategyPrompt() {
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Type your strategy... e.g. 'Buy 50 AAPL if RSI drops below 30, with a 3% stop loss'"
+            placeholder="Type your strategy... e.g. 'Buy 50 BTC if RSI drops below 30, with a 3% stop loss'"
             className="min-h-[52px] max-h-[150px] w-full resize-none rounded-lg bg-transparent pl-10 pr-[60px] pt-3.5 text-[15px] text-text-primary outline-none placeholder:text-text-tertiary"
             rows={1}
             onKeyDown={(e) => {

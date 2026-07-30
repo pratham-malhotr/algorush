@@ -95,8 +95,10 @@ export function WatchDemoModal({ isOpen, onClose }: { isOpen: boolean, onClose: 
   // Reset when closed
   React.useEffect(() => {
     if (!isOpen) {
-      setIsPlaying(false)
-      setCurrentScene(0)
+      setTimeout(() => {
+        setIsPlaying(false)
+        setCurrentScene(0)
+      }, 0)
       window.speechSynthesis.cancel()
     }
   }, [isOpen])
@@ -161,7 +163,7 @@ export function WatchDemoModal({ isOpen, onClose }: { isOpen: boolean, onClose: 
                    exit={{ opacity: 0, y: -10 }}
                    className="text-2xl md:text-3xl font-medium text-gray-800 leading-relaxed"
                  >
-                   "{SCENES[currentScene].text}"
+                   &quot;{SCENES[currentScene].text}&quot;
                  </motion.p>
                </AnimatePresence>
             </div>
@@ -253,7 +255,7 @@ function SceneVisuals({ sceneId, onClose }: { sceneId: string, onClose: () => vo
                <motion.div 
                  key={i} 
                  initial={{ height: "0%" }} 
-                 animate={{ height: `${20 + Math.random() * 80}%` }}
+                 animate={{ height: `${20 + ((i * 13.7) % 80)}%` }}
                  transition={{ duration: 0.5, delay: i * 0.1 }}
                  className={`w-full rounded-t-sm ${i > 15 ? 'bg-accent-green' : 'bg-red-400'}`}
                />

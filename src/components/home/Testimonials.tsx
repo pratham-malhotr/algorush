@@ -52,7 +52,7 @@ export function Testimonials() {
                   <Star key={s} className="h-4 w-4 fill-current" />
                 ))}
               </div>
-              <p className="mb-6 flex-1 text-[15px] leading-relaxed text-text-secondary">"{t.content}"</p>
+              <p className="mb-6 flex-1 text-[15px] leading-relaxed text-text-secondary">&quot;{t.content}&quot;</p>
               <div>
                 <p className="font-semibold text-text-primary">{t.name}</p>
                 <p className="text-[13px] text-text-tertiary">{t.role}</p>

@@ -39,9 +39,9 @@ const STRATEGIES = [
     ]
   },
   {
-    text: "TSLA Earnings Play: If Pre-market gap > 3% and Sentiment is Bullish, execute Market On Open. Trail stop by $2. Scale out 50% at 1R.",
+    text: "BTC Breakout Play: If Volume spikes > 300% and Sentiment is Bullish, execute Market order. Trail stop by 2%. Scale out 50% at 1R.",
     nodes: [
-      { id: 1, x: 500, y: 40, icon: BarChart2, color: "blue", title: "Earnings Event", desc: "Q3 Report", params: ["Ticker: TSLA", "Date: Today"] },
+      { id: 1, x: 500, y: 40, icon: BarChart2, color: "blue", title: "Volume Event", desc: "Spike Detected", params: ["Ticker: BTC", "Now"] },
       { id: 2, x: 500, y: 160, icon: TrendingUp, color: "amber", title: "Gap Scan", desc: "Pre-market Gap", params: ["Gap > +3%", "High Vol"] },
       { id: 3, x: 500, y: 280, icon: ShoppingCart, color: "green", title: "Execution", desc: "Market On Open", params: ["Buy 100", "Route: IEX"] },
       { id: 4, x: 500, y: 400, icon: ShieldAlert, color: "red", title: "Risk Engine", desc: "Trailing Stop", params: ["Offset: $2.00", "Hard"] },
@@ -55,9 +55,9 @@ const STRATEGIES = [
     ]
   },
   {
-    text: "AAPL Volatility Crush: Sell Iron Condor 45DTE before Apple event. If IV Rank > 80, open position. Close at 50% max profit or 21 DTE.",
+    text: "ETH Volatility Crush: Short perpetual futures before network upgrade. If IV Rank > 80, open position. Close at 50% max profit or post-event.",
     nodes: [
-      { id: 1, x: 500, y: 40, icon: Crosshair, color: "blue", title: "Corp Event", desc: "Keynote Stream", params: ["Ticker: AAPL", "Sept 12"] },
+      { id: 1, x: 500, y: 40, icon: Crosshair, color: "blue", title: "Network Event", desc: "Upgrade Stream", params: ["Ticker: ETH", "Sept 12"] },
       { id: 2, x: 500, y: 160, icon: Activity, color: "amber", title: "Volatility", desc: "IV Rank", params: ["IVR > 80", "Premium"] },
       { id: 3, x: 500, y: 280, icon: Briefcase, color: "green", title: "Execution", desc: "Sell Iron Condor", params: ["45 DTE", "16 Delta"] },
       { id: 4, x: 500, y: 400, icon: ShieldAlert, color: "red", title: "Max Loss", desc: "Auto-Stop", params: ["200% Credit", "BTC"] },

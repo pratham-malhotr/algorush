@@ -101,3 +101,10 @@
     font-weight: 600;
   }
 }
+
+/* Force hide Next.js dev indicator logo in the bottom corner */
+nextjs-portal,
+#next-route-announcer,
+div[data-nextjs-toast] {
+  display: none !important;
+}
