@@ -1,12 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 
 interface TickerData {
   symbol: string;
   price: number;
   change: number;
+  flash?: 'up' | 'down' | null;
 }
 
 const INITIAL_TICKERS: TickerData[] = [
@@ -24,45 +25,78 @@ const INITIAL_TICKERS: TickerData[] = [
 
 export function LiveTicker() {
   const [tickers, setTickers] = useState<TickerData[]>(INITIAL_TICKERS)
+  const tickersRef = useRef(INITIAL_TICKERS)
 
   useEffect(() => {
-    const fetchTicker = async () => {
-      try {
-        const symbols = INITIAL_TICKERS.map(t => `"${t.symbol}USDT"`).join(',')
-        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbols}]`)
-        const data = await response.json()
+    let ws: WebSocket;
+    
+    const connectWS = () => {
+      ws = new WebSocket('wss://stream.binance.com:9443/ws/!ticker@arr')
+      
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data)
         
-        if (Array.isArray(data)) {
-           const formatted = data.map((item: any) => ({
-              symbol: item.symbol.replace("USDT", ""),
-              price: parseFloat(item.lastPrice),
-              change: parseFloat(item.priceChangePercent)
-           }))
-           
-           // Ensure we keep the same order as INITIAL_TICKERS
-           const sortedFormatted = INITIAL_TICKERS.map(t => {
-             const found = formatted.find(f => f.symbol === t.symbol)
-             return found || t
-           })
-           
-           setTickers(sortedFormatted)
-        }
-      } catch (e) {
-        console.error("Failed to fetch live ticker data", e)
+        setTickers(currentTickers => {
+          let updated = false;
+          const newTickers = currentTickers.map(t => {
+            const update = data.find((d: any) => d.s === `${t.symbol}USDT`)
+            if (update) {
+              const newPrice = parseFloat(update.c)
+              const oldPrice = t.price
+              let flash: 'up' | 'down' | null = null;
+              
+              if (newPrice > oldPrice) flash = 'up';
+              else if (newPrice < oldPrice) flash = 'down';
+              
+              if (flash) updated = true;
+              
+              return {
+                ...t,
+                price: newPrice,
+                change: parseFloat(update.P),
+                flash: flash || t.flash
+              }
+            }
+            return t
+          })
+          
+          if (updated) {
+            tickersRef.current = newTickers;
+            return newTickers;
+          }
+          return currentTickers;
+        })
+        
+        // Clear flash after 500ms
+        setTimeout(() => {
+          setTickers(curr => curr.map(t => ({ ...t, flash: null })))
+        }, 500)
+      }
+      
+      ws.onerror = () => {
+        ws.close()
       }
     }
     
-    fetchTicker()
-    const interval = setInterval(fetchTicker, 5000)
-    return () => clearInterval(interval)
+    connectWS()
+    
+    return () => {
+      if (ws) ws.close()
+    }
   }, [])
 
   return (
     <div className="flex h-[36px] w-full overflow-hidden border-b border-bg-border bg-bg-surface">
-      <div className="flex animate-marquee whitespace-nowrap">
+      <div className="flex animate-marquee whitespace-nowrap hover:[animation-play-state:paused]">
         {/* Render the list twice to create a seamless infinite loop */}
         {[...tickers, ...tickers].map((ticker, index) => {
           const isPositive = ticker.change >= 0
+          
+          let flashClass = "";
+          if (ticker.flash === 'up') flashClass = "text-accent-green transition-colors duration-75";
+          else if (ticker.flash === 'down') flashClass = "text-accent-red transition-colors duration-75";
+          else flashClass = "text-text-secondary transition-colors duration-500";
+          
           return (
             <div key={`${ticker.symbol}-${index}`} className="flex items-center">
               <div className="flex items-center gap-2 px-6 font-mono text-[13px]">
@@ -71,7 +105,7 @@ export function LiveTicker() {
                   {ticker.symbol[0]}
                 </div>
                 <span className="font-semibold text-text-primary">{ticker.symbol}</span>
-                <span className="text-text-secondary">
+                <span className={flashClass}>
                   ${ticker.price > 0 ? ticker.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : "---"}
                 </span>
                 <span className={isPositive ? "text-accent-green" : "text-accent-red"}>

@@ -3,10 +3,25 @@
 import * as React from "react"
 import { useBuilderStore } from "@/store/useBuilderStore"
 import { Copy, Check, Terminal } from "lucide-react"
+import { toast } from "sonner"
+
+export type CodeLanguage = 'python' | 'pinescript' | 'nodejs';
 
 export function CodeViewer() {
   const { strategyDSL } = useBuilderStore()
   const [copied, setCopied] = React.useState(false)
+  const [language, setLanguage] = React.useState<CodeLanguage>('python')
+
+  const getOperator = (comparator: string) => {
+    switch (comparator) {
+      case 'GREATER_THAN': return '>';
+      case 'LESS_THAN': return '<';
+      case 'EQUAL': return '==';
+      case 'CROSSES_ABOVE': return '>';
+      case 'CROSSES_BELOW': return '<';
+      default: return '==';
+    }
+  }
 
   const generatePythonCode = () => {
     if (!strategyDSL) {
@@ -40,7 +55,8 @@ def check_conditions(df):
     
     if (entryConditions && entryConditions.length > 0) {
       entryConditions.forEach((cond, idx) => {
-        let pyCond = `latest['${cond.left?.type}'] ${getOperator(cond.comparator)} ${cond.right}`;
+        let rightVal = typeof cond.right === 'string' ? `'${cond.right}'` : cond.right;
+        let pyCond = `latest['${cond.left?.type}'] ${getOperator(cond.comparator)} ${rightVal}`;
         pythonCode += `    cond_entry_${idx} = ${pyCond}\n`;
       });
       pythonCode += `    entry_signal = ${entryConditions.map((_, i) => `cond_entry_${i}`).join(' and ')}\n`;
@@ -52,7 +68,8 @@ def check_conditions(df):
     
     if (exitConditions && exitConditions.length > 0) {
       exitConditions.forEach((cond, idx) => {
-        let pyCond = `latest['${cond.left?.type}'] ${getOperator(cond.comparator)} ${cond.right}`;
+        let rightVal = typeof cond.right === 'string' ? `'${cond.right}'` : cond.right;
+        let pyCond = `latest['${cond.left?.type}'] ${getOperator(cond.comparator)} ${rightVal}`;
         pythonCode += `    cond_exit_${idx} = ${pyCond}\n`;
       });
       pythonCode += `    exit_signal = ${exitConditions.map((_, i) => `cond_exit_${i}`).join(' and ')}\n`;
@@ -62,6 +79,18 @@ def check_conditions(df):
 
     pythonCode += `
     return entry_signal, exit_signal
+
+def calculate_indicators(df):
+    """
+    Calculate technical indicators and custom metrics.
+    In a real environment, you might use pandas_ta: import pandas_ta as ta
+    """
+    # Initialize placeholders for indicators used in conditions
+${Array.from(new Set([
+  ...(entryConditions || []).map(c => c.left?.type),
+  ...(exitConditions || []).map(c => c.left?.type)
+])).filter(Boolean).map(ind => `    df['${ind}'] = 0 # Placeholder for ${ind}`).join('\n')}
+    return df
 
 def execute_trade(action, qty_percent):
     account = api.get_account()
@@ -80,7 +109,17 @@ def execute_trade(action, qty_percent):
         )
         print(f"Executed BUY for {qty} shares of {symbol}")
         
-    elif action == 'SELL' or action == 'CLOSE_POSITION':
+    elif action == 'SELL':
+        api.submit_order(
+            symbol=symbol,
+            qty=qty,
+            side='sell',
+            type='market',
+            time_in_force='gtc'
+        )
+        print(f"Executed SELL (Short) for {qty} shares of {symbol}")
+        
+    elif action == 'CLOSE_POSITION':
         api.close_position(symbol)
         print(f"Closed position for {symbol}")
 
@@ -90,9 +129,8 @@ def run_bot():
         # Fetch latest market data
         bars = api.get_bars(symbol, tradeapi.TimeFrame.Minute, limit=100).df
         
-        # Assume indicators are pre-calculated by a utility function
-        # df = calculate_indicators(bars)
-        df = bars # Placeholder
+        # Calculate indicators
+        df = calculate_indicators(bars)
         
         entry_signal, exit_signal = check_conditions(df)
         
@@ -116,22 +154,90 @@ if __name__ == "__main__":
     return pythonCode;
   }
 
-  const getOperator = (comparator: string) => {
-    switch (comparator) {
-      case 'GREATER_THAN': return '>';
-      case 'LESS_THAN': return '<';
-      case 'EQUAL': return '==';
-      case 'CROSSES_ABOVE': return '>';
-      case 'CROSSES_BELOW': return '<';
-      default: return '==';
+  const generatePineScriptCode = () => {
+    if (!strategyDSL) return `// No strategy configured yet.`;
+    const { name, entryConditions, exitConditions } = strategyDSL;
+    
+    let code = `//@version=5\nstrategy("${name}", overlay=true)\n\n`;
+    
+    code += `// Entry Conditions\n`;
+    if (entryConditions && entryConditions.length > 0) {
+      entryConditions.forEach((cond, idx) => {
+        let rightVal = typeof cond.right === 'string' ? `"${cond.right}"` : cond.right;
+        code += `cond_entry_${idx} = ${cond.left?.type} ${getOperator(cond.comparator)} ${rightVal}\n`;
+      });
+      code += `longCondition = ${entryConditions.map((_, i) => `cond_entry_${i}`).join(' and ')}\n\n`;
+    } else {
+      code += `longCondition = false\n\n`;
     }
+
+    code += `// Exit Conditions\n`;
+    if (exitConditions && exitConditions.length > 0) {
+      exitConditions.forEach((cond, idx) => {
+        let rightVal = typeof cond.right === 'string' ? `"${cond.right}"` : cond.right;
+        code += `cond_exit_${idx} = ${cond.left?.type} ${getOperator(cond.comparator)} ${rightVal}\n`;
+      });
+      code += `exitCondition = ${exitConditions.map((_, i) => `cond_exit_${i}`).join(' and ')}\n\n`;
+    } else {
+      code += `exitCondition = false\n\n`;
+    }
+
+    code += `if (longCondition)\n    strategy.entry("Long", strategy.long)\n\n`;
+    code += `if (exitCondition)\n    strategy.close("Long")\n`;
+    return code;
   }
 
-  const code = generatePythonCode();
+  const generateNodeJSCode = () => {
+    if (!strategyDSL) return `// No strategy configured yet.`;
+    const { name, instruments, entryConditions, exitConditions } = strategyDSL;
+    const symbol = instruments?.[0]?.symbol || 'BTC';
+    
+    let code = `/**\n * Strategy: ${name}\n * Auto-generated for Binance CCXT\n */\n`;
+    code += `const ccxt = require('ccxt');\n\n`;
+    code += `const exchange = new ccxt.binance({\n  apiKey: 'YOUR_API_KEY',\n  secret: 'YOUR_SECRET'\n});\n\n`;
+    code += `const symbol = '${symbol}/USDT';\n\n`;
+    
+    code += `async function checkConditions(df) {\n  const latest = df[df.length - 1];\n\n`;
+    
+    if (entryConditions && entryConditions.length > 0) {
+      entryConditions.forEach((cond, idx) => {
+        let rightVal = typeof cond.right === 'string' ? `'${cond.right}'` : cond.right;
+        code += `  const cond_entry_${idx} = latest['${cond.left?.type}'] ${getOperator(cond.comparator)} ${rightVal};\n`;
+      });
+      code += `  const entrySignal = ${entryConditions.map((_, i) => `cond_entry_${i}`).join(' && ')};\n\n`;
+    } else {
+      code += `  const entrySignal = false;\n\n`;
+    }
+
+    if (exitConditions && exitConditions.length > 0) {
+      exitConditions.forEach((cond, idx) => {
+        let rightVal = typeof cond.right === 'string' ? `'${cond.right}'` : cond.right;
+        code += `  const cond_exit_${idx} = latest['${cond.left?.type}'] ${getOperator(cond.comparator)} ${rightVal};\n`;
+      });
+      code += `  const exitSignal = ${exitConditions.map((_, i) => `cond_exit_${i}`).join(' && ')};\n\n`;
+    } else {
+      code += `  const exitSignal = false;\n\n`;
+    }
+    
+    code += `  return { entrySignal, exitSignal };\n}\n\n`;
+    code += `async function runBot() {\n  console.log("Starting Node.js Bot...");\n  // Add your polling/websocket logic here\n}\n\nrunBot();`;
+    
+    return code;
+  }
+
+  const getCode = () => {
+    if (language === 'python') return generatePythonCode();
+    if (language === 'pinescript') return generatePineScriptCode();
+    if (language === 'nodejs') return generateNodeJSCode();
+    return "";
+  }
+
+  const code = getCode();
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
     setCopied(true);
+    toast.success("Code copied to clipboard");
     setTimeout(() => setCopied(false), 2000);
   }
 
@@ -140,7 +246,15 @@ if __name__ == "__main__":
       <div className="flex h-[40px] shrink-0 items-center justify-between border-b border-bg-border bg-[#F8FAFC] px-4">
         <div className="flex items-center gap-2">
           <Terminal className="h-4 w-4 text-text-tertiary" />
-          <span className="text-[12px] font-mono text-text-secondary">main.py (Alpaca Sandbox)</span>
+          <select 
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as CodeLanguage)}
+            className="bg-transparent text-[12px] font-mono text-text-secondary focus:outline-none cursor-pointer hover:text-text-primary"
+          >
+            <option value="python">main.py (Alpaca Sandbox)</option>
+            <option value="pinescript">strategy.pine (TradingView)</option>
+            <option value="nodejs">index.js (Binance CCXT)</option>
+          </select>
         </div>
         <button 
           onClick={handleCopy}
@@ -155,13 +269,17 @@ if __name__ == "__main__":
           <code dangerouslySetInnerHTML={{ 
             __html: code
               .replace(/def (.*?)\(/g, '<span class="text-blue-600 font-medium">def</span> <span class="text-amber-600">$1</span>(')
+              .replace(/function (.*?)\(/g, '<span class="text-blue-600 font-medium">function</span> <span class="text-amber-600">$1</span>(')
               .replace(/return/g, '<span class="text-blue-600 font-medium">return</span>')
-              .replace(/if|elif|else|while|and|not/g, '<span class="text-blue-600 font-medium">$&</span>')
-              .replace(/True|False|None/g, '<span class="text-emerald-600 font-medium">$&</span>')
+              .replace(/const|let|var|require|async|await/g, '<span class="text-blue-600 font-medium">$&</span>')
+              .replace(/if|elif|else|while|and|not|strategy|strategy.entry|strategy.close|strategy.long/g, '<span class="text-blue-600 font-medium">$&</span>')
+              .replace(/True|False|None|true|false/g, '<span class="text-emerald-600 font-medium">$&</span>')
               .replace(/import/g, '<span class="text-blue-600 font-medium">import</span>')
               .replace(/#.*/g, '<span class="text-slate-400 italic">$&</span>')
-              .replace(/('.*?')/g, '<span class="text-emerald-600">$1</span>')
+              .replace(/\/\/.*/g, '<span class="text-slate-400 italic">$&</span>')
+              .replace(/('.*?'|".*?")/g, '<span class="text-emerald-600">$1</span>')
               .replace(/"""([\s\S]*?)"""/g, '<span class="text-slate-400 italic">"""$1"""</span>')
+              .replace(/\/\*\*([\s\S]*?)\*\//g, '<span class="text-slate-400 italic">/**$1*/</span>')
           }} />
         </pre>
       </div>
