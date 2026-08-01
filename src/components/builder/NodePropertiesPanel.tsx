@@ -52,14 +52,16 @@ function ConditionProperties({ data, onChange }: { data: any, onChange: (data: a
   const dsl = data.dslCondition || { left: { type: 'PRICE' }, comparator: 'GREATER_THAN', right: 0 };
   
   const updateDSL = (path: string, value: any) => {
-    const newDsl = { ...dsl };
+    const newDsl = JSON.parse(JSON.stringify(dsl));
     if (path === 'left.type') newDsl.left.type = value;
     if (path === 'left.period') {
       newDsl.left.parameters = newDsl.left.parameters || {};
       newDsl.left.parameters.period = Number(value);
     }
     if (path === 'comparator') newDsl.comparator = value;
-    if (path === 'right') newDsl.right = Number(value);
+    if (path === 'right') {
+      newDsl.right = typeof dsl.right === 'string' ? value : Number(value);
+    }
     
     onChange({ dslCondition: newDsl });
   }
@@ -80,6 +82,12 @@ function ConditionProperties({ data, onChange }: { data: any, onChange: (data: a
           <option value="EMA">EMA</option>
           <option value="BOLLINGER_BANDS">Bollinger Bands</option>
           <option value="VWAP">VWAP</option>
+          <option value="TIME">Time</option>
+          <option value="DAY_OF_WEEK">Day of Week</option>
+          <option value="MARKET_EVENT">Market Event</option>
+          <option value="TIME_SINCE_ENTRY">Time Since Entry</option>
+          <option value="TIME_SINCE_LAST_TRADE">Time Since Last Trade</option>
+          <option value="LOOP_COUNT">Loop Count</option>
         </select>
       </div>
 
@@ -113,8 +121,8 @@ function ConditionProperties({ data, onChange }: { data: any, onChange: (data: a
       <div className="flex flex-col gap-1.5">
         <label className="text-[12px] text-text-secondary font-bold">Value</label>
         <input 
-          type="number" 
-          value={dsl.right || 0}
+          type={typeof dsl.right === 'string' ? "text" : "number"} 
+          value={dsl.right !== undefined ? dsl.right : 0}
           onChange={(e) => updateDSL('right', e.target.value)}
           className="h-9 w-full rounded border border-bg-border bg-bg-base px-2 text-[13px] text-text-primary outline-none focus:border-accent-blue"
         />

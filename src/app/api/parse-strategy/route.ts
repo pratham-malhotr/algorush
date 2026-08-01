@@ -40,10 +40,27 @@ export async function POST(req: Request) {
 
       // Naive action extraction
       let actionType = "BUY";
-      if (textLower.includes("sell") || textLower.includes("short")) {
+      
+      const buyIndex = textLower.indexOf("buy");
+      const sellIndex = textLower.indexOf("sell");
+      const shortIndex = textLower.indexOf("short");
+      
+      const hasShort = shortIndex !== -1;
+      const hasBuy = buyIndex !== -1;
+      const hasSell = sellIndex !== -1;
+      
+      if (hasShort) {
+         // Explicitly shorting
          actionType = "SELL";
+      } else if (hasSell && !hasBuy) {
+         // Only mentions sell, so probably a short
+         actionType = "SELL";
+      } else if (hasSell && hasBuy) {
+         // Mentions both, see which comes first
+         if (sellIndex < buyIndex) {
+            actionType = "SELL";
+         }
       }
-
       let entryConditions: any[] = [
         { id: 'entry-1', left: { type: "MARKET_EVENT" }, comparator: "EQUAL", right: "TODAY" }
       ];

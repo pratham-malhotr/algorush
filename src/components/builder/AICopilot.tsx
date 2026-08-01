@@ -9,7 +9,7 @@ export function AICopilot() {
   const [isLoading, setIsLoading] = React.useState(false)
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
   
-  const { chatHistory, addChatMessage, updateStrategy, setNodes, setEdges } = useBuilderStore()
+  const { chatHistory, addChatMessage, updateStrategy, setNodes, setEdges, setStrategyName, setTradingPair, setAllocation } = useBuilderStore()
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -31,7 +31,10 @@ export function AICopilot() {
     try {
       const response = await fetch("/api/parse-strategy", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": "Bearer at_admin_master_secret"
+        },
         body: JSON.stringify({ text: userPrompt }),
       })
       
@@ -41,6 +44,10 @@ export function AICopilot() {
         addChatMessage({ role: 'assistant', content: data.clarificationMessage });
       } else if (data.status === "SUCCESS") {
         const strat = data.strategy;
+        
+        if (strat.name) setStrategyName(strat.name);
+        if (strat.instruments?.[0]?.symbol) setTradingPair(strat.instruments[0].symbol);
+        if (strat.action?.quantityValue) setAllocation(strat.action.quantityValue);
         
         // Build graph from DSL (same logic as old prompt)
         updateStrategy(strat);

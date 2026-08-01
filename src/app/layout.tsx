@@ -7,7 +7,6 @@ import { Providers } from "./providers";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { NoiseOverlay } from "@/components/ui/NoiseOverlay";
 import { PaperTradingEngine } from "@/components/trading/PaperTradingEngine";
-
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
