@@ -28,6 +28,7 @@
     "react-hook-form": "^7.77.0",
     "reactflow": "^11.11.4",
     "recharts": "^3.8.1",
+    "sonner": "^2.0.7",
     "stripe": "^22.3.0",
     "tailwind-merge": "^3.6.0",
     "tsx": "^4.23.0",

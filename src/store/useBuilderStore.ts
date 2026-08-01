@@ -15,6 +15,8 @@ import {
 import { BacktestResult, generateMockData, runLocalBacktest } from '@/lib/backtester/engine'
 import { StrategyDSL } from '@/lib/types/strategy'
 
+import { toast } from 'sonner'
+
 export type StrategyStatus = "Draft" | "Live" | "Paused"
 
 export type ChatMessage = { role: 'user' | 'assistant', content: string };
@@ -98,6 +100,16 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     get().compileGraphToDSL();
   },
   onConnect: (connection: Connection) => {
+    if (connection.source === connection.target) {
+      toast.error("Cannot connect a node to itself");
+      return;
+    }
+    const targetNode = get().nodes.find(n => n.id === connection.target);
+    if (targetNode?.type === 'triggerNode') {
+      toast.error("Cannot connect into a Start node");
+      return;
+    }
+    
     set({
       edges: addEdge({ ...connection, animated: true }, get().edges),
     });
@@ -150,10 +162,11 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
 
     connectedNodes.forEach(node => {
       if (node.type === 'conditionNode' && node.data.dslCondition) {
+        const condition = { ...node.data.dslCondition, id: node.id };
         if (node.data.category === 'EXIT CONDITIONS') {
-          exitConditions.push(node.data.dslCondition);
+          exitConditions.push(condition);
         } else {
-          entryConditions.push(node.data.dslCondition);
+          entryConditions.push(condition);
         }
       }
       if (node.type === 'executeNode' && node.data.dslAction) {
@@ -163,6 +176,8 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
            if (!action.quantityValue) {
               action.quantityValue = allocation;
            }
+        } else {
+           action = { type: 'CLOSE_POSITION' };
         }
       }
       if (node.type === 'riskNode' && node.data.dslRisk) {
@@ -212,6 +227,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
         isBacktestDrawerOpen: true,
         backtestResult: result
       })
+      toast.success("Backtest completed successfully!");
     }, 1500)
   }
 }))

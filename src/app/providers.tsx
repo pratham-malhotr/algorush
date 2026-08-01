@@ -20,6 +20,8 @@ import {
   QueryClient,
 } from '@tanstack/react-query';
 
+import { Toaster } from 'sonner';
+
 const config = getDefaultConfig({
   appName: 'AlgoText.ai',
   projectId: 'YOUR_PROJECT_ID', // Replace with real WalletConnect ID later
@@ -42,6 +44,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           })}
         >
           {children}
+          <Toaster theme="dark" position="bottom-right" />
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
