@@ -32,7 +32,7 @@ const TickerRow = memo(function TickerRow({
   isWatchlisted: boolean,
   onToggleWatchlist: (e: React.MouseEvent, symbol: string) => void
 }) {
-  const [flash, setFlash] = useState<string>("transparent")
+  const [flash, setFlash] = useState<string>("rgba(0, 0, 0, 0)")
   const prevPriceRef = React.useRef(market.price)
   const router = useRouter()
 
@@ -40,14 +40,12 @@ const TickerRow = memo(function TickerRow({
     if (market.price === 0) return; 
     const prevPrice = prevPriceRef.current;
     
-    setTimeout(() => {
-      if (market.price > prevPrice) setFlash("rgba(34, 197, 94, 0.15)") // Green
-      else if (market.price < prevPrice) setFlash("rgba(239, 68, 68, 0.15)") // Red
-    }, 0);
+    if (market.price > prevPrice) setFlash("rgba(34, 197, 94, 0.15)") // Green
+    else if (market.price < prevPrice) setFlash("rgba(239, 68, 68, 0.15)") // Red
     
     prevPriceRef.current = market.price;
 
-    const timeout = setTimeout(() => setFlash("transparent"), 500)
+    const timeout = setTimeout(() => setFlash("rgba(0, 0, 0, 0)"), 500)
     return () => clearTimeout(timeout)
   }, [market.price])
 
@@ -127,26 +125,33 @@ export default function MarketsPage() {
   useEffect(() => {
     const fetchMarkets = async () => {
       try {
-        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr`)
-        const data = await response.json()
+        const cryptoSymbols = ALL_ASSETS.filter(a => a.market === 'CRYPTO').map(a => a.symbol.replace('/', ''))
+        const symbolsParam = JSON.stringify(cryptoSymbols)
+        let response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=${encodeURIComponent(symbolsParam)}`)
+        let data = await response.json()
+        
+        if (!response.ok || !Array.isArray(data)) {
+          response = await fetch(`https://api.binance.com/api/v3/ticker/24hr`)
+          data = await response.json()
+        }
+
+        if (!Array.isArray(data)) return
 
         setMarketDataMap(prev => {
           const newMap = { ...prev }
           
           // Update Cryptos
-          if (Array.isArray(data)) {
-            data.forEach((item: any) => {
-              const pair = item.symbol.replace("USDT", "/USDT")
-              if (newMap[pair]) {
-                const change = parseFloat(item.priceChangePercent)
-                const volNum = parseFloat(item.quoteVolume)
-                newMap[pair].price = parseFloat(item.lastPrice)
-                newMap[pair].change = change
-                newMap[pair].isPositive = change >= 0
-                newMap[pair].volume = volNum > 1e9 ? `$${(volNum / 1e9).toFixed(1)}B` : `$${(volNum / 1e6).toFixed(0)}M`
-              }
-            })
-          }
+          data.forEach((item: any) => {
+            const pair = item.symbol.replace("USDT", "/USDT")
+            if (newMap[pair]) {
+              const change = parseFloat(item.priceChangePercent)
+              const volNum = parseFloat(item.quoteVolume)
+              newMap[pair].price = parseFloat(item.lastPrice)
+              newMap[pair].change = change
+              newMap[pair].isPositive = change >= 0
+              newMap[pair].volume = volNum > 1e9 ? `$${(volNum / 1e9).toFixed(1)}B` : `$${(volNum / 1e6).toFixed(0)}M`
+            }
+          })
           
           // Simulate volatility for equities
           Object.values(newMap).forEach(market => {
@@ -159,8 +164,6 @@ export default function MarketsPage() {
           return newMap
         })
       } catch (e) {
-        // Suppress console.error to avoid triggering Next.js dev overlay on CORS/AdBlock failures.
-        // The app will just gracefully use the initial mock data.
         console.warn("Failed to fetch live markets, using mock data.", e)
       }
     }

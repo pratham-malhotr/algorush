@@ -14,6 +14,16 @@ const MOCK_GROWTH = [
 ]
 
 export function GrowthChart() {
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return <div className="h-full w-full bg-bg-elevated/50 rounded-md animate-pulse" />
+  }
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={MOCK_GROWTH}>

@@ -1,13 +1,17 @@
 "use client"
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { ALL_ASSETS } from '@/lib/constants/assets'
 
 const TechnicalAnalysisWidget = ({ symbol }: { symbol: string }) => {
-  const cleanId = `ta_widget_${symbol.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  const containerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.innerHTML = '';
     const script = document.createElement("script");
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js";
     script.type = "text/javascript";
@@ -23,20 +27,24 @@ const TechnicalAnalysisWidget = ({ symbol }: { symbol: string }) => {
       locale: "en",
       colorTheme: "light"
     });
-    const container = document.getElementById(cleanId);
-    if (container) {
-      container.innerHTML = '';
-      container.appendChild(script);
-    }
-  }, [symbol, cleanId]);
+    container.appendChild(script);
 
-  return <div id={cleanId} className="w-full h-full min-h-[450px]" />
+    return () => {
+      if (container) container.innerHTML = '';
+    };
+  }, [symbol]);
+
+  return <div ref={containerRef} className="w-full h-full min-h-[450px]" />
 }
 
 const SymbolInfoWidget = ({ symbol }: { symbol: string }) => {
-  const cleanId = `si_widget_${symbol.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.innerHTML = '';
     const script = document.createElement("script");
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-info.js";
     script.type = "text/javascript";
@@ -48,14 +56,14 @@ const SymbolInfoWidget = ({ symbol }: { symbol: string }) => {
       colorTheme: "light",
       isTransparent: true
     });
-    const container = document.getElementById(cleanId);
-    if (container) {
-      container.innerHTML = '';
-      container.appendChild(script);
-    }
-  }, [symbol, cleanId]);
+    container.appendChild(script);
 
-  return <div id={cleanId} className="w-full pointer-events-none" />
+    return () => {
+      if (container) container.innerHTML = '';
+    };
+  }, [symbol]);
+
+  return <div ref={containerRef} className="w-full pointer-events-none" />
 }
 
 const FearAndGreedIndex = ({ symbol, type }: { symbol: string, type: 'CRYPTO' }) => {
@@ -103,6 +111,7 @@ export default function AssetDashboardPage() {
   const params = useParams()
   const router = useRouter()
   const symbolParam = params.symbol as string
+  const chartContainerRef = useRef<HTMLDivElement>(null)
   
   // Resolve Asset Exchange & Type
   const symbolRaw = symbolParam ? symbolParam.replace('-', '/') : 'BTC/USDT'
@@ -124,37 +133,49 @@ export default function AssetDashboardPage() {
   }
 
   useEffect(() => {
-    // Dynamically load the TradingView Advanced Chart widget script
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/tv.js";
-    script.async = true;
-    script.onload = () => {
+    const container = chartContainerRef.current;
+    if (!container) return;
+
+    const containerId = `tv_chart_${fullSymbol.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    container.innerHTML = `<div id="${containerId}" class="w-full h-full min-h-[500px]"></div>`;
+
+    const initWidget = () => {
       if (typeof window !== "undefined" && (window as any).TradingView) {
-        new (window as any).TradingView.widget({
-          autosize: true,
-          symbol: fullSymbol,
-          interval: "D",
-          timezone: "Etc/UTC",
-          theme: "light",
-          style: "1",
-          locale: "en",
-          enable_publishing: false,
-          backgroundColor: "#ffffff", // matches bg-bg-surface roughly in light mode
-          gridColor: "#e5e7eb", // standard light gray border
-          hide_top_toolbar: false,
-          hide_legend: false,
-          save_image: false,
-          container_id: "tradingview_chart",
-        });
+        try {
+          new (window as any).TradingView.widget({
+            autosize: true,
+            symbol: fullSymbol,
+            interval: "D",
+            timezone: "Etc/UTC",
+            theme: "light",
+            style: "1",
+            locale: "en",
+            enable_publishing: false,
+            backgroundColor: "#ffffff",
+            gridColor: "#e5e7eb",
+            hide_top_toolbar: false,
+            hide_legend: false,
+            save_image: false,
+            container_id: containerId,
+          });
+        } catch (e) {
+          console.warn("Failed to initialize TradingView chart widget", e);
+        }
       }
     };
-    document.getElementById("tradingview_container")?.appendChild(script);
+
+    if (typeof window !== "undefined" && (window as any).TradingView) {
+      initWidget();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://s3.tradingview.com/tv.js";
+      script.async = true;
+      script.onload = initWidget;
+      document.head.appendChild(script);
+    }
 
     return () => {
-      const container = document.getElementById("tradingview_container");
-      if (container) {
-        container.innerHTML = '<div id="tradingview_chart" class="w-full h-full min-h-[500px]"></div>';
-      }
+      if (container) container.innerHTML = '';
     };
   }, [fullSymbol]);
 
@@ -188,8 +209,7 @@ export default function AssetDashboardPage() {
            
            {/* Left Col (Chart) */}
            <div className="lg:col-span-2 flex flex-col gap-6 min-h-[550px] h-auto">
-              <div className="flex-1 rounded-xl border border-bg-border overflow-hidden shadow-[var(--shadow-card)]" id="tradingview_container">
-                 <div id="tradingview_chart" className="w-full h-full min-h-[500px]" />
+              <div className="flex-1 rounded-xl border border-bg-border overflow-hidden shadow-[var(--shadow-card)]" ref={chartContainerRef}>
               </div>
            </div>
 
