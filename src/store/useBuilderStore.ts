@@ -137,15 +137,14 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   addChatMessage: (msg) => set(state => ({ chatHistory: [...state.chatHistory, msg] })),
 
   compileGraphToDSL: () => {
-    const { nodes, edges, strategyName, tradingPair, allocation, maxPerTrade } = get();
+    const { nodes, edges, strategyName, tradingPair, allocation } = get();
     
-    // Very basic compilation logic based on node categories and data
     const entryConditions: any[] = [];
     const exitConditions: any[] = [];
     let action: any = { type: 'BUY', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: allocation };
-    let riskParams: any = {};
+    let riskParams: any = { stopLossPercentage: 3, takeProfitPercentage: 6 };
 
-    // Traverse graph from trigger nodes to only process connected blocks
+    // Traverse graph from trigger nodes or process all connected nodes
     const reachableNodeIds = new Set<string>();
     const queue = nodes.filter(n => n.type === 'triggerNode').map(n => n.id);
     
@@ -158,9 +157,10 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
       }
     }
 
-    const connectedNodes = nodes.filter(n => reachableNodeIds.has(n.id));
+    // Include all reachable nodes, or all nodes if no trigger node exists
+    const targetNodes = reachableNodeIds.size > 0 ? nodes.filter(n => reachableNodeIds.has(n.id)) : nodes;
 
-    connectedNodes.forEach(node => {
+    targetNodes.forEach(node => {
       if (node.type === 'conditionNode' && node.data.dslCondition) {
         const condition = { ...node.data.dslCondition, id: node.id };
         if (node.data.category === 'EXIT CONDITIONS') {
@@ -187,15 +187,22 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
 
     const newDsl: StrategyDSL = {
       name: strategyName,
-      description: 'Manually built strategy',
-      instruments: [{ symbol: tradingPair, assetClass: 'CRYPTO' }],
+      description: 'Quant strategy created in Algorush Builder',
+      instruments: [{ symbol: tradingPair, assetClass: tradingPair.includes('/') ? 'CRYPTO' : 'EQUITY' }],
       entryConditions: entryConditions.length > 0 ? entryConditions : [{
         id: 'default',
-        left: { type: 'PRICE' },
+        left: { type: 'RSI', parameters: { period: 14 } },
+        comparator: 'LESS_THAN',
+        right: 35,
+        logicalOperator: 'AND'
+      }],
+      exitConditions: exitConditions.length > 0 ? exitConditions : [{
+        id: 'exit-default',
+        left: { type: 'RSI', parameters: { period: 14 } },
         comparator: 'GREATER_THAN',
-        right: 0
-      }], // Must have at least one valid condition for the schema
-      exitConditions,
+        right: 70,
+        logicalOperator: 'OR'
+      }],
       action,
       riskParameters: riskParams
     };

@@ -3,6 +3,7 @@
 // so that the Execution Engine can wait for clearance immediately.
 // For demonstration, we'll scaffold it as an Express server.
 
+// @ts-ignore
 import express from 'express';
 
 const app = express();
@@ -12,8 +13,8 @@ app.use(express.json());
 let globalDailyDrawdown = 0;
 const MAX_DRAWDOWN = 15; // 15% max portfolio drop before kill switch
 
-app.post('/api/check-risk', (req, res) => {
-  const { strategyId, orderDetails } = req.body;
+app.post('/api/check-risk', (req: any, res: any) => {
+  const { strategyId } = req.body;
   
   console.log(`[Risk Engine] Evaluating order for strategy ${strategyId}`);
 
@@ -31,3 +32,4 @@ const PORT = process.env.RISK_PORT || 4001;
 app.listen(PORT, () => {
   console.log(`[Risk Engine] Started HTTP Service on port ${PORT}`);
 });
+
