@@ -13,8 +13,7 @@ export async function parseStrategyDescription(text: string) {
   const result = await generateObject({
     model: openai('gpt-4o'),
     schema: ParserResponseSchema,
-    prompt: `You are an institutional quantitative trading architect for Algorush.
-Your goal is to parse complex natural language strategy descriptions into a formal JSON Strategy DSL.
+    prompt: `You are an institutional quantitative trading architect for AlgoText. Your job is to convert natural language strategy descriptions into valid, strictly typed StrategyDSL JSON format.
 
 User input: "${text}"
 

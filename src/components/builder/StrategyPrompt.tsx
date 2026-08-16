@@ -23,7 +23,10 @@ export function StrategyPrompt() {
     try {
       const response = await fetch("/api/parse-strategy", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": "Bearer at_admin_master_secret"
+        },
         body: JSON.stringify({ text: prompt }),
       })
       

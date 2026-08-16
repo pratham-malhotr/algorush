@@ -72,7 +72,7 @@ export function BacktestDrawer() {
                 <span className="text-[12px] font-bold uppercase text-text-secondary">Equity Curve vs Benchmark</span>
                 <span className="text-[11px] font-mono text-accent-blue">Strategy Equity ($)</span>
               </div>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={140}>
                 <LineChart data={backtestResult.equityCurve}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-bg-border)" vertical={false} />
                   <XAxis dataKey="date" stroke="#475569" fontSize={11} tickLine={false} axisLine={false} />

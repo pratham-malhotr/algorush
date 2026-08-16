@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, ChevronDown, ChevronRight, GripVertical } from "lucide-react"
+import { Search, ChevronDown, ChevronRight, GripVertical, Sparkles } from "lucide-react"
 
 const CATEGORIES = [
   {
@@ -40,6 +40,11 @@ const CATEGORIES = [
         dsl: { left: { type: 'ADX', parameters: { period: 14 } }, comparator: 'GREATER_THAN', right: 25, logicalOperator: 'AND' } 
       },
       { 
+        label: "Ichimoku Tenkan/Kijun Cross", 
+        type: "conditionNode", 
+        dsl: { left: { type: 'ICHIMOKU_TENKAN', parameters: { conversion: 9 } }, comparator: 'CROSSES_ABOVE', right: { type: 'ICHIMOKU_KIJUN', parameters: { base: 26 } }, logicalOperator: 'AND' } 
+      },
+      { 
         label: "Supertrend Bullish", 
         type: "conditionNode", 
         dsl: { left: { type: 'PRICE' }, comparator: 'GREATER_THAN', right: { type: 'SUPERTREND', parameters: { period: 10, multiplier: 3 } }, logicalOperator: 'AND' } 
@@ -50,7 +55,17 @@ const CATEGORIES = [
         dsl: { left: { type: 'VOLUME' }, comparator: 'GREATER_THAN', right: { type: 'VOLUME_SMA', parameters: { period: 20 } }, logicalOperator: 'AND' } 
       },
       { 
-        label: "Stochastic Oversold", 
+        label: "Binance Funding Rate Filter (< 0%)", 
+        type: "conditionNode", 
+        dsl: { left: { type: 'FUNDING_RATE' }, comparator: 'LESS_THAN', right: 0.0, logicalOperator: 'AND' } 
+      },
+      { 
+        label: "Orderbook Imbalance (> 65% Buy)", 
+        type: "conditionNode", 
+        dsl: { left: { type: 'ORDERBOOK_IMBALANCE' }, comparator: 'GREATER_THAN', right: 65, logicalOperator: 'AND' } 
+      },
+      { 
+        label: "Stochastic Oversold (< 20)", 
         type: "conditionNode", 
         dsl: { left: { type: 'STOCHASTIC_K', parameters: { period: 14 } }, comparator: 'LESS_THAN', right: 20, logicalOperator: 'AND' } 
       },
@@ -88,9 +103,12 @@ const CATEGORIES = [
     color: "text-purple-500",
     bgColor: "bg-purple-500",
     blocks: [
-      { label: "Buy (50% Account Allocation)", type: "executeNode", dsl: { type: 'BUY', orderType: 'MARKET', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 50 } },
-      { label: "Buy (Volatility Risk Sizing 1%)", type: "executeNode", dsl: { type: 'BUY', orderType: 'MARKET', quantityType: 'VOLATILITY_RISK_PCT', quantityValue: 1 } },
-      { label: "Buy (Half-Kelly Optimal Size)", type: "executeNode", dsl: { type: 'BUY', orderType: 'MARKET', quantityType: 'KELLY_CRITERION', quantityValue: 0.5 } },
+      { label: "Market Buy (50% Account)", type: "executeNode", dsl: { type: 'BUY', orderType: 'MARKET', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 50 } },
+      { label: "Limit Order (Post-Only)", type: "executeNode", dsl: { type: 'BUY', orderType: 'LIMIT', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 50 } },
+      { label: "Volatility Risk Sizing (1%)", type: "executeNode", dsl: { type: 'BUY', orderType: 'MARKET', quantityType: 'VOLATILITY_RISK_PCT', quantityValue: 1 } },
+      { label: "Half-Kelly Optimal Size", type: "executeNode", dsl: { type: 'BUY', orderType: 'MARKET', quantityType: 'KELLY_CRITERION', quantityValue: 0.5 } },
+      { label: "TWAP Execution (Binance)", type: "executeNode", dsl: { type: 'BUY', orderType: 'TWAP', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 50 } },
+      { label: "Grid Step Limit Order", type: "executeNode", dsl: { type: 'BUY', orderType: 'GRID_LIMIT', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 25 } },
       { label: "Sell Position (Short)", type: "executeNode", dsl: { type: 'SELL', orderType: 'MARKET', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 50 } },
       { label: "Close Position", type: "executeNode", dsl: { type: 'CLOSE_POSITION' } },
     ]
@@ -103,6 +121,7 @@ const CATEGORIES = [
       { label: "Stop Loss (3%) & Take Profit (6%)", type: "riskNode", dsl: { stopLossPercentage: 3, takeProfitPercentage: 6, riskPerTradePct: 1 } },
       { label: "ATR Trailing Stop Loss (2%)", type: "riskNode", dsl: { trailingStopPercentage: 2, stopLossPercentage: 2.5 } },
       { label: "Max Daily Drawdown Guard (5%)", type: "riskNode", dsl: { maxDailyDrawdownPct: 5, stopLossPercentage: 3 } },
+      { label: "Binance Futures Leverage (10x Cross)", type: "riskNode", dsl: { leverage: 10, marginMode: 'CROSS', stopLossPercentage: 2 } },
     ]
   }
 ]
@@ -112,7 +131,7 @@ export function BlockLibrary() {
   const [openCategories, setOpenCategories] = React.useState<Record<string, boolean>>({
     "ENTRY CONDITIONS": true,
     "EXIT CONDITIONS": true,
-    "EXECUTION": true,
+    "EXECUTION & SIZING": true,
     "RISK MANAGEMENT": true,
   })
 
@@ -129,22 +148,25 @@ export function BlockLibrary() {
   }
 
   return (
-    <div className="flex h-full w-[260px] shrink-0 flex-col border-r border-bg-border bg-bg-surface">
+    <div className="flex h-full w-[210px] shrink-0 flex-col border-r border-bg-border bg-bg-surface">
       <div className="p-4 pb-2">
-        <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-text-secondary">Block Library</h3>
+        <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-text-secondary flex items-center justify-between">
+          <span>Quant Block Library</span>
+          <span className="text-[10px] text-accent-blue font-semibold">Pro Indicators</span>
+        </h3>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
           <input 
             type="text" 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search blocks..." 
+            placeholder="Search EMA, RSI, Grid, Binance..." 
             className="h-[36px] w-full rounded-md border border-bg-border bg-bg-elevated pl-9 pr-3 text-[13px] text-text-primary outline-none placeholder:text-text-tertiary focus:border-accent-blue focus:shadow-[0_0_0_2px_rgba(59,130,246,0.15)] transition-all"
           />
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 pb-4 scrollbar-none">
+      <div className="flex-1 overflow-y-auto px-2 pb-4 scrollbar-thin scrollbar-thumb-bg-border">
         {CATEGORIES.map((cat) => {
           const filteredBlocks = cat.blocks.filter(b => 
             !searchQuery || b.label.toLowerCase().includes(searchQuery.toLowerCase())
@@ -164,7 +186,7 @@ export function BlockLibrary() {
                   ) : (
                     <ChevronRight className="h-4 w-4 text-text-secondary" />
                   )}
-                  <span className={`text-[12px] font-bold uppercase ${cat.color}`}>{cat.name}</span>
+                  <span className={`text-[11px] font-bold uppercase ${cat.color}`}>{cat.name}</span>
                 </div>
                 <span className="text-[10px] font-mono text-text-tertiary font-bold px-1.5 py-0.5 rounded bg-bg-elevated">
                   {filteredBlocks.length}
@@ -172,18 +194,17 @@ export function BlockLibrary() {
               </button>
 
               {(openCategories[cat.name] || searchQuery) && (
-                <div className="mt-1 flex flex-col gap-2 pl-2 pr-1 pb-3">
+                <div className="mt-1 flex flex-col gap-1.5 pl-2 pr-1 pb-2">
                   {filteredBlocks.map((block) => (
                     <div
                       key={block.label}
-                      className="group relative flex h-[52px] w-full cursor-grab items-center justify-between rounded-lg border border-bg-border bg-black/5 backdrop-blur-md px-3 active:cursor-grabbing hover:border-accent-blue/50 hover:bg-bg-surface hover:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all"
+                      className="group relative flex h-[48px] w-full cursor-grab items-center justify-between rounded-lg border border-bg-border bg-bg-base px-3 active:cursor-grabbing hover:border-accent-blue/50 hover:bg-bg-surface hover:shadow-[0_0_15px_rgba(59,130,246,0.1)] transition-all"
                       draggable
                       onDragStart={(e) => onDragStart(e, block.type, block.label, cat.name, block.dsl)}
                     >
-                      <div className="absolute inset-0 -z-10 rounded-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{ background: `linear-gradient(to right, transparent, rgba(59,130,246,0.05))` }} />
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-bg-elevated group-hover:bg-accent-blue/10 transition-colors`}>
-                          <div className={`h-2 w-2 rounded-full ${cat.bgColor} shadow-[0_0_8px_currentColor]`} />
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-bg-elevated group-hover:bg-accent-blue/10 transition-colors">
+                          <div className={`h-2 w-2 rounded-full ${cat.bgColor}`} />
                         </div>
                         <span className="text-[12px] font-semibold text-text-primary truncate">{block.label}</span>
                       </div>
@@ -199,4 +220,3 @@ export function BlockLibrary() {
     </div>
   )
 }
-

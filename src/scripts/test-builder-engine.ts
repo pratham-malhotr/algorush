@@ -2,7 +2,7 @@ import { runLocalBacktest, generateMockData } from '../lib/backtester/engine';
 import { StrategyDSL } from '../lib/types/strategy';
 
 console.log("=========================================================");
-console.log("  ALGONAUT / ALGORUSH DEEP STRATEGY BUILDER TEST SUITE  ");
+console.log("  ALGONAUT / ALGOTEXT DEEP STRATEGY BUILDER TEST SUITE  ");
 console.log("=========================================================\n");
 
 let passedTests = 0;

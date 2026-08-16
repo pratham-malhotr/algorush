@@ -49,7 +49,6 @@ export function AICopilot() {
         if (strat.instruments?.[0]?.symbol) setTradingPair(strat.instruments[0].symbol);
         if (strat.action?.quantityValue) setAllocation(strat.action.quantityValue);
         
-        // Build graph from DSL (same logic as old prompt)
         updateStrategy(strat);
         
         const newNodes: any[] = [];
@@ -115,12 +114,11 @@ export function AICopilot() {
             yPos += 120;
         }
 
-        // Animate build
         const animateBuild = async () => {
           setNodes([]);
           setEdges([]);
           for (let i = 0; i < newNodes.length; i++) {
-            await new Promise(r => setTimeout(r, 400));
+            await new Promise(r => setTimeout(r, 300));
             setNodes((prev) => {
               if (prev.find(n => n.id === newNodes[i].id)) return prev;
               return [...prev, newNodes[i]];
@@ -132,46 +130,51 @@ export function AICopilot() {
               });
             }
           }
-          addChatMessage({ role: 'assistant', content: "I've built the strategy graph based on your request. I've also generated the Python code for it. You can review and edit it before testing." });
+          addChatMessage({ role: 'assistant', content: "Strategy graph built successfully. Code, indicators, and exchange rules updated." });
         };
         
         animateBuild();
       }
     } catch (error) {
-      addChatMessage({ role: 'assistant', content: "Sorry, I encountered an error while trying to process that." });
+      addChatMessage({ role: 'assistant', content: "Sorry, I encountered an error while processing that." });
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="flex h-full w-[350px] shrink-0 flex-col border-r border-bg-border bg-bg-surface">
-      <div className="flex h-[52px] items-center gap-2 border-b border-bg-border px-4">
-        <BrainCircuit className="h-5 w-5 text-accent-blue" />
-        <h3 className="text-[14px] font-bold text-text-primary tracking-wide">AI Quant Copilot</h3>
+    <div className="flex h-full w-[260px] shrink-0 flex-col border-r border-bg-border bg-bg-surface">
+      <div className="flex h-[46px] items-center justify-between border-b border-bg-border px-3">
+        <div className="flex items-center gap-2">
+          <BrainCircuit className="h-4 w-4 text-accent-blue" />
+          <h3 className="text-[13px] font-bold text-text-primary">AI Copilot</h3>
+        </div>
+        <span className="rounded bg-accent-green/10 px-1.5 py-0.2 text-[9.5px] font-bold text-accent-green border border-accent-green/20">
+          PRO
+        </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-bg-border">
-        <div className="flex flex-col gap-6">
+      <div className="flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-bg-border">
+        <div className="flex flex-col gap-4">
           {chatHistory.map((msg, idx) => (
-            <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${msg.role === 'user' ? 'bg-bg-elevated' : 'bg-accent-blue/10 text-accent-blue'}`}>
-                {msg.role === 'user' ? <User className="h-4 w-4 text-text-secondary" /> : <Bot className="h-4 w-4" />}
+            <div key={idx} className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${msg.role === 'user' ? 'bg-bg-elevated' : 'bg-accent-blue/10 text-accent-blue'}`}>
+                {msg.role === 'user' ? <User className="h-3.5 w-3.5 text-text-secondary" /> : <Bot className="h-3.5 w-3.5" />}
               </div>
-              <div className={`flex max-w-[80%] flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                <div className={`rounded-2xl px-4 py-2.5 text-[14px] ${msg.role === 'user' ? 'bg-accent-blue text-white rounded-tr-sm' : 'bg-bg-elevated text-text-primary rounded-tl-sm border border-bg-border'}`}>
+              <div className={`flex max-w-[85%] flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <div className={`rounded-2xl px-3 py-2 text-[12.5px] ${msg.role === 'user' ? 'bg-accent-blue text-white rounded-tr-sm' : 'bg-bg-elevated text-text-primary rounded-tl-sm border border-bg-border'}`}>
                   {msg.content}
                 </div>
               </div>
             </div>
           ))}
           {isLoading && (
-            <div className="flex gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-blue/10 text-accent-blue">
-                <Bot className="h-4 w-4" />
+            <div className="flex gap-2">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-blue/10 text-accent-blue">
+                <Bot className="h-3.5 w-3.5" />
               </div>
-              <div className="flex items-center rounded-2xl rounded-tl-sm border border-bg-border bg-bg-elevated px-4 py-2.5">
-                <Loader2 className="h-4 w-4 animate-spin text-text-secondary" />
+              <div className="flex items-center rounded-2xl rounded-tl-sm border border-bg-border bg-bg-elevated px-3 py-2">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-text-secondary" />
               </div>
             </div>
           )}
@@ -179,16 +182,16 @@ export function AICopilot() {
         </div>
       </div>
 
-      <div className="p-4 border-t border-bg-border bg-bg-base">
+      <div className="p-3 border-t border-bg-border bg-bg-base">
         <form onSubmit={handleSubmit} className="relative flex items-end gap-2">
-          <div className="absolute left-3 top-3.5 text-accent-blue">
-            <Sparkles className="h-4 w-4" />
+          <div className="absolute left-2.5 top-3 text-accent-blue">
+            <Sparkles className="h-3.5 w-3.5" />
           </div>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe your strategy..."
-            className="min-h-[50px] max-h-[150px] w-full resize-none rounded-xl border border-bg-border bg-bg-surface pl-9 pr-12 pt-3.5 text-[14px] text-text-primary outline-none placeholder:text-text-tertiary focus:border-accent-blue focus:shadow-[0_0_0_2px_rgba(59,130,246,0.1)] transition-all"
+            placeholder="Type strategy prompt..."
+            className="min-h-[44px] max-h-[120px] w-full resize-none rounded-xl border border-bg-border bg-bg-surface pl-8 pr-10 pt-2.5 text-[12.5px] text-text-primary outline-none placeholder:text-text-tertiary focus:border-accent-blue transition-all"
             rows={1}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -200,9 +203,9 @@ export function AICopilot() {
           <button
             type="submit"
             disabled={isLoading || !prompt.trim()}
-            className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-lg bg-accent-blue text-white disabled:opacity-50 transition-colors hover:bg-blue-600 shadow-md shadow-blue-500/20"
+            className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-lg bg-accent-blue text-white disabled:opacity-50 transition-colors hover:bg-blue-600 shadow-sm"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-3.5 w-3.5" />
           </button>
         </form>
       </div>

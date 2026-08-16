@@ -20,14 +20,14 @@ export function SettingsPanel() {
 
   if (selectedNodeId) {
     return (
-      <div className="flex h-full w-[320px] shrink-0 flex-col overflow-y-auto border-l border-bg-border bg-bg-surface">
+      <div className="flex h-full w-[240px] shrink-0 flex-col overflow-y-auto border-l border-bg-border bg-bg-surface">
         <NodePropertiesPanel />
       </div>
     )
   }
 
   return (
-    <div className="flex h-full w-[320px] shrink-0 flex-col overflow-y-auto border-l border-bg-border bg-bg-surface p-5">
+    <div className="flex h-full w-[240px] shrink-0 flex-col overflow-y-auto border-l border-bg-border bg-bg-surface p-4">
       <h3 className="mb-6 text-[16px] font-bold text-text-primary">Strategy Settings</h3>
 
       {/* Exchange & Market */}
