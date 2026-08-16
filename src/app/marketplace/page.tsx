@@ -10,10 +10,19 @@ import { motion } from 'framer-motion';
 export default function MarketplacePage() {
   const { strategies, creators } = useMarketplaceStore();
   const [filter, setFilter] = React.useState('All');
+  const [searchQuery, setSearchQuery] = React.useState('');
 
-  const filteredStrategies = filter === 'All' 
-    ? strategies 
-    : strategies.filter(s => s.category === filter);
+  const filteredStrategies = React.useMemo(() => {
+    return strategies.filter(s => {
+      const matchesCategory = filter === 'All' || s.category === filter;
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch = !q || 
+        s.name.toLowerCase().includes(q) || 
+        s.description.toLowerCase().includes(q) || 
+        s.category.toLowerCase().includes(q);
+      return matchesCategory && matchesSearch;
+    });
+  }, [strategies, filter, searchQuery]);
 
   return (
     <div className="min-h-screen bg-bg-base text-text-primary flex flex-col">
@@ -41,6 +50,8 @@ export default function MarketplacePage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-text-tertiary" />
             <input 
               type="text" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for strategies (e.g., 'Mean Reversion', 'Crypto BTC')" 
               className="w-full bg-bg-surface border border-bg-border rounded-full py-4 pl-12 pr-4 outline-none focus:border-accent-blue transition-colors"
             />

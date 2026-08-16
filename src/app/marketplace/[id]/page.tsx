@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ArrowLeft, ShieldCheck, Download, TrendingUp, Copy, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export default function StrategyDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -29,9 +30,10 @@ export default function StrategyDetailsPage({ params }: { params: { id: string }
     if (strategy.price > 0) {
       await new Promise(r => setTimeout(r, 1500)); 
       // In reality, we'd redirect to Stripe checkout here
-      alert(`Payment of $${strategy.price} successful! Cloning strategy...`);
+      toast.success(`Payment of $${strategy.price} successful! Strategy cloned.`);
     } else {
       await new Promise(r => setTimeout(r, 800));
+      toast.success(`Strategy '${strategy.name}' cloned to builder.`);
     }
 
     // Load into builder
