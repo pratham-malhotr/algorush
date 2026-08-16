@@ -3,6 +3,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Terminal, Key, ShieldCheck, Copy, Code, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export default function DevelopersPage() {
   const [apiKey, setApiKey] = React.useState<string | null>(null);
@@ -10,12 +11,13 @@ export default function DevelopersPage() {
   const generateKey = () => {
     // Mock API Key generation
     setApiKey(`at_live_${Math.random().toString(36).substr(2, 24)}`);
+    toast.success("New production API Key generated!");
   };
 
   const copyToClipboard = () => {
     if (apiKey) {
       navigator.clipboard.writeText(apiKey);
-      alert('API Key copied to clipboard!');
+      toast.success('API Key copied to clipboard!');
     }
   };
 

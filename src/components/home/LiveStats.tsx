@@ -7,7 +7,7 @@ const STATS = [
   { value: 8500000, label: "Volume Traded", prefix: "$", suffix: "M+", divisor: 1000000, decimals: 1 },
   { value: 1240, label: "Strategies Created", prefix: "", suffix: "+", divisor: 1, decimals: 0 },
   { value: 432, label: "Active Traders", prefix: "", suffix: "", divisor: 1, decimals: 0 },
-  { value: 0.05, label: "Flat Fee", prefix: "", suffix: "%", divisor: 1, decimals: 2 },
+  { value: 100, label: "Execution Uptime", prefix: "", suffix: "%", divisor: 1, decimals: 0 },
 ]
 
 function CountUp({ value, divisor, decimals, inView }: { value: number; divisor: number; decimals: number; inView: boolean }) {

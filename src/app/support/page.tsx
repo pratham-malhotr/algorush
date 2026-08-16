@@ -6,7 +6,7 @@ import { BackButton } from "@/components/ui/BackButton"
 
 const FAQS = [
   { q: "Do you have access to my crypto?", a: "No. AlgoText is 100% non-custodial. We execute trades via smart contracts authorized by your self-hosted wallet (like MetaMask). You can revoke access at any time." },
-  { q: "How much does it cost?", a: "We charge a flat 0.05% fee on the volume of trades executed. There are no monthly subscriptions, setup fees, or hidden charges." },
+  { q: "How much does it cost?", a: "We offer simple, transparent subscription plans ($0 Free / $29 Pro / $99 Enterprise) with $0 trading volume fees. You keep 100% of your strategy profits." },
   { q: "Can I use AlgoText if I don't know how to code?", a: "Yes! That is exactly what we built it for. You just type your strategy in plain English, and our AI compiler handles all the complex logic, node generation, and execution." },
   { q: "What exchanges are supported?", a: "Currently, we route liquidity through major decentralized exchanges (DEXs) like Uniswap, Curve, and 1inch on Ethereum, Arbitrum, and Polygon." },
   { q: "Is backtesting accurate?", a: "We use ultra-high resolution historical tick data to simulate slippage and fees, making our backtesting environment extremely close to live market conditions." },

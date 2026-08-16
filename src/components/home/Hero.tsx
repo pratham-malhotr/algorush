@@ -155,8 +155,8 @@ export function Hero() {
         
         <p className="mb-10 max-w-[560px] text-[18px] leading-[1.7] text-text-secondary">
           AlgoText lets you build powerful algorithmic trading strategies using
-          a simple drag-and-drop interface. Connect your wallet, set your rules,
-          and let your bot trade crypto while you sleep — for just 0.05% on volume.
+          a simple drag-and-drop interface. Connect your exchange or wallet, set your rules,
+          and let your bot trade 24/7 with zero platform volume markups.
         </p>
         
         <div className="flex flex-row items-center gap-4 mt-2">
@@ -173,8 +173,8 @@ export function Hero() {
         <div className="mt-[32px] flex flex-row flex-wrap items-center justify-center gap-6">
           {[
             "No coding required",
-            "0.05% fee only on volume",
-            "Your wallet, your keys",
+            "$0 volume fees",
+            "Your exchange, your keys",
             "Backtest before going live",
           ].map((item) => (
             <div key={item} className="flex items-center gap-2">

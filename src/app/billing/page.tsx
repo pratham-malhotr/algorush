@@ -5,8 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
 
 const plans = [
   {
@@ -39,7 +42,7 @@ export default function BillingPage() {
 
   const handleCheckout = async (priceId: string) => {
     if (priceId.startsWith('mock_')) {
-      alert("This is a custom or free plan. No checkout needed.");
+      toast.info("This is a custom or free plan. No checkout needed.");
       return;
     }
     setLoadingPlan(priceId);
@@ -51,7 +54,8 @@ export default function BillingPage() {
       });
       const { sessionId, mockMode } = await response.json();
       
-      if (mockMode) {
+      if (mockMode || !stripePromise) {
+        toast.success("Pro plan activated (Sandbox Mode)!");
         router.push('/billing?success=true');
         return;
       }
@@ -63,6 +67,7 @@ export default function BillingPage() {
       }
     } catch (error) {
       console.error('Checkout error:', error);
+      toast.error('Failed to initialize checkout.');
     } finally {
       setLoadingPlan(null);
     }

@@ -7,7 +7,7 @@ import {
   BookOpen, Terminal, Activity, ChevronRight, Search, Copy, Check, 
   Webhook, Layers, Info, AlertTriangle, Lightbulb, Server,
   Lock, Zap, Code2, Globe, Shield, Coins, BarChart3, Clock,
-  ArrowRight, Blocks, Cpu
+  ArrowRight, Blocks, Cpu, Dna, Sparkles, Flame, Percent
 } from "lucide-react"
 import { BackButton } from "@/components/ui/BackButton"
 
@@ -216,6 +216,14 @@ export default function DocsPage() {
                 <NavMenuLink href="#prompting" title="Prompt Engineering" icon={Terminal} active={activeSection === 'prompting'} />
                 <NavMenuLink href="#advanced-strategies" title="Advanced Strategies" icon={Zap} active={activeSection === 'advanced-strategies'} />
                 <NavMenuLink href="#backtesting" title="Backtesting Engine" icon={Clock} active={activeSection === 'backtesting'} />
+              </div>
+            </div>
+            <div>
+              <h3 className="mb-3 px-3 text-[11px] font-bold uppercase tracking-widest text-gray-400">Quant & Arbitrage Suite</h3>
+              <div className="flex flex-col gap-1">
+                <NavMenuLink href="#arbitrage-engine" title="Arbitrage & Basis Yield" icon={Layers} active={activeSection === 'arbitrage-engine'} />
+                <NavMenuLink href="#auto-optimizer" title="Genetic Auto-Optimizer" icon={Dna} active={activeSection === 'auto-optimizer'} />
+                <NavMenuLink href="#sentiment-engine" title="AI News & Sentiment" icon={Sparkles} active={activeSection === 'sentiment-engine'} />
               </div>
             </div>
             <div>
@@ -690,6 +698,148 @@ print(f"Strategy deployed successfully! ID: {deployment.id}")`}
             </div>
           </section>
 
+          {/* Institutional Arbitrage & Basis Engine */}
+          <section id="arbitrage-engine" className="scroll-mt-32 mb-28 border-t border-gray-100 pt-16">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <Layers className="h-4 w-4 text-blue-600" />
+              </div>
+              <span className="text-sm font-bold uppercase tracking-widest text-blue-600">Institutional Suite</span>
+            </div>
+            <h2 className="mb-6 text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">Arbitrage Radar & Basis Yield Engine</h2>
+            <div className="prose prose-lg max-w-none text-gray-600 space-y-6 leading-relaxed">
+              <p>
+                AlgoText features an enterprise-grade <strong>Institutional Arbitrage Radar</strong> (<code className="text-blue-600 font-mono">/arbitrage</code>) scanning sub-second price spreads across 60+ CEX & DEX venues (Binance, LBank, OKX, Bybit, Hyperliquid, Coinbase).
+              </p>
+
+              <FeatureGrid>
+                <FeatureCard 
+                  icon={Layers} 
+                  title="Level-2 Orderbook Ladder VWAP" 
+                  description="Simulates 5-level Bid/Ask depth stacks for both buy and sell exchanges to calculate real VWAP execution slippage on trade sizes from $1,000 to $250,000." 
+                />
+                <FeatureCard 
+                  icon={Percent} 
+                  title="Spot-Futures Cash & Carry Basis" 
+                  description="Scans 8-hour funding rates across Binance, OKX, Bybit, and Hyperliquid. Executes Delta-Neutral positions (Long Spot + Short Futures) with up to 125.9% APY basis yields." 
+                />
+                <FeatureCard 
+                  icon={Flame} 
+                  title="CEX-DEX Gas & MEV Risk Protection" 
+                  description="Models Ethereum, Arbitrum, and Solana gas fees in Gwei, block settlement latency (ms), and MEV sandwich attack risks for DEX execution." 
+                />
+                <FeatureCard 
+                  icon={Activity} 
+                  title="Auto-Inventory Rebalancing" 
+                  description="Monitors USDT and base token balances across connected exchange accounts to automatically rebalance inventory between buy and sell venues." 
+                />
+              </FeatureGrid>
+
+              <Callout type="tip" title="Level-2 Orderbook Slippage Protection">
+                Unlike primitive scanners that check top-of-book prices (L1), AlgoText evaluates orderbook depth absorption. A $100,000 trade will automatically adjust expected PnL based on orderbook level traversal before sending orders.
+              </Callout>
+
+              <CodeBlock 
+                title="Spatial Arbitrage Execution Signal Payload"
+                language="json"
+                code={`{
+  "opportunity_id": "arb-spatial-1",
+  "pair": "BTC/USDT",
+  "buy_venue": "Binance Futures ($64,180.50)",
+  "sell_venue": "LBank Pro ($64,390.00)",
+  "capital_allocated_usd": 25000.0,
+  "level2_depth_absorption": {
+    "vwap_buy": 64182.00,
+    "vwap_sell": 64388.00,
+    "realized_slippage_pct": 0.052,
+    "net_realized_pnl_usd": 195.52
+  }
+}`}
+              />
+            </div>
+          </section>
+
+          {/* AI Genetic Parameter Auto-Optimizer */}
+          <section id="auto-optimizer" className="scroll-mt-32 mb-28 border-t border-gray-100 pt-16">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                <Dna className="h-4 w-4 text-purple-600" />
+              </div>
+              <span className="text-sm font-bold uppercase tracking-widest text-purple-600">AI Optimization</span>
+            </div>
+            <h2 className="mb-6 text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">AI Genetic Parameter Auto-Optimizer</h2>
+            <div className="prose prose-lg max-w-none text-gray-600 space-y-6 leading-relaxed">
+              <p>
+                The <strong>AI Genetic Auto-Optimizer</strong> mutates strategy parameters (RSI periods, EMA lengths, Stop Loss/Take Profit percentages) across 30+ generations of backtest simulations to discover parameter combinations that maximize risk-adjusted performance.
+              </p>
+
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden my-6 shadow-sm">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50/80 text-gray-900">
+                      <th className="p-5 font-bold uppercase tracking-wider text-xs">Optimization Goal</th>
+                      <th className="p-5 font-bold uppercase tracking-wider text-xs">Fitness Score Formula</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-gray-600 divide-y divide-gray-100">
+                    <tr className="hover:bg-gray-50/50 transition-colors">
+                      <td className="p-5 font-mono font-bold text-blue-600 whitespace-nowrap">MAXIMIZE SHARPE</td>
+                      <td className="p-5">Fitness = (Sharpe Ratio × 2.0) + (Total Return % ÷ 10) - (Max Drawdown % × 0.5)</td>
+                    </tr>
+                    <tr className="hover:bg-gray-50/50 transition-colors">
+                      <td className="p-5 font-mono font-bold text-emerald-600 whitespace-nowrap">MAXIMIZE WIN RATE</td>
+                      <td className="p-5">Fitness = (Win Rate % × 2.0) - Max Drawdown %</td>
+                    </tr>
+                    <tr className="hover:bg-gray-50/50 transition-colors">
+                      <td className="p-5 font-mono font-bold text-purple-600 whitespace-nowrap">MINIMIZE DRAWDOWN</td>
+                      <td className="p-5">Fitness = ((100 - Max Drawdown %) × 2.0) + (Total Return % ÷ 10)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <Callout type="info" title="1-Click Canvas Parameter Injection">
+                When you select a winning evolved parameter chromosome in the Auto-Optimizer Modal, clicking <strong>"Apply AI Parameters to Canvas"</strong> automatically updates your Visual Strategy Builder nodes with the optimized values.
+              </Callout>
+            </div>
+          </section>
+
+          {/* AI Real-Time News & Sentiment Engine */}
+          <section id="sentiment-engine" className="scroll-mt-32 mb-28 border-t border-gray-100 pt-16">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                <Sparkles className="h-4 w-4 text-emerald-600" />
+              </div>
+              <span className="text-sm font-bold uppercase tracking-widest text-emerald-600">Event-Driven NLP</span>
+            </div>
+            <h2 className="mb-6 text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">AI News & Sentiment Engine</h2>
+            <div className="prose prose-lg max-w-none text-gray-600 space-y-6 leading-relaxed">
+              <p>
+                AlgoText continuously parses breaking financial news headlines, Fed policy dot plots, CPI data, SEC regulatory filings, and Twitter/X sentiment using LLM NLP models via the <code className="text-emerald-600 font-mono">/api/sentiment</code> endpoint.
+              </p>
+
+              <CodeBlock 
+                title="AI Sentiment API Response (/api/sentiment)"
+                language="json"
+                code={`{
+  "status": "SUCCESS",
+  "marketSentimentIndex": 85,
+  "sentimentLabel": "EXTREME_BULLISH",
+  "totalArticles": 5,
+  "articles": [
+    {
+      "headline": "Federal Reserve Signals Rate Cuts as Inflation Drops Below 2.1% Target",
+      "source": "Bloomberg Terminals",
+      "sentimentScore": 0.85,
+      "confidence": 94,
+      "impact": "HIGH"
+    }
+  ]
+}`}
+              />
+            </div>
+          </section>
+
           {/* FAQ */}
           <section id="faq" className="scroll-mt-32 mb-28 border-t border-gray-100 pt-16">
             <h2 className="mb-6 text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">Frequently Asked Questions</h2>
@@ -726,16 +876,16 @@ print(f"Strategy deployed successfully! ID: {deployment.id}")`}
 
           {/* Footer Nav */}
           <div className="mt-16 pt-8 border-t border-gray-200 flex justify-between items-center bg-gray-50/50 p-6 rounded-2xl">
-            <a href="#" className="flex flex-col gap-1.5 group">
+            <a href="#architecture" className="flex flex-col gap-1.5 group">
               <span className="text-xs font-bold uppercase tracking-wider text-gray-400 group-hover:text-gray-500 transition-colors">Previous</span>
               <span className="text-blue-600 font-bold text-lg group-hover:text-blue-700 transition-colors flex items-center gap-2">
-                <ChevronRight className="h-4 w-4 rotate-180" /> Quick Start Guide
+                <ChevronRight className="h-4 w-4 rotate-180" /> Architecture Overview
               </span>
             </a>
-            <a href="#" className="flex flex-col gap-1.5 items-end group">
+            <a href="#faq" className="flex flex-col gap-1.5 items-end group">
               <span className="text-xs font-bold uppercase tracking-wider text-gray-400 group-hover:text-gray-500 transition-colors">Next</span>
               <span className="text-blue-600 font-bold text-lg group-hover:text-blue-700 transition-colors flex items-center gap-2">
-                Deployment <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                FAQ & Support <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </span>
             </a>
           </div>
@@ -758,6 +908,15 @@ print(f"Strategy deployed successfully! ID: {deployment.id}")`}
               </li>
               <li>
                 <a href="#backtesting" className={`block transition-all duration-200 ${activeSection === 'backtesting' ? 'text-blue-600 font-bold -ml-px border-l-2 border-blue-600 pl-3' : 'text-gray-500 hover:text-gray-900'}`}>Backtesting Engine</a>
+              </li>
+              <li>
+                <a href="#arbitrage-engine" className={`block transition-all duration-200 ${activeSection === 'arbitrage-engine' ? 'text-blue-600 font-bold -ml-px border-l-2 border-blue-600 pl-3' : 'text-gray-500 hover:text-gray-900'}`}>Arbitrage Radar</a>
+              </li>
+              <li>
+                <a href="#auto-optimizer" className={`block transition-all duration-200 ${activeSection === 'auto-optimizer' ? 'text-blue-600 font-bold -ml-px border-l-2 border-blue-600 pl-3' : 'text-gray-500 hover:text-gray-900'}`}>Genetic Auto-Optimizer</a>
+              </li>
+              <li>
+                <a href="#sentiment-engine" className={`block transition-all duration-200 ${activeSection === 'sentiment-engine' ? 'text-blue-600 font-bold -ml-px border-l-2 border-blue-600 pl-3' : 'text-gray-500 hover:text-gray-900'}`}>AI News & Sentiment</a>
               </li>
               <li>
                 <a href="#order-types" className={`block transition-all duration-200 ${activeSection === 'order-types' ? 'text-blue-600 font-bold -ml-px border-l-2 border-blue-600 pl-3' : 'text-gray-500 hover:text-gray-900'}`}>Algorithmic Orders</a>

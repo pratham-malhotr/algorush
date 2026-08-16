@@ -6,6 +6,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Activity, ShieldAlert, Zap, TrendingUp, Settings, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -65,13 +66,16 @@ export default function DashboardPage() {
                 try {
                   await fetch('/api/kill-switch', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      'Authorization': 'Bearer at_admin_master_secret'
+                    },
                     body: JSON.stringify({ action: 'engage' })
                   });
                   haltAllTrading();
-                  alert('CRITICAL: Kill Switch Engaged. All trading halted across all strategies.');
+                  toast.error('CRITICAL: Kill Switch Engaged. All trading halted across all strategies.');
                 } catch (e) {
-                  alert('Error engaging Kill Switch!');
+                  toast.error('Error engaging Kill Switch!');
                 }
               }}
             >
@@ -88,7 +92,7 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 bg-bg-surface border border-bg-border rounded-xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
             <h3 className="font-bold text-lg mb-6">Live Equity Curve (Paper Trading)</h3>
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={240}>
                 <LineChart data={equityHistory}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-bg-border)" vertical={false} />
                   <XAxis dataKey="time" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
