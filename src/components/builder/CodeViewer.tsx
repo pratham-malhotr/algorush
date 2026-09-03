@@ -13,6 +13,52 @@ export function CodeViewer() {
   const [copied, setCopied] = React.useState(false)
   const [tab, setTab] = React.useState<CodeViewTab>('python')
 
+  const formatPythonIndicator = (ind: any) => {
+    if (!ind || ind.type === 'PRICE') return `df['close']`;
+    if (ind.type === 'OPEN') return `df['open']`;
+    if (ind.type === 'HIGH') return `df['high']`;
+    if (ind.type === 'LOW') return `df['low']`;
+    if (ind.type === 'VOLUME') return `df['volume']`;
+    const period = ind.parameters?.period || ind.parameters?.fast || 14;
+    if (ind.type === 'EMA') return `ta.ema(df['close'], length=${period})`;
+    if (ind.type === 'SMA') return `ta.sma(df['close'], length=${period})`;
+    if (ind.type === 'WMA') return `ta.wma(df['close'], length=${period})`;
+    if (ind.type === 'HMA') return `ta.hma(df['close'], length=${period})`;
+    if (ind.type === 'RSI') return `ta.rsi(df['close'], length=${period})`;
+    if (ind.type === 'ATR') return `ta.atr(df['high'], df['low'], df['close'], length=${period})`;
+    if (ind.type === 'BOLLINGER_LOWER') return `ta.bbands(df['close'], length=${period})['BBL_${period}_2.0']`;
+    if (ind.type === 'BOLLINGER_UPPER') return `ta.bbands(df['close'], length=${period})['BBU_${period}_2.0']`;
+    if (ind.type === 'BOLLINGER_MIDDLE') return `ta.sma(df['close'], length=${period})`;
+    if (ind.type === 'MACD') return `ta.macd(df['close'])['MACD_12_26_9']`;
+    if (ind.type === 'MACD_SIGNAL') return `ta.macd(df['close'])['MACDs_12_26_9']`;
+    if (ind.type === 'MACD_HISTOGRAM') return `ta.macd(df['close'])['MACDh_12_26_9']`;
+    if (ind.type === 'SUPERTREND') return `ta.supertrend(df['high'], df['low'], df['close'])['SUPERT_7_3.0']`;
+    if (ind.type === 'STOCHASTIC_K') return `ta.stoch(df['high'], df['low'], df['close'])['STOCHk_14_3_3']`;
+    if (ind.type === 'STOCHASTIC_D') return `ta.stoch(df['high'], df['low'], df['close'])['STOCHd_14_3_3']`;
+    if (ind.type === 'ADX') return `ta.adx(df['high'], df['low'], df['close'])['ADX_14']`;
+    if (ind.type === 'CCI') return `ta.cci(df['high'], df['low'], df['close'], length=${period})`;
+    if (ind.type === 'OBV') return `ta.obv(df['close'], df['volume'])`;
+    if (ind.type === 'WILLIAMS_R') return `ta.willr(df['high'], df['low'], df['close'], length=${period})`;
+    if (ind.type === 'VWAP') return `ta.vwap(df['high'], df['low'], df['close'], df['volume'])`;
+    if (ind.type === 'VOLUME_SMA') return `ta.sma(df['volume'], length=${period})`;
+    return `df['close']`;
+  };
+
+  const formatPythonCondition = (cond: any) => {
+    const left = formatPythonIndicator(cond.left);
+    const right = typeof cond.right === 'object' && cond.right !== null ? formatPythonIndicator(cond.right) : cond.right;
+    const compMap: Record<string, string> = {
+      GREATER_THAN: '>',
+      LESS_THAN: '<',
+      EQUAL: '==',
+      GREATER_THAN_OR_EQUAL: '>=',
+      LESS_THAN_OR_EQUAL: '<=',
+      CROSSES_ABOVE: '>',
+      CROSSES_BELOW: '<'
+    };
+    return `${left}.iloc[-1] ${compMap[cond.comparator] || '>'} ${right}`;
+  };
+
   const generatePythonCode = () => {
     if (!strategyDSL) {
       return `# No strategy configured yet.\n# Use AI Copilot or Block Library to build your quant algorithm.\n`;
@@ -24,6 +70,14 @@ export function CodeViewer() {
     const takeProfit = riskParameters?.takeProfitPercentage || 6.0;
     const actionType = action?.type || 'BUY';
     const quantityVal = action?.quantityValue || 50;
+
+    const entryCodeStr = entryConditions?.length > 0
+      ? entryConditions.map(formatPythonCondition).join(" and ")
+      : "True";
+
+    const exitCodeStr = exitConditions && exitConditions.length > 0
+      ? exitConditions.map(formatPythonCondition).join(" or ")
+      : "False";
 
     return `"""
 Strategy: ${name}
@@ -40,7 +94,7 @@ import os
 API_KEY = os.getenv("EXCHANGE_API_KEY", "YOUR_EXCHANGE_API_KEY")
 SECRET_KEY = os.getenv("EXCHANGE_SECRET_KEY", "YOUR_EXCHANGE_SECRET")
 
-# Initialize CCXT exchange client (Binance / LBank / OKX / 60+ exchanges)
+# Initialize CCXT exchange client
 exchange = ccxt.binance({
     'apiKey': API_KEY,
     'secret': SECRET_KEY,
@@ -53,32 +107,16 @@ SYMBOL = "${symbol}"
 def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """Calculates quantitative technical indicators using pandas_ta."""
     df = df.copy()
-    
-    df['SMA_50'] = ta.sma(df['close'], length=50)
     df['EMA_50'] = ta.ema(df['close'], length=50)
     df['EMA_200'] = ta.ema(df['close'], length=200)
     df['RSI_14'] = ta.rsi(df['close'], length=14)
-    
-    macd = ta.macd(df['close'], fast=12, slow=26, signal=9)
-    if macd is not None:
-        df = pd.concat([df, macd], axis=1)
-        
-    bb = ta.bbands(df['close'], length=20, std=2.0)
-    if bb is not None:
-        df = pd.concat([df, bb], axis=1)
-        
     df['ATRr_14'] = ta.atr(df['high'], df['low'], df['close'], length=14)
-    df['VOL_SMA_20'] = ta.sma(df['volume'], length=20)
-    
     return df
 
 def generate_signals(df: pd.DataFrame):
     """Evaluates multi-condition strategy logic on latest candle."""
-    latest = df.iloc[-1]
-    
-    entry_signal = True
-    exit_signal = False
-    
+    entry_signal = ${entryCodeStr}
+    exit_signal = ${exitCodeStr}
     return entry_signal, exit_signal
 
 def execute_orders(action_type: str, qty_percent: float):
@@ -97,6 +135,13 @@ def execute_orders(action_type: str, qty_percent: float):
         tp_price = price * (1 + (${takeProfit} / 100))
         exchange.create_order(SYMBOL, 'STOP_MARKET', 'sell', amount, None, {'stopPrice': sl_price})
         exchange.create_order(SYMBOL, 'TAKE_PROFIT_MARKET', 'sell', amount, None, {'stopPrice': tp_price})
+        return order
+    elif action_type == 'SELL':
+        order = exchange.create_market_sell_order(SYMBOL, amount)
+        sl_price = price * (1 + (${stopLoss} / 100))
+        tp_price = price * (1 - (${takeProfit} / 100))
+        exchange.create_order(SYMBOL, 'STOP_MARKET', 'buy', amount, None, {'stopPrice': sl_price})
+        exchange.create_order(SYMBOL, 'TAKE_PROFIT_MARKET', 'buy', amount, None, {'stopPrice': tp_price})
         return order
     elif action_type == 'CLOSE_POSITION':
         return exchange.create_market_sell_order(SYMBOL, amount)
@@ -128,23 +173,82 @@ if __name__ == "__main__":
 `;
   }
 
+  const formatPineIndicator = (ind: any) => {
+    if (!ind || ind.type === 'PRICE') return `close`;
+    if (ind.type === 'OPEN') return `open`;
+    if (ind.type === 'HIGH') return `high`;
+    if (ind.type === 'LOW') return `low`;
+    if (ind.type === 'VOLUME') return `volume`;
+    const period = ind.parameters?.period || ind.parameters?.fast || 14;
+    if (ind.type === 'EMA') return `ta.ema(close, ${period})`;
+    if (ind.type === 'SMA') return `ta.sma(close, ${period})`;
+    if (ind.type === 'WMA') return `ta.wma(close, ${period})`;
+    if (ind.type === 'HMA') return `ta.hma(close, ${period})`;
+    if (ind.type === 'RSI') return `ta.rsi(close, ${period})`;
+    if (ind.type === 'ATR') return `ta.atr(${period})`;
+    if (ind.type === 'BOLLINGER_LOWER') return `ta.bbands(close, ${period}, 2.0)[2]`;
+    if (ind.type === 'BOLLINGER_UPPER') return `ta.bbands(close, ${period}, 2.0)[0]`;
+    if (ind.type === 'BOLLINGER_MIDDLE') return `ta.sma(close, ${period})`;
+    if (ind.type === 'MACD') return `ta.macd(close, 12, 26, 9)[0]`;
+    if (ind.type === 'MACD_SIGNAL') return `ta.macd(close, 12, 26, 9)[1]`;
+    if (ind.type === 'MACD_HISTOGRAM') return `ta.macd(close, 12, 26, 9)[2]`;
+    if (ind.type === 'SUPERTREND') return `ta.supertrend(3.0, 10)[0]`;
+    if (ind.type === 'STOCHASTIC_K') return `ta.stoch(close, high, low, 14)`;
+    if (ind.type === 'STOCHASTIC_D') return `ta.sma(ta.stoch(close, high, low, 14), 3)`;
+    if (ind.type === 'ADX') return `ta.adx(14)`;
+    if (ind.type === 'CCI') return `ta.cci(close, ${period})`;
+    if (ind.type === 'OBV') return `ta.obv`;
+    if (ind.type === 'WILLIAMS_R') return `ta.wpr(${period})`;
+    if (ind.type === 'VWAP') return `ta.vwap`;
+    if (ind.type === 'VOLUME_SMA') return `ta.sma(volume, ${period})`;
+    return `close`;
+  };
+
+  const formatPineCondition = (cond: any) => {
+    const left = formatPineIndicator(cond.left);
+    const right = typeof cond.right === 'object' && cond.right !== null ? formatPineIndicator(cond.right) : cond.right;
+    if (cond.comparator === 'CROSSES_ABOVE') return `ta.crossover(${left}, ${right})`;
+    if (cond.comparator === 'CROSSES_BELOW') return `ta.crossunder(${left}, ${right})`;
+    const compMap: Record<string, string> = {
+      GREATER_THAN: '>',
+      LESS_THAN: '<',
+      EQUAL: '==',
+      GREATER_THAN_OR_EQUAL: '>=',
+      LESS_THAN_OR_EQUAL: '<='
+    };
+    return `${left} ${compMap[cond.comparator] || '>'} ${right}`;
+  };
+
   const generatePineScriptCode = () => {
     if (!strategyDSL) return `//@version=5\n// No strategy configured yet.`;
-    const { name, riskParameters } = strategyDSL;
+    const { name, entryConditions, exitConditions, action, riskParameters } = strategyDSL;
+    const isShort = action?.type === 'SELL';
     
     let code = `//@version=5\nstrategy("${name}", overlay=true, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=50)\n\n`;
     code += `// --- ENTRY CONDITIONS ---\n`;
-    code += `longCondition = ta.crossover(ta.ema(close, 50), ta.ema(close, 200))\n\n`;
+    const entryStr = entryConditions?.length > 0 ? entryConditions.map(formatPineCondition).join(" and ") : "true";
+    code += `entryCondition = ${entryStr}\n\n`;
+    
     code += `// --- EXIT CONDITIONS ---\n`;
-    code += `exitCondition = ta.rsi(close, 14) > 75\n\n`;
-    code += `if (longCondition)\n    strategy.entry("Long Entry", strategy.long)\n\n`;
-    code += `if (exitCondition)\n    strategy.close("Long Entry")\n\n`;
+    const exitStr = exitConditions && exitConditions.length > 0 ? exitConditions.map(formatPineCondition).join(" or ") : "false";
+    code += `exitCondition = ${exitStr}\n\n`;
+    
+    if (!isShort) {
+      code += `if (entryCondition)\n    strategy.entry("Long Entry", strategy.long)\n\n`;
+      code += `if (exitCondition)\n    strategy.close("Long Entry")\n\n`;
+    } else {
+      code += `if (entryCondition)\n    strategy.entry("Short Entry", strategy.short)\n\n`;
+      code += `if (exitCondition)\n    strategy.close("Short Entry")\n\n`;
+    }
 
     if (riskParameters) {
       const sl = (riskParameters.stopLossPercentage || 3) / 100;
       const tp = (riskParameters.takeProfitPercentage || 6) / 100;
+      const posName = !isShort ? "Long Entry" : "Short Entry";
+      const slPrice = !isShort ? `strategy.position_avg_price * (1 - ${sl})` : `strategy.position_avg_price * (1 + ${sl})`;
+      const tpPrice = !isShort ? `strategy.position_avg_price * (1 + ${tp})` : `strategy.position_avg_price * (1 - ${tp})`;
       code += `// --- RISK BRACKET (SL/TP) ---\n`;
-      code += `strategy.exit("Bracket", "Long Entry", stop=strategy.position_avg_price * (1 - ${sl}), limit=strategy.position_avg_price * (1 + ${tp}))\n`;
+      code += `strategy.exit("Bracket", "${posName}", stop=${slPrice}, limit=${tpPrice})\n`;
     }
     return code;
   }

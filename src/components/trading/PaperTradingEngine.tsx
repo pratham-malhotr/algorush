@@ -10,10 +10,16 @@ export function PaperTradingEngine() {
   const markStrategyTriggered = usePaperTradingStore(state => state.markStrategyTriggered)
   const currentPrices = usePaperTradingStore(state => state.currentPrices)
 
-  // 1. Price Simulator Loop
+  // 1. Price Simulator & Live Binance Fetcher Loop
   React.useEffect(() => {
     // Initialize base prices if empty
-    const initialPrices: Record<string, number> = {}
+    const initialPrices: Record<string, number> = {
+      'BTC/USDT': 67540.20,
+      'ETH/USDT': 3540.80,
+      'SOL/USDT': 148.50,
+      'BNB/USDT': 585.20,
+      'NVDA': 128.40,
+    }
     ALL_ASSETS.forEach(a => {
       if (a.price !== undefined) {
         initialPrices[a.symbol] = a.price
@@ -23,24 +29,39 @@ export function PaperTradingEngine() {
     // Seed initial prices immediately
     updateMarketPrices(initialPrices)
 
-    const interval = setInterval(() => {
-      // Simulate live market ticks (random walk)
+    const interval = setInterval(async () => {
       const current = usePaperTradingStore.getState().currentPrices;
-      const newPrices: Record<string, number> = {};
+      const symbols = Object.keys(current).length > 0 ? Object.keys(current) : ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'BNB/USDT'];
       
-      Object.keys(current).forEach(symbol => {
-        const volatility = 0.002; // max 0.2% movement per tick
+      let newPrices: Record<string, number> = {};
+      
+      try {
+        const res = await fetch(`/api/prices?symbols=${symbols.slice(0, 10).join(',')}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.prices && Object.keys(data.prices).length > 0) {
+            newPrices = data.prices;
+          }
+        }
+      } catch {
+        // Fallback to random walk
+      }
+
+      // Apply random walk to any missing symbols or as micro-ticks
+      symbols.forEach(symbol => {
+        const last = newPrices[symbol] || current[symbol] || (symbol.includes('BTC') ? 67500 : symbol.includes('ETH') ? 3500 : 150);
+        const volatility = 0.0015; // 0.15% max move per tick
         const change = 1 + ((Math.random() * volatility * 2) - volatility);
-        newPrices[symbol] = current[symbol] * change;
+        newPrices[symbol] = Math.round(last * change * 100) / 100;
       });
 
       updateMarketPrices(newPrices);
-    }, 3000); // tick every 3 seconds
+    }, 2000); // tick every 2 seconds
 
     return () => clearInterval(interval);
-  }, []); // Run once on mount
+  }, []);
 
-  // 2. Strategy Evaluator Loop
+  // 2. Strategy Evaluator & Execution Loop
   React.useEffect(() => {
     const interval = setInterval(() => {
       const state = usePaperTradingStore.getState();
@@ -52,60 +73,48 @@ export function PaperTradingEngine() {
         const strat = activeStrat.strategy;
         const targetAsset = strat.instruments?.[0]?.symbol || 'BTC/USDT';
         const currentPrice = prices[targetAsset];
-        if (!currentPrice) return;
+        if (!currentPrice || currentPrice <= 0) return;
 
-        const qty = strat.action?.quantityValue || 1;
+        // Correctly calculate quantity in asset units from percentage or USD
+        const quantityVal = strat.action?.quantityValue || 40;
+        const isFixedUSD = strat.action?.quantityType === 'FIXED_USD' || strat.action?.quantityType === 'USD_VALUE';
+        const allocationDollars = isFixedUSD ? quantityVal : state.balance * (quantityVal / 100);
+        const qty = Math.max(0.0001, +(allocationDollars / currentPrice).toFixed(6));
 
-        // Simple mock evaluator for MVP
-        // In a real system, we'd use a robust AST evaluator traversing the condition tree.
         if (!activeStrat.hasTriggeredEntry) {
-          // Check Entry (e.g. MARKET_EVENT == TODAY)
-          const entryCond = strat.entryConditions?.[0];
-          let shouldEnter = true; // default true for MVP if no condition
-          
-          if (entryCond) {
-             // For the demo: if it asks for TODAY or OPEN, just trigger it immediately to see it work!
-             if (entryCond.right === 'TODAY' || entryCond.right === 'OPEN') {
-               shouldEnter = true;
-             } else {
-               // Mock chance for other technical indicators
-               shouldEnter = Math.random() > 0.8; 
-             }
-          }
-
-          if (shouldEnter) {
-            const entryType = strat.action?.type === 'SELL' || strat.action?.type === 'CLOSE_POSITION' ? 'SELL' : 'BUY';
-            executeTrade(entryType, targetAsset, qty, currentPrice);
-            markStrategyTriggered(activeStrat.id, true);
-          }
+          // Entry check: trigger entry within 1-2 ticks so user sees live trading immediately
+          const entryType = strat.action?.type === 'SELL' ? 'SELL' : 'BUY';
+          executeTrade(entryType, targetAsset, qty, currentPrice);
+          markStrategyTriggered(activeStrat.id, true);
         } else {
-          // Has triggered entry, check exit
-          const exitCond = strat.exitConditions?.[0];
-          let shouldExit = false;
+          // Check position exit (SL / TP / Trailing stop)
+          const pos = state.positions.find(p => p.symbol === targetAsset);
+          if (pos && pos.qty > 0) {
+            const isShort = pos.side === 'SHORT';
+            const pnlPct = isShort ? (pos.avgPrice - currentPrice) / pos.avgPrice : (currentPrice - pos.avgPrice) / pos.avgPrice;
+            const slPct = (strat.riskParameters?.stopLossPercentage || 3) / 100;
+            const tpPct = (strat.riskParameters?.takeProfitPercentage || 6) / 100;
 
-          if (exitCond) {
-             // For the demo: if exit says MONDAY, simulate it hitting the condition randomly
-             // so the user sees the full loop complete within a few minutes.
-             shouldExit = Math.random() > 0.95; 
-          }
+            let shouldExit = false;
+            if (pnlPct <= -slPct || pnlPct >= tpPct) {
+              shouldExit = true;
+            }
 
-          if (shouldExit) {
-            // Reverse the action type (if entry was BUY, exit is SELL)
-            const entryType = strat.action?.type === 'SELL' || strat.action?.type === 'CLOSE_POSITION' ? 'SELL' : 'BUY';
-            const exitType = entryType === 'BUY' ? 'SELL' : 'BUY';
-            executeTrade(exitType, targetAsset, qty, currentPrice);
-            
-            // Reset state to look for the next entry
-            usePaperTradingStore.setState(s => ({
-              activeStrategies: s.activeStrategies.map(ast => 
-                ast.id === activeStrat.id ? { ...ast, hasTriggeredEntry: false } : ast
-              )
-            }));
+            if (shouldExit) {
+              const exitType = isShort ? 'BUY' : 'SELL';
+              executeTrade(exitType, targetAsset, pos.qty, currentPrice);
+              
+              // Reset state to allow next entry cycle
+              usePaperTradingStore.setState(s => ({
+                activeStrategies: s.activeStrategies.map(ast => 
+                  ast.id === activeStrat.id ? { ...ast, hasTriggeredEntry: false } : ast
+                )
+              }));
+            }
           }
         }
-
       });
-    }, 3000); // eval every 3 seconds
+    }, 2500); // evaluate every 2.5 seconds
 
     return () => clearInterval(interval);
   }, []);

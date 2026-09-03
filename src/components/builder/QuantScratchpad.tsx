@@ -158,7 +158,17 @@ function evaluateStrategy(candles) {
 ];
 
 export function QuantScratchpad() {
-  const { strategyDSL, compileGraphToDSL, nodes, strategyName, tradingPair, setTradingPair, setStrategyName } = useBuilderStore()
+  const { 
+    strategyDSL, 
+    compileGraphToDSL, 
+    nodes, 
+    strategyName, 
+    tradingPair, 
+    setTradingPair, 
+    setStrategyName,
+    loadPresetTemplate,
+    setWorkspaceMode
+  } = useBuilderStore()
   const { accounts, getActiveAccount } = useExchangeStore()
 
   const activeAccount = getActiveAccount()
@@ -448,6 +458,24 @@ Connecting to Localhost:3000 market candle database...`)
               <option value={100}>100x</option>
             </select>
           </div>
+
+          <button
+            onClick={() => {
+              if (selectedPresetId === "triple_ema") loadPresetTemplate("triple_ema")
+              else if (selectedPresetId === "bollinger_squeeze") loadPresetTemplate("bollinger_squeeze")
+              else if (selectedPresetId === "basis_arbitrage") loadPresetTemplate("basis_arbitrage")
+              else if (selectedPresetId === "macd_divergence") loadPresetTemplate("golden_cross")
+              else if (selectedPresetId === "pairs_cointegration") loadPresetTemplate("pairs_trading")
+              else if (selectedPresetId === "hft_orderbook_imbalance") loadPresetTemplate("order_flow")
+              else loadPresetTemplate("triple_ema")
+              setWorkspaceMode('canvas')
+            }}
+            className="flex items-center gap-1.5 rounded-lg bg-accent-blue/10 border border-accent-blue/30 px-3 py-1 text-[11px] font-bold text-accent-blue hover:bg-accent-blue hover:text-white transition-all shrink-0"
+            title="Convert and load this strategy directly into the interactive Visual Node Canvas"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Open in Canvas</span>
+          </button>
 
           <button
             onClick={handleRunFullBacktest}

@@ -59,6 +59,19 @@ function ConditionProperties({ data, onChange }: { data: any, onChange: (data: a
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Category Role Selector */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[11px] text-text-secondary font-bold">Condition Purpose</label>
+        <select 
+          value={data.category || 'ENTRY CONDITIONS'}
+          onChange={(e) => onChange({ category: e.target.value })}
+          className="h-8 w-full rounded border border-bg-border bg-bg-base px-2 text-[12px] font-bold text-accent-blue outline-none cursor-pointer"
+        >
+          <option value="ENTRY CONDITIONS">ENTRY CONDITION</option>
+          <option value="EXIT CONDITIONS">EXIT CONDITION</option>
+        </select>
+      </div>
+
       {/* Left Indicator Timeframe & Shift */}
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1.5">

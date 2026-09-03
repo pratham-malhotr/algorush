@@ -50,6 +50,8 @@ export const IndicatorTypeSchema = z.enum([
   'TIME_SINCE_ENTRY',
   'TIME_SINCE_LAST_TRADE',
   'LOOP_COUNT',
+  'FUNDING_RATE',
+  'ORDERBOOK_IMBALANCE',
 ]);
 
 export const IndicatorSchema = z.object({
@@ -64,6 +66,8 @@ export const ComparatorSchema = z.enum([
   'GREATER_THAN',
   'LESS_THAN',
   'EQUAL',
+  'GREATER_THAN_OR_EQUAL',
+  'LESS_THAN_OR_EQUAL',
   'CROSSES_ABOVE',
   'CROSSES_BELOW',
 ]);
@@ -78,12 +82,13 @@ export const ConditionSchema = z.object({
 
 export const ActionTypeSchema = z.enum(['BUY', 'SELL', 'CLOSE_POSITION', 'REBALANCE']);
 
-export const OrderTypeSchema = z.enum(['MARKET', 'LIMIT', 'STOP', 'STOP_LIMIT', 'TRAILING_STOP']);
+export const OrderTypeSchema = z.enum(['MARKET', 'LIMIT', 'STOP', 'STOP_LIMIT', 'TRAILING_STOP', 'TWAP', 'GRID_LIMIT']);
 
 export const QuantityTypeSchema = z.enum([
   'SHARES',
   'PERCENT_OF_ACCOUNT',
   'USD_VALUE',
+  'FIXED_USD',
   'VOLATILITY_RISK_PCT',
   'KELLY_CRITERION',
 ]);
@@ -93,6 +98,7 @@ export const ActionSchema = z.object({
   orderType: OrderTypeSchema.optional(),
   quantityType: QuantityTypeSchema.optional(),
   quantityValue: z.number().optional(),
+  leverage: z.number().optional(),
   limitPriceOffsetPct: z.number().optional(),
 });
 
@@ -106,6 +112,7 @@ export const RiskParametersSchema = z.object({
   maxPortfolioLossPct: z.number().optional(),
   maxConsecutiveLosses: z.number().optional(),
   kellyFraction: z.number().optional(), // e.g. 0.5 for Half-Kelly
+  leverage: z.number().optional(),
 });
 
 export const StrategyDSLSchema = z.object({
@@ -124,6 +131,7 @@ export type StrategyDSL = z.infer<typeof StrategyDSLSchema>;
 export type Condition = z.infer<typeof ConditionSchema>;
 export type Action = z.infer<typeof ActionSchema>;
 export type Indicator = z.infer<typeof IndicatorSchema>;
+export type IndicatorType = z.infer<typeof IndicatorTypeSchema>;
 export type RiskParameters = z.infer<typeof RiskParametersSchema>;
 export type Timeframe = z.infer<typeof TimeframeSchema>;
 

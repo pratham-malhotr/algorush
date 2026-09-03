@@ -23,9 +23,14 @@ const navLinks = [
 export function Navbar() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
+  const [mounted, setMounted] = React.useState(false)
   const { getActiveAccount, setIsConnectModalOpen } = useExchangeStore()
 
-  const activeAccount = getActiveAccount()
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const activeAccount = mounted ? getActiveAccount() : null
 
   return (
     <>

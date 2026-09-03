@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, ChevronDown, ChevronRight, GripVertical, Sparkles } from "lucide-react"
+import { Search, ChevronDown, ChevronRight, GripVertical, Sparkles, X } from "lucide-react"
 
 const CATEGORIES = [
   {
@@ -161,8 +161,17 @@ export function BlockLibrary() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search EMA, RSI, Grid, Binance..." 
-            className="h-[36px] w-full rounded-md border border-bg-border bg-bg-elevated pl-9 pr-3 text-[13px] text-text-primary outline-none placeholder:text-text-tertiary focus:border-accent-blue focus:shadow-[0_0_0_2px_rgba(59,130,246,0.15)] transition-all"
+            className="h-[36px] w-full rounded-md border border-bg-border bg-bg-elevated pl-9 pr-8 text-[13px] text-text-primary outline-none placeholder:text-text-tertiary focus:border-accent-blue focus:shadow-[0_0_0_2px_rgba(59,130,246,0.15)] transition-all"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary p-0.5 rounded transition-colors"
+              title="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

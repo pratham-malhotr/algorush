@@ -10,7 +10,15 @@ const CATEGORY_STYLES: Record<string, { bg: string, border: string, text: string
 }
 
 export function ConditionNode({ id, data, selected }: { id: string; data: any; selected?: boolean }) {
-  const styles = CATEGORY_STYLES[data.category] || { bg: "bg-bg-elevated", border: "border-text-tertiary", text: "text-text-tertiary" }
+  // Normalize legacy category names to the canonical format
+  const CATEGORY_MAP: Record<string, string> = {
+    'technical': 'ENTRY CONDITIONS',
+    'entry': 'ENTRY CONDITIONS',
+    'risk': 'EXIT CONDITIONS',
+    'exit': 'EXIT CONDITIONS',
+  };
+  const normalizedCategory = CATEGORY_MAP[data.category?.toLowerCase()] || data.category || 'ENTRY CONDITIONS';
+  const styles = CATEGORY_STYLES[normalizedCategory] || { bg: "bg-[#0F2036]", border: "border-accent-blue", text: "text-accent-blue" }
   const setNodes = useBuilderStore((state) => state.setNodes)
   const setEdges = useBuilderStore((state) => state.setEdges)
 
@@ -77,7 +85,7 @@ export function ConditionNode({ id, data, selected }: { id: string; data: any; s
         <div className="flex items-center gap-2">
           <span className={`flex h-2 w-2 rounded-full ${styles.border.replace('border-', 'bg-')} shadow-[0_0_10px_currentColor]`} />
           <span className={`text-[11px] font-bold uppercase tracking-wider ${styles.text}`}>
-            {data.category.replace(" CONDITIONS", "")}
+            {normalizedCategory.replace(" CONDITIONS", "")}
           </span>
         </div>
         <div className="flex items-center gap-1">

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import { StrategyDSL } from '@/lib/types/strategy'
 
 export interface Position {
@@ -6,6 +7,9 @@ export interface Position {
   qty: number;
   avgPrice: number;
   currentPrice: number;
+  side?: 'LONG' | 'SHORT';
+  unrealizedPnl?: number;
+  unrealizedPnlPercent?: number;
 }
 
 export interface Trade {
@@ -47,7 +51,9 @@ interface PaperTradingState {
   haltAllTrading: () => void;
 }
 
-export const usePaperTradingStore = create<PaperTradingState>((set, get) => ({
+export const usePaperTradingStore = create<PaperTradingState>()(
+  persist(
+    (set, get) => ({
   balance: 100000, // $100k starting balance
   positions: [],
   trades: [],
@@ -79,33 +85,69 @@ export const usePaperTradingStore = create<PaperTradingState>((set, get) => ({
 
   executeTrade: (type, symbol, qty, price) => {
     set((state) => {
-      const cost = qty * price;
       let newBalance = state.balance;
       let newPositions = [...state.positions];
-      
       const posIndex = newPositions.findIndex(p => p.symbol === symbol);
 
       if (type === 'BUY') {
-        if (newBalance < cost) return state; // Insufficient funds
-        newBalance -= cost;
-        if (posIndex >= 0) {
-          // average up/down
+        // If existing SHORT position, BUY covers the short
+        if (posIndex >= 0 && newPositions[posIndex].side === 'SHORT') {
           const pos = newPositions[posIndex];
-          const totalCost = (pos.qty * pos.avgPrice) + cost;
-          const newQty = pos.qty + qty;
-          newPositions[posIndex] = { ...pos, qty: newQty, avgPrice: totalCost / newQty, currentPrice: price };
+          const closeQty = Math.min(pos.qty, qty);
+          const pnl = (pos.avgPrice - price) * closeQty;
+          newBalance += (closeQty * pos.avgPrice) + pnl;
+          const remainingQty = pos.qty - closeQty;
+          if (remainingQty <= 0.000001) {
+            newPositions.splice(posIndex, 1);
+          } else {
+            newPositions[posIndex] = { ...pos, qty: remainingQty, currentPrice: price };
+          }
         } else {
-          newPositions.push({ symbol, qty, avgPrice: price, currentPrice: price });
+          // Open or scale into LONG position
+          const cost = qty * price;
+          if (newBalance < cost) {
+            if (newBalance < 10) return state;
+            qty = +(newBalance / price).toFixed(6);
+          }
+          newBalance -= qty * price;
+          if (posIndex >= 0 && newPositions[posIndex].side === 'LONG') {
+            const pos = newPositions[posIndex];
+            const totalCost = (pos.qty * pos.avgPrice) + (qty * price);
+            const newQty = pos.qty + qty;
+            newPositions[posIndex] = { ...pos, qty: newQty, avgPrice: totalCost / newQty, currentPrice: price, side: 'LONG' };
+          } else {
+            newPositions.push({ symbol, qty, avgPrice: price, currentPrice: price, side: 'LONG', unrealizedPnl: 0, unrealizedPnlPercent: 0 });
+          }
         }
       } else if (type === 'SELL') {
-        if (posIndex < 0 || newPositions[posIndex].qty < qty) return state; // Can't short sell for now, or insufficient qty
-        newBalance += cost;
-        const pos = newPositions[posIndex];
-        const newQty = pos.qty - qty;
-        if (newQty === 0) {
-          newPositions.splice(posIndex, 1);
+        // If existing LONG position, SELL closes the long
+        if (posIndex >= 0 && newPositions[posIndex].side === 'LONG') {
+          const pos = newPositions[posIndex];
+          const closeQty = Math.min(pos.qty, qty);
+          const pnl = (price - pos.avgPrice) * closeQty;
+          newBalance += (closeQty * pos.avgPrice) + pnl;
+          const remainingQty = pos.qty - closeQty;
+          if (remainingQty <= 0.000001) {
+            newPositions.splice(posIndex, 1);
+          } else {
+            newPositions[posIndex] = { ...pos, qty: remainingQty, currentPrice: price };
+          }
         } else {
-          newPositions[posIndex] = { ...pos, qty: newQty, currentPrice: price };
+          // Open or scale into SHORT position
+          const margin = qty * price;
+          if (newBalance < margin) {
+            if (newBalance < 10) return state;
+            qty = +(newBalance / price).toFixed(6);
+          }
+          newBalance -= qty * price;
+          if (posIndex >= 0 && newPositions[posIndex].side === 'SHORT') {
+            const pos = newPositions[posIndex];
+            const totalCost = (pos.qty * pos.avgPrice) + (qty * price);
+            const newQty = pos.qty + qty;
+            newPositions[posIndex] = { ...pos, qty: newQty, avgPrice: totalCost / newQty, currentPrice: price, side: 'SHORT' };
+          } else {
+            newPositions.push({ symbol, qty, avgPrice: price, currentPrice: price, side: 'SHORT', unrealizedPnl: 0, unrealizedPnlPercent: 0 });
+          }
         }
       }
 
@@ -113,13 +155,13 @@ export const usePaperTradingStore = create<PaperTradingState>((set, get) => ({
         id: Math.random().toString(36).substring(7),
         symbol,
         type,
-        qty,
-        price,
+        qty: +qty.toFixed(6),
+        price: +price.toFixed(2),
         time: new Date().toISOString()
       };
 
       return {
-        balance: newBalance,
+        balance: Math.max(0, newBalance),
         positions: newPositions,
         trades: [newTrade, ...state.trades]
       };
@@ -128,32 +170,47 @@ export const usePaperTradingStore = create<PaperTradingState>((set, get) => ({
 
   updateMarketPrices: (prices) => {
     set((state) => {
-      // 1. Update positions with new prices
-      const newPositions = state.positions.map(p => ({
-        ...p,
-        currentPrice: prices[p.symbol] || p.currentPrice
-      }));
+      // 1. Update positions with new prices and unrealized PnL
+      const newPositions = state.positions.map(p => {
+        const curPrice = prices[p.symbol] || p.currentPrice;
+        const isShort = p.side === 'SHORT';
+        const pnl = isShort ? (p.avgPrice - curPrice) * p.qty : (curPrice - p.avgPrice) * p.qty;
+        const pnlPct = p.avgPrice > 0 ? (pnl / (p.avgPrice * p.qty)) * 100 : 0;
+        return {
+          ...p,
+          currentPrice: curPrice,
+          unrealizedPnl: Math.round(pnl * 100) / 100,
+          unrealizedPnlPercent: Math.round(pnlPct * 100) / 100
+        };
+      });
 
-      // 2. Calculate Total Equity (Balance + Sum(Qty * CurrentPrice))
-      const positionsValue = newPositions.reduce((acc, pos) => acc + (pos.qty * pos.currentPrice), 0);
-      const totalEquity = state.balance + positionsValue;
+      // 2. Calculate Total Equity
+      const totalUnrealizedPnl = newPositions.reduce((acc, pos) => acc + (pos.unrealizedPnl || 0), 0);
+      const positionsCost = newPositions.reduce((acc, pos) => acc + (pos.qty * pos.avgPrice), 0);
+      const totalEquity = state.balance + positionsCost + totalUnrealizedPnl;
 
-      // 3. Update Equity History
-      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      // 3. Update Active Strategies PnL
+      const newActiveStrategies = state.activeStrategies.map(s => {
+        const symbol = s.strategy.instruments?.[0]?.symbol || 'BTC/USDT';
+        const pos = newPositions.find(p => p.symbol === symbol);
+        return {
+          ...s,
+          pnl: pos ? pos.unrealizedPnl || 0 : s.pnl || 0
+        };
+      });
+
+      // 4. Update Equity History
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       let newHistory = [...state.equityHistory];
-      const lastPoint = newHistory[newHistory.length - 1];
+      const roundedEquity = Math.round(totalEquity * 100) / 100;
       
-      if (lastPoint && lastPoint.time === nowStr) {
-        // Update current minute immutably
-        newHistory[newHistory.length - 1] = { ...lastPoint, value: totalEquity };
-      } else {
-        newHistory.push({ time: nowStr, value: totalEquity });
-        if (newHistory.length > 50) newHistory.shift(); // Keep last 50 points
-      }
+      newHistory.push({ time: nowStr, value: roundedEquity });
+      if (newHistory.length > 60) newHistory.shift();
 
       return {
         currentPrices: { ...state.currentPrices, ...prices },
         positions: newPositions,
+        activeStrategies: newActiveStrategies,
         equityHistory: newHistory
       };
     })
@@ -193,4 +250,17 @@ export const usePaperTradingStore = create<PaperTradingState>((set, get) => ({
       };
     });
   }
-}))
+}),
+    {
+      name: 'algotext-paper-trading',
+      partialize: (state) => ({
+        balance: state.balance,
+        positions: state.positions,
+        trades: state.trades,
+        equityHistory: state.equityHistory,
+        activeStrategies: state.activeStrategies,
+        currentPrices: state.currentPrices,
+      }),
+    }
+  )
+)

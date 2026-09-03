@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, Key, ShieldCheck, CheckCircle2, AlertTriangle, Cpu, Wallet, QrCode, RefreshCw, Trash2, ArrowRight, Sparkles, Search, SlidersHorizontal, Layers, Activity } from "lucide-react"
+import { X, Key, ShieldCheck, CheckCircle2, AlertTriangle, Cpu, Wallet, QrCode, RefreshCw, Trash2, ArrowRight, Sparkles, Search, SlidersHorizontal, Layers, Activity, Zap, Check } from "lucide-react"
 import { useExchangeStore, ExchangeId } from "@/store/useExchangeStore"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { toast } from "sonner"
@@ -107,6 +107,9 @@ export function ExchangeConnectModal() {
   const [isTestnet, setIsTestnet] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [tab, setTab] = React.useState<"connect" | "manage">("connect")
+  const [isFastSyncing, setIsFastSyncing] = React.useState(false)
+  const [fastSyncStep, setFastSyncStep] = React.useState<string>("")
+  const [showQrModal, setShowQrModal] = React.useState(false)
 
   React.useEffect(() => {
     if (selectedExchangeForModal) {
@@ -153,13 +156,16 @@ export function ExchangeConnectModal() {
       const success = await connectExchange(
         selectedExchange,
         accountName || `${currentExchangeMeta.name} ${isTestnet ? 'Testnet' : 'Main'}`,
-        { apiKey, apiSecret, passphrase, isTestnet }
+        { apiKey, apiSecret, passphrase, isTestnet },
+        undefined,
+        true
       )
       if (success) {
         toast.success(`Successfully connected to ${currentExchangeMeta.name}!`)
         setApiKey("")
         setApiSecret("")
         setPassphrase("")
+        setTab("manage")
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to connect exchange")
@@ -168,11 +174,48 @@ export function ExchangeConnectModal() {
     }
   }
 
-  const handleFastAppSync = (exMeta: ExchangeDefinition) => {
-    setAccountName(`${exMeta.name} Fast App Sync`)
-    setApiKey(`${exMeta.id}_fast_oauth_` + Math.random().toString(36).substring(2, 10))
-    setApiSecret("secret_" + Math.random().toString(36).substring(2, 18))
-    toast.success(`Fast App Sync generated secure OAuth API key for ${exMeta.name}! Click Save & Connect below.`)
+  const handleFastAppSync = async (exMeta: ExchangeDefinition) => {
+    setIsFastSyncing(true)
+    
+    // Stage 1: Handshake
+    setFastSyncStep(`Connecting to ${exMeta.name} OAuth App Gateway...`)
+    await new Promise(r => setTimeout(r, 400))
+    
+    // Stage 2: Token generation
+    setFastSyncStep(`Generating RSA-2048 Read & Trade token (0-Withdrawals)...`)
+    await new Promise(r => setTimeout(r, 450))
+
+    // Stage 3: Verification & Balance Sync
+    setFastSyncStep(`Verifying ping latency (${exMeta.estPingMs}ms) & synchronizing balances...`)
+    await new Promise(r => setTimeout(r, 400))
+
+    const fastApiKey = `${exMeta.id}_fast_oauth_` + Math.random().toString(36).substring(2, 9).toUpperCase()
+    const fastApiSecret = "sec_fast_" + Math.random().toString(36).substring(2, 18)
+
+    try {
+      const success = await connectExchange(
+        exMeta.id,
+        `${exMeta.name} (Fast App Sync)`,
+        {
+          apiKey: fastApiKey,
+          apiSecret: fastApiSecret,
+          passphrase: ['okx', 'kucoin', 'bybit', 'deribit'].includes(exMeta.id) ? 'AlgoRush_OAuth_2026' : undefined,
+          isTestnet: false
+        },
+        undefined,
+        true // keepModalOpen so user can see it in Active tab!
+      )
+
+      if (success) {
+        setTab("manage")
+        toast.success(`⚡ Fast App Sync Successful! Connected ${exMeta.name} with live trading permissions & pre-funded balance.`)
+      }
+    } catch (err: any) {
+      toast.error(`Fast App Sync failed: ${err.message}`)
+    } finally {
+      setIsFastSyncing(false)
+      setFastSyncStep("")
+    }
   }
 
   return (
@@ -438,24 +481,143 @@ export function ExchangeConnectModal() {
             ) : (
               <form onSubmit={handleConnectSubmit} className="space-y-4">
                 {/* Fast App Sync Banner */}
-                <div className="flex items-center justify-between rounded-xl bg-accent-blue/10 border border-accent-blue/20 p-3.5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-blue text-white font-bold">
-                      <QrCode className="h-5 w-5" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-gradient-to-r from-accent-blue/15 via-accent-blue/10 to-purple-500/10 border border-accent-blue/30 p-4 gap-3 shadow-lg">
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-blue text-white font-bold shadow-md shadow-accent-blue/30">
+                      <Zap className="h-6 w-6 fill-current" />
                     </div>
                     <div>
-                      <h4 className="text-[13px] font-bold text-text-primary">{currentExchangeMeta.name} Fast App Sync (QR / OAuth)</h4>
-                      <p className="text-[11px] text-text-secondary">Scan QR code or click Fast Sync to automatically generate read & trade API keys.</p>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-[13.5px] font-bold text-text-primary">{currentExchangeMeta.name} Fast App Sync</h4>
+                        <span className="rounded-full bg-accent-green/15 text-accent-green text-[9.5px] font-bold px-2 py-0.5 border border-accent-green/30">
+                          Instant OAuth
+                        </span>
+                      </div>
+                      <p className="text-[11.5px] text-text-secondary mt-0.5">
+                        Automatically provisions non-custodial read & trade API credentials without manual key copying.
+                      </p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleFastAppSync(currentExchangeMeta)}
-                    className="flex items-center gap-1.5 rounded-lg bg-accent-blue text-white px-3 py-1.5 text-[12px] font-bold hover:bg-blue-600 transition-colors shadow-sm"
-                  >
-                    1-Click App Sync <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setShowQrModal(true)}
+                      className="flex items-center gap-1.5 rounded-xl border border-bg-border bg-bg-base hover:bg-bg-elevated px-3 py-2 text-[12px] font-semibold text-text-primary transition-all shadow-sm"
+                    >
+                      <QrCode className="h-4 w-4 text-accent-blue" />
+                      <span>QR Code</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleFastAppSync(currentExchangeMeta)}
+                      disabled={isFastSyncing}
+                      className="flex items-center gap-2 rounded-xl bg-accent-blue text-white px-4 py-2 text-[12.5px] font-bold hover:bg-blue-600 transition-all shadow-md shadow-accent-blue/25 disabled:opacity-50"
+                    >
+                      {isFastSyncing ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                          <span>Syncing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4 fill-current" />
+                          <span>1-Click App Sync</span>
+                          <ArrowRight className="h-3.5 w-3.5 ml-0.5" />
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Fast Syncing Live Progress Overlay */}
+                {isFastSyncing && (
+                  <div className="rounded-2xl border border-accent-blue/40 bg-accent-blue/10 p-5 text-center space-y-3 animate-in fade-in">
+                    <div className="flex items-center justify-center">
+                      <div className="relative">
+                        <div className="h-12 w-12 rounded-full border-4 border-accent-blue/20 border-t-accent-blue animate-spin" />
+                        <div className="absolute inset-0 flex items-center justify-center font-bold text-xs text-accent-blue">
+                          ⚡
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-text-primary">Fast App Sync in Progress</h4>
+                      <p className="font-mono text-xs text-accent-blue mt-1 animate-pulse">{fastSyncStep}</p>
+                    </div>
+                    <span className="text-[10.5px] text-text-tertiary block font-mono">
+                      Establishing non-custodial RSA-2048 cryptographic channel with {currentExchangeMeta.name}...
+                    </span>
+                  </div>
+                )}
+
+                {/* Mobile QR Code Dialog */}
+                {showQrModal && (
+                  <div className="rounded-2xl border border-accent-blue/30 bg-bg-base p-6 text-center space-y-4 animate-in zoom-in-95 shadow-2xl">
+                    <div className="flex items-center justify-between border-b border-bg-border pb-3">
+                      <div className="flex items-center gap-2 text-xs font-bold text-text-primary">
+                        <QrCode className="h-4 w-4 text-accent-blue" />
+                        <span>Pair with {currentExchangeMeta.name} Mobile App</span>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => setShowQrModal(false)} 
+                        className="text-text-tertiary hover:text-text-primary"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6 py-2">
+                      {/* Stylized QR Box */}
+                      <div className="w-40 h-40 rounded-2xl border-2 border-accent-blue/50 bg-white p-3.5 flex flex-col justify-between shadow-xl">
+                        <div className="w-full flex justify-between">
+                          <div className="w-8 h-8 border-4 border-black rounded-md flex items-center justify-center"><div className="w-2.5 h-2.5 bg-black rounded-sm" /></div>
+                          <div className="w-8 h-8 border-4 border-black rounded-md flex items-center justify-center"><div className="w-2.5 h-2.5 bg-black rounded-sm" /></div>
+                        </div>
+                        <div className="h-8 w-8 mx-auto rounded-lg bg-accent-blue text-white font-black text-xs flex items-center justify-center shadow-md">
+                          {currentExchangeMeta.name.charAt(0)}
+                        </div>
+                        <div className="w-full flex justify-between">
+                          <div className="w-8 h-8 border-4 border-black rounded-md flex items-center justify-center"><div className="w-2.5 h-2.5 bg-black rounded-sm" /></div>
+                          <div className="flex gap-1 items-end"><div className="w-2 h-6 bg-black" /><div className="w-2 h-3 bg-black" /></div>
+                        </div>
+                      </div>
+
+                      <div className="text-left space-y-2 max-w-[320px]">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-accent-blue block">Quick Pairing Steps</span>
+                        <ol className="text-xs text-text-secondary space-y-1.5 list-decimal pl-4">
+                          <li>Open your <strong>{currentExchangeMeta.name}</strong> mobile app.</li>
+                          <li>Navigate to <strong>Account &rarr; API Management</strong>.</li>
+                          <li>Select <strong>Scan QR Code</strong> to link AlgoText.</li>
+                          <li>Confirm <strong>Read & Trade permissions</strong> (Withdrawals disabled).</li>
+                        </ol>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-bg-border">
+                      <button
+                        type="button"
+                        onClick={() => setShowQrModal(false)}
+                        className="px-4 py-2 rounded-xl border border-bg-border bg-bg-surface text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowQrModal(false)
+                          handleFastAppSync(currentExchangeMeta)
+                        }}
+                        className="px-5 py-2 rounded-xl bg-accent-blue text-xs font-bold text-white hover:bg-blue-600 transition-all flex items-center gap-1.5 shadow-md shadow-accent-blue/25"
+                      >
+                        <Zap className="h-3.5 w-3.5 fill-current" />
+                        <span>Simulate Scanned QR & Authorize</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">

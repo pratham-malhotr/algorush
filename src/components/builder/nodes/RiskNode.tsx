@@ -32,9 +32,32 @@ export function RiskNode({ id, data, selected }: { id: string; data: any; select
       <span className="text-[15px] font-semibold text-text-primary mb-1">{data.label}</span>
       
       {data.dslRisk && (
-        <div className="flex gap-3 text-[12px] text-text-tertiary font-mono mt-1">
-          {data.dslRisk.stopLossPercentage !== undefined && <span>SL: {data.dslRisk.stopLossPercentage}%</span>}
-          {data.dslRisk.takeProfitPercentage !== undefined && <span>TP: {data.dslRisk.takeProfitPercentage}%</span>}
+        <div className="flex flex-wrap gap-2 text-[11px] text-text-tertiary font-mono mt-1">
+          {data.dslRisk.stopLossPercentage !== undefined && (
+            <span className="rounded bg-accent-red/10 border border-accent-red/20 text-accent-red px-1.5 py-0.5">
+              SL: {data.dslRisk.stopLossPercentage}%
+            </span>
+          )}
+          {data.dslRisk.takeProfitPercentage !== undefined && (
+            <span className="rounded bg-accent-green/10 border border-accent-green/20 text-accent-green px-1.5 py-0.5">
+              TP: {data.dslRisk.takeProfitPercentage}%
+            </span>
+          )}
+          {data.dslRisk.trailingStopPercentage !== undefined && (
+            <span className="rounded bg-accent-blue/10 border border-accent-blue/20 text-accent-blue px-1.5 py-0.5">
+              Trail: {data.dslRisk.trailingStopPercentage}%
+            </span>
+          )}
+          {data.dslRisk.maxDailyDrawdownPct !== undefined && (
+            <span className="rounded bg-amber-500/10 border border-amber-500/20 text-accent-amber px-1.5 py-0.5">
+              MaxDD: {data.dslRisk.maxDailyDrawdownPct}%
+            </span>
+          )}
+          {data.dslRisk.leverage !== undefined && data.dslRisk.leverage > 1 && (
+            <span className="rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 px-1.5 py-0.5">
+              {data.dslRisk.leverage}x Lev
+            </span>
+          )}
         </div>
       )}
 

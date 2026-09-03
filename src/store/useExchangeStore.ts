@@ -103,7 +103,7 @@ interface ExchangeState {
   // Actions
   setIsConnectModalOpen: (open: boolean, exchangeId?: ExchangeId) => void;
   setActiveAccount: (id: string | null) => void;
-  connectExchange: (exchangeId: ExchangeId, name: string, credentials: ExchangeCredentials, walletAddress?: string) => Promise<boolean>;
+  connectExchange: (exchangeId: ExchangeId, name: string, credentials: ExchangeCredentials, walletAddress?: string, keepModalOpen?: boolean) => Promise<boolean>;
   disconnectExchange: (id: string) => void;
   getActiveAccount: () => ConnectedAccount | null;
   testConnection: (id: string) => Promise<boolean>;
@@ -167,7 +167,7 @@ export const useExchangeStore = create<ExchangeState>()(
 
       setActiveAccount: (id) => set({ activeAccountId: id }),
 
-      connectExchange: async (exchangeId, name, credentials, walletAddress) => {
+      connectExchange: async (exchangeId, name, credentials, walletAddress, keepModalOpen) => {
         await new Promise((resolve) => setTimeout(resolve, 700));
 
         const newAccount: ConnectedAccount = {
@@ -178,10 +178,10 @@ export const useExchangeStore = create<ExchangeState>()(
           isTestnet: credentials.isTestnet,
           credentials,
           walletAddress,
-          balanceUsdt: credentials.isTestnet ? 10000.00 : 25400.75,
-          balanceBtc: 0.45,
+          balanceUsdt: credentials.isTestnet ? 10000.00 : 38450.75,
+          balanceBtc: 0.65,
           connectedAt: new Date().toISOString(),
-          pingMs: Math.floor(Math.random() * 20) + 12,
+          pingMs: Math.floor(Math.random() * 8) + 11,
           permissions: {
             canRead: true,
             canTrade: true,
@@ -193,7 +193,7 @@ export const useExchangeStore = create<ExchangeState>()(
         set((state) => ({
           accounts: [...state.accounts, newAccount],
           activeAccountId: newAccount.id,
-          isConnectModalOpen: false,
+          isConnectModalOpen: keepModalOpen ? true : false,
         }));
 
         return true;

@@ -34,6 +34,7 @@ interface BuilderState {
   strategyStatus: StrategyStatus
   exchange: string
   tradingPair: string
+  timeframe: string
   allocation: number
   maxPerTrade: number
   selectedNodeId: string | null
@@ -41,12 +42,19 @@ interface BuilderState {
   isBacktesting: boolean
   backtestResult: BacktestResult | null
   chatHistory: ChatMessage[]
+  isAnimatingBuild: boolean
   
   // Undo/Redo stack
   history: { nodes: Node[]; edges: Edge[] }[]
   historyIndex: number
   undo: () => void
   redo: () => void
+
+  workspaceMode: 'canvas' | 'scratchpad' | 'code'
+  setWorkspaceMode: (mode: 'canvas' | 'scratchpad' | 'code') => void
+  isOptimizerModalOpen: boolean
+  setIsOptimizerModalOpen: (isOpen: boolean) => void
+  autoLayoutNodes: () => void
 
   updateStrategy: (dsl: StrategyDSL) => void
   onNodesChange: OnNodesChange
@@ -62,15 +70,18 @@ interface BuilderState {
   loadPresetTemplate: (templateId: string) => void
   clearCanvas: () => void
   addChatMessage: (msg: ChatMessage) => void
+  setIsAnimatingBuild: (isAnimating: boolean) => void
 
   setStrategyName: (name: string) => void
   setStrategyStatus: (status: StrategyStatus) => void
   setExchange: (exchange: string) => void
   setTradingPair: (pair: string) => void
+  setTimeframe: (tf: string) => void
   setAllocation: (allocation: number) => void
   setMaxPerTrade: (max: number) => void
   
   setIsBacktestDrawerOpen: (isOpen: boolean) => void
+  setBacktestResult: (result: BacktestResult | null) => void
   runBacktest: () => void
 }
 
@@ -120,18 +131,39 @@ const initialEdges: Edge[] = [
 export const useBuilderStore = create<BuilderState>((set, get) => ({
   nodes: initialNodes,
   edges: initialEdges,
-  strategyDSL: null,
+  strategyDSL: {
+    name: 'Binance Golden Cross Bot',
+    description: 'Quant strategy compiled by AlgoText Engine',
+    instruments: [{ symbol: 'BTC/USDT', assetClass: 'CRYPTO' }],
+    timeframe: '1h',
+    entryConditions: [{
+      id: 'entry-1',
+      left: { type: 'EMA', parameters: { period: 50 } },
+      comparator: 'CROSSES_ABOVE',
+      right: { type: 'EMA', parameters: { period: 200 } },
+      logicalOperator: 'AND'
+    }],
+    exitConditions: [],
+    action: { type: 'BUY', orderType: 'MARKET', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 50 },
+    riskParameters: { stopLossPercentage: 3, takeProfitPercentage: 6, riskPerTradePct: 1.5 }
+  },
   strategyName: 'Binance Golden Cross Bot',
   strategyStatus: 'Draft',
   exchange: 'Binance',
   tradingPair: 'BTC/USDT',
+  timeframe: '1h',
   allocation: 50,
   maxPerTrade: 10,
   selectedNodeId: null,
   isBacktestDrawerOpen: false,
   isBacktesting: false,
   backtestResult: null,
-  chatHistory: [{ role: 'assistant', content: "Hi! I'm your AI Quant Copilot. I can build, optimize, and test quantitative strategies for Binance and crypto exchanges." }],
+  chatHistory: [{ role: 'assistant', content: "Hi! I'm your AI Quant Copilot. Write your trading strategy below in natural language (e.g. 'Go short BTC when 50 EMA crosses below 200 EMA and MACD histogram < 0, exit when RSI < 30 or 3% trailing stop, 5x leverage'), and I'll generate your visual algorithm, compile execution code, and run backtests." }],
+  isAnimatingBuild: false,
+  workspaceMode: 'canvas',
+  setWorkspaceMode: (mode) => set({ workspaceMode: mode }),
+  isOptimizerModalOpen: false,
+  setIsOptimizerModalOpen: (isOpen) => set({ isOptimizerModalOpen: isOpen }),
   
   history: [{ nodes: initialNodes, edges: initialEdges }],
   historyIndex: 0,
@@ -268,7 +300,12 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     }
   },
 
+  setIsAnimatingBuild: (isAnimating) => set({ isAnimatingBuild: isAnimating }),
+
   compileGraphToDSL: () => {
+    // Skip compilation during animated node builds to prevent incomplete DSL
+    if (get().isAnimatingBuild) return;
+    
     const { nodes, edges, strategyName, tradingPair, allocation } = get()
     
     const entryConditions: any[] = []
@@ -319,20 +356,14 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
       name: strategyName,
       description: 'Quant strategy compiled by AlgoText Engine',
       instruments: [{ symbol: tradingPair, assetClass: tradingPair.includes('/') ? 'CRYPTO' : 'EQUITY' }],
-      entryConditions: entryConditions.length > 0 ? entryConditions : [{
+      entryConditions: entryConditions.length > 0 ? entryConditions : (nodes.some(n => n.type === 'conditionNode') ? [] : [{
         id: 'default-entry',
         left: { type: 'EMA', parameters: { period: 50 } },
         comparator: 'CROSSES_ABOVE',
         right: { type: 'EMA', parameters: { period: 200 } },
         logicalOperator: 'AND'
-      }],
-      exitConditions: exitConditions.length > 0 ? exitConditions : [{
-        id: 'default-exit',
-        left: { type: 'RSI', parameters: { period: 14 } },
-        comparator: 'GREATER_THAN',
-        right: 70,
-        logicalOperator: 'OR'
-      }],
+      }]),
+      exitConditions: exitConditions,
       action,
       riskParameters: riskParams
     }
@@ -376,8 +407,8 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
         { id: 'e2', source: 'entry-rsi', target: 'exec-buy', animated: true },
         { id: 'e3', source: 'exec-buy', target: 'risk-tight', animated: true },
       ]
-    } else if (templateId === "futures_grid") {
-      name = "Binance Futures Grid Step Strategy"
+    } else if (templateId === "futures_grid" || templateId === "volatility_grid") {
+      name = "Binance Futures Dynamic Volatility Grid"
       pair = "SOL/USDT"
       presetNodes = [
         { id: 'start', type: 'triggerNode', position: { x: 250, y: 40 }, data: { label: 'Strategy Start' } },
@@ -390,6 +421,83 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
         { id: 'e2', source: 'entry-bollinger', target: 'exec-limit', animated: true },
         { id: 'e3', source: 'exec-limit', target: 'risk-grid', animated: true },
       ]
+    } else if (templateId === "triple_ema") {
+      name = "Triple EMA Trend Confirmation + Volatility Guard"
+      pair = "BTC/USDT"
+      presetNodes = [
+        { id: 'start', type: 'triggerNode', position: { x: 250, y: 40 }, data: { label: 'Strategy Start' } },
+        { id: 'entry-ema-fast', type: 'conditionNode', position: { x: 120, y: 160 }, data: { category: 'ENTRY CONDITIONS', label: 'EMA 20 > EMA 50', dslCondition: { left: { type: 'EMA', parameters: { period: 20 } }, comparator: 'GREATER_THAN', right: { type: 'EMA', parameters: { period: 50 } }, logicalOperator: 'AND' } } },
+        { id: 'entry-ema-slow', type: 'conditionNode', position: { x: 380, y: 160 }, data: { category: 'ENTRY CONDITIONS', label: 'EMA 50 > EMA 200', dslCondition: { left: { type: 'EMA', parameters: { period: 50 } }, comparator: 'GREATER_THAN', right: { type: 'EMA', parameters: { period: 200 } }, logicalOperator: 'AND' } } },
+        { id: 'entry-rsi-filter', type: 'conditionNode', position: { x: 250, y: 280 }, data: { category: 'ENTRY CONDITIONS', label: 'RSI Filter (45 - 68)', dslCondition: { left: { type: 'RSI', parameters: { period: 14 } }, comparator: 'GREATER_THAN', right: 45, logicalOperator: 'AND' } } },
+        { id: 'exec-buy', type: 'executeNode', position: { x: 250, y: 400 }, data: { label: 'Buy Long (35% Position)', dslAction: { type: 'BUY', orderType: 'MARKET', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 35 } } },
+        { id: 'risk-atr', type: 'riskNode', position: { x: 250, y: 520 }, data: { label: 'Dynamic ATR Trailing Bracket', dslRisk: { stopLossPercentage: 2.2, takeProfitPercentage: 6.5, trailingStopPercentage: 1.8 } } },
+      ]
+      presetEdges = [
+        { id: 'e1', source: 'start', target: 'entry-ema-fast', animated: true },
+        { id: 'e2', source: 'start', target: 'entry-ema-slow', animated: true },
+        { id: 'e3', source: 'entry-ema-fast', target: 'entry-rsi-filter', animated: true },
+        { id: 'e4', source: 'entry-ema-slow', target: 'entry-rsi-filter', animated: true },
+        { id: 'e5', source: 'entry-rsi-filter', target: 'exec-buy', animated: true },
+        { id: 'e6', source: 'exec-buy', target: 'risk-atr', animated: true },
+      ]
+    } else if (templateId === "bollinger_squeeze") {
+      name = "Bollinger Squeeze Mean Reversion with ATR Stop"
+      pair = "ETH/USDT"
+      presetNodes = [
+        { id: 'start', type: 'triggerNode', position: { x: 250, y: 40 }, data: { label: 'Strategy Start' } },
+        { id: 'entry-bb-lower', type: 'conditionNode', position: { x: 250, y: 160 }, data: { category: 'ENTRY CONDITIONS', label: 'Price Pierces Lower BB', dslCondition: { left: { type: 'PRICE' }, comparator: 'LESS_THAN', right: { type: 'BOLLINGER_LOWER', parameters: { period: 20, multiplier: 2.0 } }, logicalOperator: 'AND' } } },
+        { id: 'entry-rsi-oversold', type: 'conditionNode', position: { x: 250, y: 280 }, data: { category: 'ENTRY CONDITIONS', label: 'RSI < 30 Confirmation', dslCondition: { left: { type: 'RSI', parameters: { period: 14 } }, comparator: 'LESS_THAN', right: 30, logicalOperator: 'AND' } } },
+        { id: 'exec-long', type: 'executeNode', position: { x: 250, y: 400 }, data: { label: 'Buy Long (40% Equity)', dslAction: { type: 'BUY', orderType: 'LIMIT', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 40 } } },
+        { id: 'risk-bracket', type: 'riskNode', position: { x: 250, y: 520 }, data: { label: 'ATR Risk Stop (2.0% / 5.5%)', dslRisk: { stopLossPercentage: 2.0, takeProfitPercentage: 5.5, trailingStopPercentage: 1.5 } } },
+      ]
+      presetEdges = [
+        { id: 'e1', source: 'start', target: 'entry-bb-lower', animated: true },
+        { id: 'e2', source: 'entry-bb-lower', target: 'entry-rsi-oversold', animated: true },
+        { id: 'e3', source: 'entry-rsi-oversold', target: 'exec-long', animated: true },
+        { id: 'e4', source: 'exec-long', target: 'risk-bracket', animated: true },
+      ]
+    } else if (templateId === "basis_arbitrage") {
+      name = "Spot-Futures Basis Funding Rate Arbitrage"
+      pair = "SOL/USDT"
+      presetNodes = [
+        { id: 'start', type: 'triggerNode', position: { x: 250, y: 40 }, data: { label: 'Hourly Funding Check' } },
+        { id: 'entry-funding', type: 'conditionNode', position: { x: 250, y: 160 }, data: { category: 'ENTRY CONDITIONS', label: 'Perpetual Funding Rate > 0.035%', dslCondition: { left: { type: 'FUNDING_RATE' }, comparator: 'GREATER_THAN', right: 0.00035, logicalOperator: 'AND' } } },
+        { id: 'exec-arb', type: 'executeNode', position: { x: 250, y: 280 }, data: { label: 'Delta-Neutral 1x Cash & Carry', dslAction: { type: 'BUY', orderType: 'MARKET', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 50 } } },
+        { id: 'risk-arb', type: 'riskNode', position: { x: 250, y: 400 }, data: { label: 'Delta Tolerance Guard (0.01)', dslRisk: { stopLossPercentage: 1.0, takeProfitPercentage: 10.0 } } },
+      ]
+      presetEdges = [
+        { id: 'e1', source: 'start', target: 'entry-funding', animated: true },
+        { id: 'e2', source: 'entry-funding', target: 'exec-arb', animated: true },
+        { id: 'e3', source: 'exec-arb', target: 'risk-arb', animated: true },
+      ]
+    } else if (templateId === "order_flow") {
+      name = "High-Frequency Order Flow Imbalance Scalper"
+      pair = "BTC/USDT"
+      presetNodes = [
+        { id: 'start', type: 'triggerNode', position: { x: 250, y: 40 }, data: { label: 'Tick Stream Scanner' } },
+        { id: 'entry-imbalance', type: 'conditionNode', position: { x: 250, y: 160 }, data: { category: 'ENTRY CONDITIONS', label: 'Bid/Ask Imbalance Ratio > 1.8', dslCondition: { left: { type: 'ORDERBOOK_IMBALANCE' }, comparator: 'GREATER_THAN', right: 1.8, logicalOperator: 'AND' } } },
+        { id: 'exec-snap', type: 'executeNode', position: { x: 250, y: 280 }, data: { label: 'Taker Fill Long (20% Account)', dslAction: { type: 'BUY', orderType: 'MARKET', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 20 } } },
+        { id: 'risk-micro', type: 'riskNode', position: { x: 250, y: 400 }, data: { label: 'Ultra-Tight Scalp (0.8% SL / 1.6% TP)', dslRisk: { stopLossPercentage: 0.8, takeProfitPercentage: 1.6 } } },
+      ]
+      presetEdges = [
+        { id: 'e1', source: 'start', target: 'entry-imbalance', animated: true },
+        { id: 'e2', source: 'entry-imbalance', target: 'exec-snap', animated: true },
+        { id: 'e3', source: 'exec-snap', target: 'risk-micro', animated: true },
+      ]
+    } else if (templateId === "pairs_trading") {
+      name = "Statistical Pairs Cointegration Alpha (BTC/ETH)"
+      pair = "ETH/USDT"
+      presetNodes = [
+        { id: 'start', type: 'triggerNode', position: { x: 250, y: 40 }, data: { label: '15m Spread Monitor' } },
+        { id: 'entry-zscore', type: 'conditionNode', position: { x: 250, y: 160 }, data: { category: 'ENTRY CONDITIONS', label: 'Z-Score Spread < -2.10', dslCondition: { left: { type: 'PRICE' }, comparator: 'LESS_THAN', right: 0.052, logicalOperator: 'AND' } } },
+        { id: 'exec-pair', type: 'executeNode', position: { x: 250, y: 280 }, data: { label: 'Long Spread (Hedge Ratio 1.42)', dslAction: { type: 'BUY', orderType: 'LIMIT', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 30 } } },
+        { id: 'risk-pair', type: 'riskNode', position: { x: 250, y: 400 }, data: { label: 'Cointegration Break Guard', dslRisk: { stopLossPercentage: 2.5, takeProfitPercentage: 5.0 } } },
+      ]
+      presetEdges = [
+        { id: 'e1', source: 'start', target: 'entry-zscore', animated: true },
+        { id: 'e2', source: 'entry-zscore', target: 'exec-pair', animated: true },
+        { id: 'e3', source: 'exec-pair', target: 'risk-pair', animated: true },
+      ]
     }
 
     set({
@@ -399,9 +507,44 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
       edges: presetEdges,
       history: [{ nodes: presetNodes, edges: presetEdges }],
       historyIndex: 0,
+      backtestResult: null,
     })
     get().compileGraphToDSL()
-    toast.success(`Loaded preset template: ${name}`)
+    const data = generateMockData(90)
+    const freshResult = runLocalBacktest(get().strategyDSL, data)
+    set({ backtestResult: freshResult })
+    toast.success(`Loaded institutional preset: ${name}`)
+  },
+
+  autoLayoutNodes: () => {
+    const { nodes } = get()
+    const triggers = nodes.filter(n => n.type === 'triggerNode')
+    const entries = nodes.filter(n => n.type === 'conditionNode' && n.data?.category !== 'EXIT CONDITIONS')
+    const execs = nodes.filter(n => n.type === 'executeNode')
+    const exits = nodes.filter(n => n.type === 'conditionNode' && n.data?.category === 'EXIT CONDITIONS')
+    const risks = nodes.filter(n => n.type === 'riskNode')
+    const others = nodes.filter(n => !['triggerNode', 'conditionNode', 'executeNode', 'riskNode'].includes(n.type || ''))
+
+    const layers = [triggers, entries, execs, exits, risks, others].filter(l => l.length > 0)
+
+    const layoutedNodes = nodes.map(node => {
+      const layerIdx = layers.findIndex(layer => layer.some(n => n.id === node.id))
+      const layer = layers[layerIdx] || [node]
+      const nodeIdx = layer.findIndex(n => n.id === node.id)
+      const totalInLayer = layer.length
+      const spacingX = 260
+      const startX = 280 - ((totalInLayer - 1) * spacingX) / 2
+      const x = Math.round(startX + nodeIdx * spacingX)
+      const y = Math.round(50 + layerIdx * 135)
+
+      return {
+        ...node,
+        position: { x, y }
+      }
+    })
+
+    set({ nodes: layoutedNodes })
+    toast.success("✨ Nodes aligned hierarchically in DAG layout!")
   },
 
   clearCanvas: () => {
@@ -414,6 +557,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
       history: [{ nodes: cleanNodes, edges: [] }],
       historyIndex: 0,
       selectedNodeId: null,
+      backtestResult: null,
     })
     get().compileGraphToDSL()
     toast.info("Canvas cleared")
@@ -423,6 +567,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   setStrategyStatus: (status) => set({ strategyStatus: status }),
   setExchange: (exchange) => set({ exchange }),
   setTradingPair: (pair) => set({ tradingPair: pair }),
+  setTimeframe: (tf) => set({ timeframe: tf }),
   setAllocation: (allocation) => {
     set({ allocation })
     get().compileGraphToDSL()
@@ -430,6 +575,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   setMaxPerTrade: (max) => set({ maxPerTrade: max }),
   
   setIsBacktestDrawerOpen: (isOpen) => set({ isBacktestDrawerOpen: isOpen }),
+  setBacktestResult: (result) => set({ backtestResult: result }),
   runBacktest: () => {
     set({ isBacktesting: true })
     setTimeout(() => {

@@ -33,7 +33,8 @@ function CanvasFlow() {
     history, 
     validateGraph, 
     loadPresetTemplate, 
-    clearCanvas 
+    clearCanvas,
+    autoLayoutNodes
   } = useBuilderStore()
 
   const reactFlowWrapper = React.useRef<HTMLDivElement>(null)
@@ -102,30 +103,25 @@ function CanvasFlow() {
     style: { stroke: '#3B82F6', strokeWidth: 2, filter: 'drop-shadow(0 0 5px rgba(59,130,246,0.6))' } 
   }), [])
 
-  const handleAutoLayout = () => {
-    let y = 50
-    const rearranged = nodes.map((node, idx) => {
-      const updated = { ...node, position: { x: 250, y } }
-      y += 120
-      return updated
-    })
-    setNodes(rearranged)
-  }
-
   return (
     <div className="flex-1 h-full w-full bg-bg-base relative" ref={reactFlowWrapper}>
       {/* Canvas Top Control Bar */}
-      <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-xl border border-bg-border bg-white/90 p-1.5 backdrop-blur-md shadow-md">
+      <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-xl border border-bg-border bg-bg-surface/90 p-1.5 backdrop-blur-md shadow-md">
         {/* Preset Templates Dropdown */}
         <select
           onChange={(e) => e.target.value && loadPresetTemplate(e.target.value)}
           defaultValue=""
-          className="h-8 rounded-lg border border-bg-border bg-white px-2 text-[12px] font-semibold text-text-primary outline-none hover:border-accent-blue transition-colors cursor-pointer"
+          className="h-8 rounded-lg border border-bg-border bg-bg-base px-2.5 text-[12px] font-semibold text-text-primary outline-none hover:border-accent-blue transition-colors cursor-pointer"
         >
           <option value="" disabled>✨ Preset Quant Templates</option>
+          <option value="triple_ema">Triple EMA Trend + Volatility Guard</option>
+          <option value="bollinger_squeeze">Bollinger Squeeze Mean Reversion</option>
+          <option value="basis_arbitrage">Spot-Futures Basis Funding Arbitrage</option>
+          <option value="order_flow">Order Flow Imbalance Scalper</option>
+          <option value="pairs_trading">Statistical Pairs Cointegration (BTC/ETH)</option>
+          <option value="volatility_grid">Dynamic Volatility Grid</option>
           <option value="golden_cross">Binance 50/200 Golden Cross</option>
-          <option value="rsi_oversold">ETH Volatility RSI Scalper</option>
-          <option value="futures_grid">Binance Futures Grid Step Bot</option>
+          <option value="rsi_oversold">ETH RSI Oversold Scalper</option>
         </select>
 
         <div className="h-4 w-px bg-bg-border mx-1" />
@@ -153,12 +149,12 @@ function CanvasFlow() {
 
         {/* Auto Arrange */}
         <button
-          onClick={handleAutoLayout}
+          onClick={autoLayoutNodes}
           className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-semibold text-text-secondary hover:bg-bg-elevated hover:text-text-primary transition-colors"
-          title="Auto Arrange Nodes"
+          title="Auto Arrange Nodes Hierarchically"
         >
           <LayoutGrid className="h-3.5 w-3.5 text-accent-blue" />
-          <span>Auto Layout</span>
+          <span>Auto Layout DAG</span>
         </button>
 
         {/* Clear Canvas */}
@@ -175,9 +171,9 @@ function CanvasFlow() {
       {/* Graph Validation Health Pill */}
       <div className="absolute right-4 top-4 z-10">
         {validation.isValid ? (
-          <div className="flex items-center gap-2 rounded-xl border border-accent-green/30 bg-accent-green/10 px-3 py-1.5 text-[12px] font-bold text-accent-green backdrop-blur-md shadow-sm">
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[12px] font-bold text-emerald-500 backdrop-blur-md shadow-sm">
             <CheckCircle2 className="h-4 w-4" />
-            <span>Graph Health: Valid for Binance Live</span>
+            <span>DAG Valid • Ready for Execution</span>
           </div>
         ) : (
           <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-[12px] font-bold text-amber-500 backdrop-blur-md shadow-sm">
@@ -203,9 +199,9 @@ function CanvasFlow() {
         className="algotext-ai-canvas"
         defaultEdgeOptions={defaultEdgeOptions}
       >
-        <Background color="#CBD5E1" variant={"dots" as any} gap={24} size={2} />
+        <Background color="#475569" variant={"dots" as any} gap={24} size={1.5} />
         <Controls 
-          className="bg-white border border-bg-border rounded-md shadow-sm overflow-hidden fill-text-secondary"
+          className="bg-bg-surface border border-bg-border rounded-lg shadow-sm overflow-hidden fill-text-primary"
           showInteractive={false}
         />
         <MiniMap 
