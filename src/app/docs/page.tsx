@@ -178,7 +178,7 @@ export default function DocsPage() {
       
       {/* Docs Header */}
       <div className="border-b border-gray-200 bg-white/80 backdrop-blur-xl sticky top-0 z-40 transition-all shadow-sm">
-        <div className="mx-auto flex max-w-[1400px] flex-col md:flex-row items-start md:items-center justify-between px-6 py-4 md:py-5 gap-4">
+        <div className="mx-auto flex max-w-[1680px] flex-col md:flex-row items-start md:items-center justify-between px-6 py-4 md:py-5 gap-4">
           <div className="flex items-center gap-5">
             <BackButton />
             <div className="h-6 w-px bg-gray-200 hidden md:block"></div>
@@ -204,7 +204,7 @@ export default function DocsPage() {
       </div>
 
       {/* Docs Layout (3 Columns) */}
-      <div className="mx-auto flex max-w-[1400px] flex-col md:flex-row px-6 py-12 gap-8 lg:gap-16 relative">
+      <div className="mx-auto flex max-w-[1680px] flex-col md:flex-row px-6 py-12 gap-8 lg:gap-14 relative">
         
         {/* Left Sidebar (Navigation) */}
         <aside className="hidden md:block w-[260px] shrink-0">
@@ -254,7 +254,7 @@ export default function DocsPage() {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 min-w-0 max-w-[850px] pb-32">
+        <main className="flex-1 min-w-0 max-w-[1160px] 2xl:max-w-[1240px] pb-32">
           
           {/* Architecture */}
           <section id="architecture" className="scroll-mt-32 mb-28">

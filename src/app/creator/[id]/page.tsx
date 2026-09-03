@@ -6,10 +6,11 @@ import { ArrowLeft, ShieldCheck, Download, Users, Briefcase } from 'lucide-react
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-export default function CreatorProfilePage({ params }: { params: { id: string } }) {
+export default function CreatorProfilePage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const unwrappedParams = 'then' in params ? React.use(params as Promise<{ id: string }>) : params;
   const { getCreator, getStrategiesByCreator } = useMarketplaceStore();
   
-  const creator = getCreator(params.id);
+  const creator = getCreator(unwrappedParams?.id);
   const strategies = creator ? getStrategiesByCreator(creator.id) : [];
 
   if (!creator) {

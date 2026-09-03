@@ -2,22 +2,18 @@
 
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Check, X, Zap, Shield, Crown, HelpCircle, Info, Star, Cpu, BarChart3, CheckCircle2, Bitcoin, Wallet, Copy, ExternalLink, Lock } from "lucide-react"
+import { Check, X, Zap, Shield, Crown, HelpCircle, Info, Star, Cpu, BarChart3, CheckCircle2, Bitcoin, Wallet, Copy, ExternalLink, Lock, Clock, AlertTriangle, ArrowRight } from "lucide-react"
 import { BackButton } from "@/components/ui/BackButton"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { MERCHANT_BTC_ADDRESS } from "@/lib/payments/btc"
 
 const faqs = [
+  { question: "Can I pay using Bitcoin?", answer: "Yes! We accept direct on-chain Bitcoin (BTC) payments. Your transaction will be verified on the Bitcoin network and your account will be upgraded instantly upon confirmation." },
   { question: "Can I cancel my subscription?", answer: "Yes, you can cancel your subscription at any time. Your access will remain active until the end of your current billing period." },
   { question: "What is included in the free trial?", answer: "The 14-day free trial gives you full access to all Pro features. You can build, backtest, and run live strategies to see the value before paying." },
   { question: "How does premium execution routing work?", answer: "Premium routing reduces latency by connecting directly to exchange APIs through our dedicated institutional-grade servers, ensuring faster trade execution." },
   { question: "Can I upgrade or downgrade later?", answer: "Absolutely. You can change your plan at any time. Prorated charges or credits will be automatically applied to your account." },
-]
-
-const CRYPTO_OPTIONS = [
-  { id: 'btc', name: 'Bitcoin', symbol: 'BTC', network: 'Bitcoin Network', address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh' },
-  { id: 'eth', name: 'Ethereum', symbol: 'ETH', network: 'ERC-20', address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F' },
-  { id: 'sol', name: 'Solana', symbol: 'SOL', network: 'Solana Network', address: 'HN7cABqLq46Es1jh92dQQisAq662SmxELLLsHHe4YWrH' },
-  { id: 'usdt', name: 'USDT', symbol: 'USDT', network: 'TRC-20', address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t' }
 ]
 
 const Tooltip = ({ text, children }: { text: string, children: React.ReactNode }) => (
@@ -37,21 +33,84 @@ export default function PricingPage() {
   
   // Checkout State
   const [checkoutPlan, setCheckoutPlan] = React.useState<'PRO' | 'ELITE' | null>(null)
-  const [selectedCrypto, setSelectedCrypto] = React.useState(CRYPTO_OPTIONS[0])
-  const [copied, setCopied] = React.useState(false)
+  const [copiedAddress, setCopiedAddress] = React.useState(false)
+  const [copiedAmount, setCopiedAmount] = React.useState(false)
   const [verifying, setVerifying] = React.useState(false)
+  const [txHash, setTxHash] = React.useState('')
+  const [btcPrice, setBtcPrice] = React.useState(67500)
+  const [orderExpiry, setOrderExpiry] = React.useState(900) // 15 mins in seconds
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(selectedCrypto.address)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  // Fetch live BTC price
+  React.useEffect(() => {
+    fetch('/api/prices?symbols=BTC/USDT')
+      .then(res => res.json())
+      .then(data => {
+        if (data.prices && data.prices['BTC/USDT']) {
+          setBtcPrice(data.prices['BTC/USDT'])
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  // Expiration countdown
+  React.useEffect(() => {
+    if (!checkoutPlan) return
+    const timer = setInterval(() => {
+      setOrderExpiry(prev => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [checkoutPlan])
+
+  const planPriceUSD = checkoutPlan === 'PRO' 
+    ? (isAnnual ? 540 : 59) 
+    : (isAnnual ? 1428 : 149)
+
+  const btcAmount = +(planPriceUSD / btcPrice).toFixed(6)
+  const bip21Uri = `bitcoin:${MERCHANT_BTC_ADDRESS}?amount=${btcAmount}&label=AlgoText%20VIP`
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(bip21Uri)}&margin=8`
+
+  const handleCopyAddress = () => {
+    navigator.clipboard.writeText(MERCHANT_BTC_ADDRESS)
+    setCopiedAddress(true)
+    toast.success("Bitcoin address copied to clipboard!")
+    setTimeout(() => setCopiedAddress(false), 2500)
   }
 
-  const handleVerify = () => {
+  const handleCopyAmount = () => {
+    navigator.clipboard.writeText(btcAmount.toString())
+    setCopiedAmount(true)
+    toast.success(`Copied ${btcAmount} BTC to clipboard!`)
+    setTimeout(() => setCopiedAmount(false), 2500)
+  }
+
+  const handleVerify = async () => {
     setVerifying(true)
-    setTimeout(() => {
-      router.push("/checkout/verify")
-    }, 800)
+    try {
+      const orderId = `INV-BTC-${Date.now().toString(36).toUpperCase()}`
+      // Navigate to verification pipeline with order details
+      const params = new URLSearchParams({
+        orderId,
+        plan: checkoutPlan || 'PRO',
+        cycle: isAnnual ? 'annual' : 'monthly',
+        amountUSD: planPriceUSD.toString(),
+        amountBTC: btcAmount.toString(),
+        txHash: txHash.trim() || 'pending',
+        address: MERCHANT_BTC_ADDRESS
+      })
+      
+      setTimeout(() => {
+        router.push(`/checkout/verify?${params.toString()}`)
+      }, 600)
+    } catch {
+      setVerifying(false)
+      toast.error("Failed to submit payment confirmation")
+    }
+  }
+
+  const formatCountdown = (secs: number) => {
+    const m = Math.floor(secs / 60)
+    const s = secs % 60
+    return `${m}:${s.toString().padStart(2, '0')}`
   }
 
   return (
@@ -82,7 +141,7 @@ export default function PricingPage() {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             className="mx-auto max-w-[650px] text-lg md:text-xl text-text-secondary leading-relaxed font-medium"
           >
-            Automate your success without emotion. Choose a predictable flat-rate plan and unlock institutional-grade AI trading capabilities. 
+            Automate your success without emotion. Choose a predictable flat-rate plan and unlock institutional-grade AI trading capabilities. Pay via Bitcoin.
           </motion.p>
         </div>
 
@@ -99,249 +158,186 @@ export default function PricingPage() {
               {!isAnnual && (
                 <motion.div layoutId="active-pill" className="absolute inset-0 bg-text-primary rounded-full -z-10 shadow-lg" transition={{ type: "spring", stiffness: 400, damping: 30 }} />
               )}
-              <span className="relative z-10">Pay Monthly</span>
+              Monthly
             </button>
             <button 
               onClick={() => setIsAnnual(true)}
-              className={`relative w-40 py-3.5 text-sm font-bold rounded-full z-10 transition-colors duration-300 flex items-center justify-center gap-2 ${isAnnual ? 'text-white' : 'text-text-secondary hover:text-text-primary'}`}
+              className={`relative w-44 py-3.5 text-sm font-bold rounded-full z-10 transition-colors duration-300 flex items-center justify-center gap-1.5 ${isAnnual ? 'text-white' : 'text-text-secondary hover:text-text-primary'}`}
             >
               {isAnnual && (
                 <motion.div layoutId="active-pill" className="absolute inset-0 bg-text-primary rounded-full -z-10 shadow-lg" transition={{ type: "spring", stiffness: 400, damping: 30 }} />
               )}
-              <span className="relative z-10">Pay Annually</span>
+              Annual
+              <span className={`text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full ${isAnnual ? 'bg-accent-green text-black' : 'bg-accent-green/20 text-accent-green'}`}>
+                Save 25%
+              </span>
             </button>
-            
-            {/* Savings Badge */}
-            <motion.div 
-              initial={false}
-              animate={{ opacity: isAnnual ? 1 : 0.5, scale: isAnnual ? 1 : 0.9, y: isAnnual ? 0 : 5 }}
-              className="absolute -top-5 -right-8 text-[11px] font-extrabold text-white bg-gradient-to-r from-blue-600 to-cyan-500 px-3 py-1.5 rounded-full shadow-lg shadow-blue-500/30 rotate-6 border border-white/20"
-            >
-              Save 24%
-            </motion.div>
           </div>
         </motion.div>
 
-        {/* Pricing Cards */}
-        <div className="grid lg:grid-cols-3 gap-8 max-w-[1200px] mx-auto mb-32 items-center">
+        {/* Pricing Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch mb-32">
           
-          {/* Basic */}
+          {/* FREE PLAN */}
           <motion.div 
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-            onHoverStart={() => setHoveredTier('basic')}
-            onHoverEnd={() => setHoveredTier(null)}
-            className={`rounded-[2.5rem] border ${hoveredTier === 'basic' ? 'border-text-secondary/40 bg-bg-surface/80' : 'border-bg-border bg-bg-surface/40'} backdrop-blur-xl p-8 flex flex-col transition-all duration-500 shadow-2xl relative overflow-hidden`}
+            initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+            className="relative bg-bg-surface border border-bg-border rounded-[2.5rem] p-8 flex flex-col justify-between shadow-xl"
           >
-            <h3 className="text-2xl font-bold text-text-primary mb-2">Basic</h3>
-            <p className="text-text-secondary text-sm mb-8 min-h-[40px] font-medium leading-relaxed">Perfect for beginners building their first automated strategies.</p>
-            <div className="mb-8 pb-8 border-b border-bg-border/50">
-              <div className="flex items-end gap-1">
-                <span className="text-5xl font-extrabold text-text-primary tracking-tight">$0</span>
-                <span className="text-text-secondary font-semibold mb-1">/mo</span>
+            <div>
+              <div className="flex items-center gap-2 text-text-secondary text-sm font-bold uppercase tracking-wider mb-4">
+                <Cpu className="h-4 w-4" /> Starter
               </div>
-              <div className="text-sm text-text-secondary mt-2 font-medium">Free forever. No credit card.</div>
+              <h3 className="text-2xl font-bold text-text-primary mb-2">Paper Sandbox</h3>
+              <p className="text-text-secondary text-sm mb-6">Test strategies with simulated capital & testnets.</p>
+              <div className="flex items-baseline gap-1 mb-8">
+                <span className="text-5xl font-extrabold text-text-primary tracking-tight">$0</span>
+                <span className="text-text-secondary text-sm font-bold">/ forever</span>
+              </div>
+
+              <div className="h-px bg-bg-border mb-8" />
+
+              <div className="space-y-4 mb-8">
+                {[
+                  "1 Active Paper Bot",
+                  "NLP Strategy Compiler",
+                  "10 Backtest Runs / day",
+                  "Standard Webhook Execution",
+                  "Community Discord Support"
+                ].map(feature => (
+                  <div key={feature} className="flex items-center gap-3 text-sm text-text-secondary">
+                    <Check className="h-4 w-4 text-accent-blue shrink-0" />
+                    <span>{feature}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <ul className="space-y-4 mb-10 flex-1">
-              {[
-                { name: "1 Active Trading Bot", tooltip: "Maximum number of bots running concurrently." },
-                { name: "2 Connected Exchanges", tooltip: "Link up to two API keys from supported exchanges." },
-                { name: "Standard Execution Speed", tooltip: "Trades are routed and executed within 60 seconds of signal." },
-                { name: "3 Months Backtesting History" },
-                { name: "Community Support" }
-              ].map((feature, i) => (
-                <li key={i} className="flex items-start gap-3 text-text-secondary text-sm font-medium">
-                  <Check className="h-5 w-5 text-text-primary shrink-0" /> 
-                  <span className="leading-tight">
-                    {feature.name}
-                    {feature.tooltip && (
-                      <Tooltip text={feature.tooltip}>
-                        <Info className="h-4 w-4 inline-block ml-1 text-text-tertiary hover:text-text-primary cursor-help transition-colors" />
-                      </Tooltip>
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <button className="w-full py-4 rounded-2xl font-bold bg-white/5 text-text-primary border border-bg-border hover:bg-white/10 hover:border-text-secondary/50 transition-all duration-300 text-sm shadow-sm backdrop-blur-md">
-              Start Building
+
+            <button 
+              onClick={() => router.push("/builder")}
+              className="w-full py-4 rounded-2xl font-bold border border-bg-border bg-bg-elevated hover:bg-bg-border/50 text-text-primary transition-all duration-300"
+            >
+              Start Free
             </button>
           </motion.div>
 
-          {/* Pro (Highlighted) */}
+          {/* PRO PLAN (POPULAR) */}
           <motion.div 
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-            onHoverStart={() => setHoveredTier('pro')}
-            onHoverEnd={() => setHoveredTier(null)}
-            className={`rounded-[2.5rem] bg-bg-surface/80 backdrop-blur-2xl p-10 flex flex-col relative transition-all duration-500 z-20 ${hoveredTier === 'pro' ? 'scale-[1.03] shadow-[0_0_80px_rgba(59,130,246,0.15)]' : 'scale-100 shadow-[0_0_50px_rgba(59,130,246,0.1)]'}`}
+            initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+            className="relative bg-bg-surface border-2 border-accent-blue rounded-[2.5rem] p-8 flex flex-col justify-between shadow-[0_0_50px_rgba(59,130,246,0.15)] md:-translate-y-4"
           >
-            {/* Animated Gradient Border */}
-            <div className="absolute inset-0 rounded-[2.5rem] p-[2px] bg-gradient-to-br from-accent-blue/80 via-blue-400/40 to-cyan-400/80 pointer-events-none mask-border" style={{ WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)', WebkitMaskComposite: 'xor', maskComposite: 'exclude' }} />
-            
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-accent-blue to-cyan-500 text-white px-5 py-1.5 text-xs font-extrabold rounded-full uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-blue-500/30 border border-white/20">
-              <Zap className="h-3.5 w-3.5 fill-white" /> Most Popular
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-[11px] font-extrabold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
+              <Star className="h-3 w-3 fill-white" /> Most Popular
             </div>
-            
-            <h3 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 mb-2">Pro</h3>
-            <p className="text-text-secondary text-sm mb-8 min-h-[40px] font-medium leading-relaxed">For active traders who need serious power, speed, and AI tools.</p>
-            <div className="mb-8 pb-8 border-b border-bg-border relative">
-              <AnimatePresence mode="wait">
-                <motion.div 
-                  key={isAnnual ? 'annual' : 'monthly'}
-                  initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}
-                  className="flex items-end gap-1"
-                >
-                  <span className="text-6xl font-extrabold text-text-primary tracking-tight">${isAnnual ? '45' : '59'}</span>
-                  <span className="text-text-secondary font-semibold mb-2">/mo</span>
-                </motion.div>
-              </AnimatePresence>
-              <div className="text-sm font-bold text-accent-blue mt-3 h-5">
-                {isAnnual ? 'Billed $540 annually' : 'Billed monthly'}
+
+            <div>
+              <div className="flex items-center gap-2 text-accent-blue text-sm font-bold uppercase tracking-wider mb-4">
+                <Zap className="h-4 w-4" /> Professional
+              </div>
+              <h3 className="text-2xl font-bold text-text-primary mb-2">Live Quant Pro</h3>
+              <p className="text-text-secondary text-sm mb-6">Automate real capital across Binance, OKX, & 60+ exchanges.</p>
+              <div className="flex items-baseline gap-1 mb-8">
+                <span className="text-5xl font-extrabold text-text-primary tracking-tight">
+                  {isAnnual ? "$45" : "$59"}
+                </span>
+                <span className="text-text-secondary text-sm font-bold">/ month</span>
+                {isAnnual && <span className="text-xs text-text-tertiary ml-1">(billed $540/yr)</span>}
+              </div>
+
+              <div className="h-px bg-bg-border mb-8" />
+
+              <div className="space-y-4 mb-8">
+                {[
+                  "10 Active Live Bots",
+                  "Institutional-Grade Low Latency",
+                  "Unlimited Multi-Year Backtests",
+                  "Binance / OKX / LBank REST & WebSockets",
+                  "Sub-Second Order Routing",
+                  "Custom DSL Webhook Triggers",
+                  "Priority Email & Telegram Support"
+                ].map(feature => (
+                  <div key={feature} className="flex items-center gap-3 text-sm text-text-primary font-medium">
+                    <Check className="h-4 w-4 text-accent-green shrink-0" />
+                    <span>{feature}</span>
+                  </div>
+                ))}
               </div>
             </div>
-            <ul className="space-y-4 mb-10 flex-1">
-              {[
-                { name: "10 Live Trading Bots", tooltip: "Run up to 10 automated strategies simultaneously." }, 
-                { name: "5 Connected Exchanges" }, 
-                { name: "Premium Execution Routing", tooltip: "Trades executed in under 2 seconds directly on our institutional lines." }, 
-                { name: "5 Years Backtesting History" },
-                { name: "AI Strategy Builder Access", tooltip: "Use our generative AI to build complex strategies purely from text prompts." }
-              ].map((feature, i) => (
-                <li key={i} className="flex items-start gap-3 text-text-secondary text-sm font-semibold">
-                  <Check className="h-5 w-5 text-accent-blue shrink-0 drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]" /> 
-                  <span className="text-text-primary leading-tight">
-                    {feature.name}
-                    {feature.tooltip && (
-                      <Tooltip text={feature.tooltip}>
-                        <Info className="h-4 w-4 inline-block ml-1.5 text-text-tertiary hover:text-accent-blue cursor-help transition-colors" />
-                      </Tooltip>
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ul>
+
             <button 
               onClick={() => setCheckoutPlan('PRO')}
-              className="w-full py-4 rounded-2xl font-extrabold bg-gradient-to-r from-blue-600 to-accent-blue text-white shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_40px_rgba(59,130,246,0.6)] hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 group"
+              className="w-full py-4 rounded-2xl font-bold bg-accent-blue hover:bg-blue-600 text-white shadow-lg shadow-accent-blue/30 transition-all duration-300 flex items-center justify-center gap-2"
             >
-              Get Pro Now <ExternalLink className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              <Bitcoin className="h-4 w-4" />
+              Pay with Bitcoin (PRO)
             </button>
-            <p className="text-center text-[11px] font-bold text-text-tertiary mt-5 flex items-center justify-center gap-1.5 uppercase tracking-wider">
-              <Lock className="h-3 w-3" /> Non-Custodial Crypto Pay
-            </p>
           </motion.div>
 
-          {/* Elite */}
+          {/* ELITE PLAN */}
           <motion.div 
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-            onHoverStart={() => setHoveredTier('elite')}
-            onHoverEnd={() => setHoveredTier(null)}
-            className={`rounded-[2.5rem] border ${hoveredTier === 'elite' ? 'border-yellow-500/40 bg-bg-surface/80' : 'border-bg-border bg-bg-surface/40'} backdrop-blur-xl p-8 flex flex-col transition-all duration-500 shadow-2xl relative overflow-hidden`}
+            initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
+            className="relative bg-bg-surface border border-bg-border rounded-[2.5rem] p-8 flex flex-col justify-between shadow-xl"
           >
-            <h3 className="text-2xl font-bold text-text-primary mb-2 flex items-center gap-2">
-              Elite <Crown className="h-6 w-6 text-yellow-500 drop-shadow-[0_0_12px_rgba(234,179,8,0.6)]" />
-            </h3>
-            <p className="text-text-secondary text-sm mb-8 min-h-[40px] font-medium leading-relaxed">Institutional grade features for funds, prop firms, and whales.</p>
-            <div className="mb-8 pb-8 border-b border-bg-border/50">
-              <AnimatePresence mode="wait">
-                <motion.div 
-                  key={isAnnual ? 'annual' : 'monthly'}
-                  initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}
-                  className="flex items-end gap-1"
-                >
-                  <span className="text-5xl font-extrabold text-text-primary tracking-tight">${isAnnual ? '119' : '149'}</span>
-                  <span className="text-text-secondary font-semibold mb-1">/mo</span>
-                </motion.div>
-              </AnimatePresence>
-              <div className="text-sm font-medium text-text-tertiary mt-2 h-5">
-                {isAnnual ? 'Billed $1,428 annually' : 'Billed monthly'}
+            <div>
+              <div className="flex items-center gap-2 text-text-secondary text-sm font-bold uppercase tracking-wider mb-4">
+                <Crown className="h-4 w-4 text-yellow-500" /> Institutional
+              </div>
+              <h3 className="text-2xl font-bold text-text-primary mb-2">Elite Fund</h3>
+              <p className="text-text-secondary text-sm mb-6">Dedicated co-located execution & bespoke algorithmic pipelines.</p>
+              <div className="flex items-baseline gap-1 mb-8">
+                <span className="text-5xl font-extrabold text-text-primary tracking-tight">
+                  {isAnnual ? "$119" : "$149"}
+                </span>
+                <span className="text-text-secondary text-sm font-bold">/ month</span>
+                {isAnnual && <span className="text-xs text-text-tertiary ml-1">(billed $1,428/yr)</span>}
+              </div>
+
+              <div className="h-px bg-bg-border mb-8" />
+
+              <div className="space-y-4 mb-8">
+                {[
+                  "Unlimited Live Bots",
+                  "Co-Located Dedicated Servers (<5ms)",
+                  "Custom Python Strategy Engine",
+                  "Multi-Exchange Cross Arbitrage",
+                  "Dedicated Quant Engineer",
+                  "Private Slack / Telegram Channel",
+                  "SLA 99.99% Uptime Guarantee"
+                ].map(feature => (
+                  <div key={feature} className="flex items-center gap-3 text-sm text-text-secondary">
+                    <Check className="h-4 w-4 text-accent-blue shrink-0" />
+                    <span>{feature}</span>
+                  </div>
+                ))}
               </div>
             </div>
-            <ul className="space-y-4 mb-10 flex-1">
-              {[
-                { name: "Unlimited Trading Bots" }, 
-                { name: "Ultra-Low Latency VPS", tooltip: "Trades executed in under 50ms via co-located servers near exchange matching engines." }, 
-                { name: "Full Historical Tick Data", tooltip: "Access to order-book level historical data for ultra-precise backtesting." }, 
-                { name: "Custom Webhooks & API" },
-                { name: "Dedicated Account Manager" }
-              ].map((feature, i) => (
-                <li key={i} className="flex items-start gap-3 text-text-secondary text-sm font-medium">
-                  <Check className="h-5 w-5 text-yellow-500 shrink-0" /> 
-                  <span className="leading-tight">
-                    {feature.name}
-                    {feature.tooltip && (
-                      <Tooltip text={feature.tooltip}>
-                        <Info className="h-4 w-4 inline-block ml-1.5 text-text-tertiary hover:text-yellow-500 cursor-help transition-colors" />
-                      </Tooltip>
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ul>
+
             <button 
               onClick={() => setCheckoutPlan('ELITE')}
-              className="w-full py-4 rounded-2xl font-bold bg-bg-primary text-text-primary border border-bg-border hover:bg-white/10 hover:border-yellow-500/30 transition-all duration-300 text-sm shadow-sm"
+              className="w-full py-4 rounded-2xl font-bold border border-bg-border bg-bg-elevated hover:bg-bg-border/50 text-text-primary transition-all duration-300 flex items-center justify-center gap-2"
             >
-              Contact Sales
+              <Bitcoin className="h-4 w-4" />
+              Pay with Bitcoin (Elite)
             </button>
           </motion.div>
+
         </div>
 
-        {/* Enterprise Feature Comparison */}
-        <div className="max-w-[1000px] mx-auto mb-32 hidden md:block">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-extrabold text-text-primary tracking-tight mb-4">Deep Feature Comparison</h2>
-            <p className="text-text-secondary">Compare everything before making your decision.</p>
-          </div>
-          
-          <div className="border border-bg-border rounded-3xl overflow-hidden bg-bg-surface/50 backdrop-blur-xl shadow-2xl relative">
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-bg-border to-transparent" />
-            <table className="w-full text-left border-collapse relative">
-              <thead className="sticky top-0 bg-bg-surface/90 backdrop-blur-md z-10">
-                <tr className="border-b border-bg-border">
-                  <th className="p-6 text-text-secondary font-bold uppercase tracking-wider text-xs w-1/3">Core Features</th>
-                  <th className="p-6 text-text-primary font-bold w-[22%] text-center text-lg">Basic</th>
-                  <th className="p-6 text-accent-blue font-bold w-[22%] text-center bg-accent-blue/[0.03] border-x border-accent-blue/10 text-lg shadow-[inset_0_2px_0_rgba(59,130,246,0.5)]">Pro</th>
-                  <th className="p-6 text-text-primary font-bold w-[22%] text-center text-lg">Elite</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-bg-border/50">
-                {[
-                  { name: "Active Live Bots", basic: "1", pro: "10", elite: "Unlimited" },
-                  { name: "Connected Exchanges", basic: "2", pro: "5", elite: "Unlimited" },
-                  { name: "Backtesting History", basic: "3 Months", pro: "5 Years", elite: "Unlimited (Tick-level)" },
-                  { name: "Execution Speed", basic: "Standard (<60s)", pro: "Premium (<2s)", elite: "Ultra-Low (<50ms)" },
-                  { name: "AI Strategy Builder", basic: false, pro: true, elite: true },
-                  { name: "TradingView Webhooks", basic: false, pro: false, elite: true },
-                  { name: "Paper Trading Accounts", basic: "1", pro: "5", elite: "Unlimited" },
-                  { name: "Support Level", basic: "Community", pro: "Priority SLA", elite: "Dedicated Slack" },
-                ].map((row, i) => (
-                  <tr key={i} className="group hover:bg-white/[0.03] transition-colors duration-300">
-                    <td className="p-6 text-text-primary font-semibold text-sm group-hover:text-accent-blue transition-colors">{row.name}</td>
-                    <td className="p-6 text-center">
-                      {typeof row.basic === 'boolean' ? (
-                        row.basic ? <Check className="h-5 w-5 mx-auto text-text-primary" /> : <X className="h-5 w-5 mx-auto text-text-tertiary/40" />
-                      ) : <span className="text-text-secondary font-medium">{row.basic}</span>}
-                    </td>
-                    <td className="p-6 text-center bg-accent-blue/[0.02] border-x border-accent-blue/10 group-hover:bg-accent-blue/[0.05] transition-colors duration-300">
-                      {typeof row.pro === 'boolean' ? (
-                        row.pro ? <Check className="h-5 w-5 mx-auto text-accent-blue drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" /> : <X className="h-5 w-5 mx-auto text-text-tertiary/40" />
-                      ) : <span className="text-text-primary font-bold">{row.pro}</span>}
-                    </td>
-                    <td className="p-6 text-center">
-                      {typeof row.elite === 'boolean' ? (
-                        row.elite ? <Check className="h-5 w-5 mx-auto text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]" /> : <X className="h-5 w-5 mx-auto text-text-tertiary/40" />
-                      ) : <span className="text-text-secondary font-medium">{row.elite}</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* FAQs */}
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl font-extrabold text-text-primary text-center mb-12">Frequently Asked Questions</h2>
+          <div className="space-y-6">
+            {faqs.map((faq, i) => (
+              <div key={i} className="p-6 rounded-2xl border border-bg-border bg-bg-surface">
+                <h4 className="font-bold text-text-primary mb-2">{faq.question}</h4>
+                <p className="text-sm text-text-secondary leading-relaxed">{faq.answer}</p>
+              </div>
+            ))}
           </div>
         </div>
 
       </section>
 
-      {/* Web3 Coinbase-Style Checkout Modal */}
+      {/* ═══ Bitcoin Payment Modal ═══ */}
       <AnimatePresence>
         {checkoutPlan && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -350,7 +346,7 @@ export default function PricingPage() {
               animate={{ opacity: 1, backdropFilter: "blur(8px)" }} 
               exit={{ opacity: 0, backdropFilter: "blur(0px)" }} 
               onClick={() => setCheckoutPlan(null)}
-              className="absolute inset-0 bg-black/70"
+              className="absolute inset-0 bg-black/75"
             />
             
             <motion.div
@@ -358,102 +354,163 @@ export default function PricingPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-md bg-bg-surface border border-bg-border rounded-[2rem] shadow-2xl overflow-hidden flex flex-col"
+              className="relative w-full max-w-lg bg-bg-surface border border-bg-border rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-              {/* Header */}
-              <div className="p-6 flex justify-between items-center bg-bg-primary/80 border-b border-bg-border backdrop-blur-xl relative">
-                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent-blue to-cyan-400" />
-                <div className="flex flex-col">
-                  <h2 className="text-xl font-extrabold text-text-primary tracking-tight">Commerce</h2>
-                  <p className="text-sm font-medium text-text-secondary mt-1">
-                    Paying for {checkoutPlan === 'PRO' ? (isAnnual ? 'Pro (Annual)' : 'Pro (Monthly)') : (isAnnual ? 'Elite (Annual)' : 'Elite (Monthly)')}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-text-primary">
-                    {checkoutPlan === 'PRO' ? (isAnnual ? '$540' : '$59') : (isAnnual ? '$1,428' : '$149')}
+              {/* Top Accent Gradient */}
+              <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600" />
+
+              {/* Modal Header */}
+              <div className="p-6 pb-4 flex justify-between items-center bg-bg-surface border-b border-bg-border">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500">
+                    <Bitcoin className="h-6 w-6" />
                   </div>
-                  <button onClick={() => setCheckoutPlan(null)} className="absolute top-6 right-6 h-8 w-8 rounded-full hover:bg-white/10 flex items-center justify-center text-text-tertiary hover:text-text-primary transition-colors">
+                  <div>
+                    <h2 className="text-lg font-extrabold text-text-primary">Receive Bitcoin</h2>
+                    <div className="flex items-center gap-2 text-xs text-text-secondary mt-0.5">
+                      <span className="font-semibold text-text-primary">{checkoutPlan} Plan ({isAnnual ? 'Annual' : 'Monthly'})</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1 text-amber-500 font-mono">
+                        <Clock className="h-3 w-3" /> {formatCountdown(orderExpiry)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="text-xl font-bold text-text-primary">${planPriceUSD}</div>
+                    <div className="text-xs font-mono text-amber-500 font-bold">{btcAmount} BTC</div>
+                  </div>
+                  <button 
+                    onClick={() => setCheckoutPlan(null)} 
+                    className="h-8 w-8 rounded-full hover:bg-bg-elevated flex items-center justify-center text-text-tertiary hover:text-text-primary transition-colors"
+                  >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
               </div>
 
-              {/* Body */}
-              <div className="p-6 bg-bg-surface flex flex-col gap-6">
+              {/* Modal Body */}
+              <div className="p-6 overflow-y-auto space-y-5">
                 
-                {/* Network Selection */}
-                <div>
-                  <h4 className="text-xs font-bold text-text-secondary mb-3 uppercase tracking-wider">Pay With</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    {CRYPTO_OPTIONS.map((crypto) => (
-                      <button
-                        key={crypto.id}
-                        onClick={() => setSelectedCrypto(crypto)}
-                        className={`flex items-center gap-3 p-3.5 rounded-2xl border transition-all duration-300 ${selectedCrypto.id === crypto.id ? 'border-accent-blue bg-accent-blue/10 shadow-[0_0_20px_rgba(59,130,246,0.15)]' : 'border-bg-border hover:border-text-secondary/50 bg-bg-primary/30'}`}
-                      >
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${selectedCrypto.id === crypto.id ? 'bg-accent-blue text-white' : 'bg-bg-border text-text-tertiary'}`}>
-                          <Bitcoin className="h-5 w-5" />
-                        </div>
-                        <div className="text-left">
-                          <div className={`font-bold text-sm ${selectedCrypto.id === crypto.id ? 'text-text-primary' : 'text-text-secondary'}`}>{crypto.symbol}</div>
-                          <div className="text-[10px] text-text-tertiary uppercase font-bold tracking-wider">{crypto.network}</div>
-                        </div>
-                      </button>
-                    ))}
+                {/* QR Code Card */}
+                <div className="bg-bg-base rounded-2xl p-5 border border-bg-border flex flex-col items-center shadow-inner">
+                  {/* Bitcoin Asset Dropdown Pill */}
+                  <div className="mb-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-500 text-xs font-bold">
+                    <Bitcoin className="h-3.5 w-3.5" />
+                    <span>Bitcoin Network (Native SegWit)</span>
+                  </div>
+
+                  {/* QR Image */}
+                  <div className="p-3 bg-white rounded-2xl shadow-xl mb-4 relative group">
+                    <img 
+                      src={qrCodeUrl}
+                      alt="Bitcoin QR Code"
+                      className="w-44 h-44 object-contain"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="h-9 w-9 rounded-full bg-amber-500 flex items-center justify-center text-white shadow-lg border-2 border-white">
+                        <Bitcoin className="h-5 w-5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Address Display */}
+                  <div className="w-full text-center">
+                    <div className="font-mono text-[13px] font-bold text-text-primary break-all bg-bg-elevated/70 p-3 rounded-xl border border-bg-border select-all">
+                      {MERCHANT_BTC_ADDRESS}
+                    </div>
                   </div>
                 </div>
 
-                {/* Deposit Address */}
-                <div className="bg-bg-primary/50 rounded-3xl p-6 border border-bg-border flex flex-col items-center shadow-inner">
-                  <div className="mb-6 p-3 bg-white rounded-2xl shadow-xl">
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(selectedCrypto.address)}`}
-                      alt="QR Code"
-                      className="w-36 h-36 object-contain"
+                {/* Important Warning Banner */}
+                <div className="rounded-xl bg-amber-500/10 border border-amber-500/25 p-3.5 flex items-start gap-3 text-amber-500">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <p className="text-[12px] font-medium leading-relaxed">
+                    <strong>Notice:</strong> Only send Bitcoin (BTC) assets to this address. Other crypto assets sent will be lost forever.
+                  </p>
+                </div>
+
+                {/* Action Buttons: Copy Address & Copy Amount */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={handleCopyAddress}
+                    className={`py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
+                      copiedAddress 
+                        ? 'bg-accent-green/20 border-accent-green text-accent-green' 
+                        : 'bg-bg-elevated border-bg-border hover:border-text-secondary text-text-primary'
+                    }`}
+                  >
+                    {copiedAddress ? <CheckCircle2 className="h-4 w-4 text-accent-green" /> : <Copy className="h-4 w-4" />}
+                    <span>{copiedAddress ? 'Address Copied!' : 'Copy Address'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleCopyAmount}
+                    className={`py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
+                      copiedAmount 
+                        ? 'bg-accent-green/20 border-accent-green text-accent-green' 
+                        : 'bg-bg-elevated border-bg-border hover:border-text-secondary text-text-primary'
+                    }`}
+                  >
+                    {copiedAmount ? <CheckCircle2 className="h-4 w-4 text-accent-green" /> : <Bitcoin className="h-4 w-4" />}
+                    <span>{copiedAmount ? 'BTC Copied!' : `Copy ${btcAmount} BTC`}</span>
+                  </button>
+                </div>
+
+                {/* Optional TxID Input */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-text-tertiary uppercase tracking-wider">
+                    Transaction ID / Hash (Optional)
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      placeholder="Paste 64-character Bitcoin TxID..."
+                      value={txHash}
+                      onChange={(e) => setTxHash(e.target.value)}
+                      className="w-full bg-bg-base border border-bg-border rounded-xl py-3 pl-3.5 pr-20 text-text-primary font-mono text-xs outline-none focus:border-amber-500/50 transition-colors"
                     />
-                  </div>
-                  
-                  <div className="w-full">
-                    <div className="flex justify-center items-center mb-3">
-                      <span className="text-xs font-bold text-text-secondary uppercase tracking-widest">Send to this address</span>
-                    </div>
-                    <div className="relative group">
-                      <input 
-                        readOnly 
-                        value={selectedCrypto.address} 
-                        className="w-full bg-bg-surface border border-bg-border rounded-xl py-4 pl-4 pr-12 text-text-primary font-mono text-sm outline-none shadow-sm focus:border-accent-blue/50 transition-colors cursor-text"
-                      />
-                      <button 
-                        onClick={handleCopy}
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-lg flex items-center justify-center transition-all duration-300 ${copied ? 'bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)]' : 'bg-bg-border hover:bg-text-secondary/20 text-text-secondary'}`}
-                      >
-                        {copied ? <CheckCircle2 className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const text = await navigator.clipboard.readText()
+                          if (text) setTxHash(text.trim())
+                        } catch {}
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-semibold bg-bg-elevated hover:bg-bg-border rounded-lg text-text-secondary transition-colors"
+                    >
+                      Paste
+                    </button>
                   </div>
                 </div>
 
               </div>
 
-              {/* Footer */}
-              <div className="p-6 pt-0 bg-bg-surface flex flex-col gap-4">
+              {/* Modal Footer */}
+              <div className="p-6 pt-3 bg-bg-surface border-t border-bg-border flex flex-col gap-3">
                 <button 
                   onClick={handleVerify}
                   disabled={verifying}
-                  className="w-full py-4 rounded-xl font-bold bg-text-primary text-bg-primary shadow-lg hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-3.5 rounded-xl font-bold bg-amber-500 hover:bg-amber-600 text-black shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                 >
                   {verifying ? (
                     <>
-                      <div className="h-4 w-4 rounded-full border-2 border-bg-primary/30 border-t-bg-primary animate-spin" />
-                      Awaiting Block Confirmation...
+                      <div className="h-4 w-4 rounded-full border-2 border-black/30 border-t-black animate-spin" />
+                      <span>Initiating Confirmation Pipeline...</span>
                     </>
                   ) : (
-                    "I have transferred the funds"
+                    <>
+                      <span>I Have Sent The Bitcoin</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
                   )}
                 </button>
-                <div className="flex items-center justify-center gap-2 text-[11px] font-bold text-text-tertiary uppercase tracking-widest">
-                  <Lock className="h-3 w-3" /> End-to-end encrypted
+                
+                <div className="flex items-center justify-center gap-2 text-[10.5px] font-semibold text-text-tertiary uppercase tracking-wider">
+                  <Lock className="h-3 w-3" /> Direct On-Chain Settlement • Instant Verification
                 </div>
               </div>
 
