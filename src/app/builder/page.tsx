@@ -9,10 +9,11 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { 
   Play, ShieldAlert, FlaskConical, Code2, CheckCircle2, Zap, ShieldCheck, 
-  ChevronUp, ChevronDown, Timer, BarChart3, Sparkles, LayoutGrid, Terminal, 
-  Sliders, Layers, Flame, RefreshCw, Dna, Activity
+  ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X, Timer, BarChart3, Sparkles, LayoutGrid, Terminal, 
+  Sliders, Layers, Flame, RefreshCw, Dna, Activity, BrainCircuit
 } from "lucide-react"
 import { SettingsPanel } from "@/components/builder/SettingsPanel"
+import { NodePropertiesPanel } from "@/components/builder/NodePropertiesPanel"
 import { BacktestDrawer } from "@/components/builder/BacktestDrawer"
 import { AICopilot } from "@/components/builder/AICopilot"
 import { CodeViewer } from "@/components/builder/CodeViewer"
@@ -21,6 +22,8 @@ import { AutoOptimizerModal } from "@/components/builder/AutoOptimizerModal"
 import { ComplianceAuditModal } from "@/components/builder/ComplianceAuditModal"
 import { BlockLibrary } from "@/components/builder/BlockLibrary"
 import { QuantScratchpad } from "@/components/builder/QuantScratchpad"
+import { GeminiSettingsModal } from "@/components/builder/GeminiSettingsModal"
+import { StrategyBuildupHubModal } from "@/components/builder/StrategyBuildupHubModal"
 import dynamic from "next/dynamic"
 import { toast } from "sonner"
 
@@ -47,13 +50,18 @@ export default function BuilderPage() {
     workspaceMode,
     setWorkspaceMode,
     isOptimizerModalOpen,
-    setIsOptimizerModalOpen
+    setIsOptimizerModalOpen,
+    setIsGeminiModalOpen,
+    geminiApiKey,
+    aiModel,
+    selectedNodeId
   } = useBuilderStore()
   
   const { haltAllTrading } = usePaperTradingStore()
   const { getActiveAccount, setIsConnectModalOpen } = useExchangeStore()
 
-  const [showCode, setShowCode] = React.useState(true)
+  const [activeLeftPanel, setActiveLeftPanel] = React.useState<'copilot' | 'blocks' | 'settings' | null>('copilot')
+  const [showCode, setShowCode] = React.useState(false)
   const [isPaper, setIsPaper] = React.useState(true)
   const [isDeployModalOpen, setIsDeployModalOpen] = React.useState(false)
   const [isComplianceModalOpen, setIsComplianceModalOpen] = React.useState(false)
@@ -196,6 +204,16 @@ export default function BuilderPage() {
         {/* Right: Actions (Compliance, Optimizer, Backtest, Kill, Deploy) */}
         <div className="flex items-center gap-2 shrink-0">
           
+          {/* Gemini AI Engine Configuration */}
+          <button
+            onClick={() => setIsGeminiModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-accent-blue/30 bg-accent-blue/10 px-2.5 py-1 text-[11px] font-bold text-accent-blue hover:bg-accent-blue/20 transition-all"
+            title="Gemini Flash 8B AI Engine Settings (Free Tier)"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-accent-blue" />
+            <span className="hidden sm:inline">{geminiApiKey ? 'Gemini Active' : 'Gemini AI (Free)'}</span>
+          </button>
+
           {/* Pre-Flight Compliance Gate */}
           <button
             onClick={() => setIsComplianceModalOpen(true)}
@@ -280,13 +298,107 @@ export default function BuilderPage() {
       {/* ═══ Main Dynamic Body ═══ */}
       <div className="flex flex-1 overflow-hidden relative">
         {workspaceMode === 'canvas' && (
-          <>
-            <AICopilot />
-            <BlockLibrary />
-            
-            <div className="flex flex-1 flex-col overflow-hidden relative">
-              {/* Canvas */}
-              <div className="flex-1 relative min-h-[200px]">
+          <div className="flex flex-1 overflow-hidden relative h-full w-full">
+            {/* ═══ Slim Left Activity Bar (48px) ═══ */}
+            <div className="w-[48px] shrink-0 bg-bg-surface border-r border-bg-border flex flex-col items-center py-2.5 justify-between z-20 select-none">
+              <div className="flex flex-col items-center gap-2">
+                {/* AI Copilot Tab */}
+                <button
+                  onClick={() => setActiveLeftPanel(prev => prev === 'copilot' ? null : 'copilot')}
+                  className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+                    activeLeftPanel === 'copilot'
+                      ? 'bg-accent-blue/15 text-accent-blue border border-accent-blue/30 shadow-sm'
+                      : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
+                  }`}
+                  title="AI Copilot (Chat & Generation)"
+                >
+                  <BrainCircuit className="h-4 w-4" />
+                </button>
+
+                {/* Block Library Tab */}
+                <button
+                  onClick={() => setActiveLeftPanel(prev => prev === 'blocks' ? null : 'blocks')}
+                  className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+                    activeLeftPanel === 'blocks'
+                      ? 'bg-accent-blue/15 text-accent-blue border border-accent-blue/30 shadow-sm'
+                      : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
+                  }`}
+                  title="Quant Block Library (Drag & Drop Nodes)"
+                >
+                  <Layers className="h-4 w-4" />
+                </button>
+
+                {/* Quant Settings Tab */}
+                <button
+                  onClick={() => setActiveLeftPanel(prev => prev === 'settings' ? null : 'settings')}
+                  className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+                    activeLeftPanel === 'settings'
+                      ? 'bg-accent-blue/15 text-accent-blue border border-accent-blue/30 shadow-sm'
+                      : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
+                  }`}
+                  title="Strategy Venue & Risk Settings"
+                >
+                  <Sliders className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Bottom Activity Bar Controls */}
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  onClick={() => setActiveLeftPanel(prev => prev ? null : 'copilot')}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary hover:bg-bg-elevated hover:text-text-primary transition-colors"
+                  title={activeLeftPanel ? "Collapse sidebar (Maximize canvas)" : "Open sidebar"}
+                >
+                  {activeLeftPanel ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* ═══ Active Left Drawer (Single Panel) ═══ */}
+            {activeLeftPanel && (
+              <div className="w-[320px] shrink-0 border-r border-bg-border bg-bg-surface h-full flex flex-col overflow-hidden z-10 animate-in slide-in-from-left duration-200">
+                <div className="flex h-9 shrink-0 items-center justify-between px-3 border-b border-bg-border bg-bg-elevated/40 text-xs font-bold text-text-secondary">
+                  <span className="flex items-center gap-1.5">
+                    {activeLeftPanel === 'copilot' && (
+                      <>
+                        <BrainCircuit className="h-3.5 w-3.5 text-accent-blue" />
+                        <span>AI Copilot</span>
+                      </>
+                    )}
+                    {activeLeftPanel === 'blocks' && (
+                      <>
+                        <Layers className="h-3.5 w-3.5 text-accent-blue" />
+                        <span>Block Library</span>
+                      </>
+                    )}
+                    {activeLeftPanel === 'settings' && (
+                      <>
+                        <Sliders className="h-3.5 w-3.5 text-accent-blue" />
+                        <span>Quant Settings</span>
+                      </>
+                    )}
+                  </span>
+                  <button
+                    onClick={() => setActiveLeftPanel(null)}
+                    className="p-1 text-text-tertiary hover:text-text-primary hover:bg-bg-elevated rounded transition-colors"
+                    title="Close sidebar"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-hidden">
+                  {activeLeftPanel === 'copilot' && <AICopilot />}
+                  {activeLeftPanel === 'blocks' && <BlockLibrary />}
+                  {activeLeftPanel === 'settings' && <SettingsPanel />}
+                </div>
+              </div>
+            )}
+
+            {/* ═══ Center: Canvas & Bottom Status Bar / Code Drawer ═══ */}
+            <div className="flex flex-1 flex-col overflow-hidden relative h-full">
+              {/* ReactFlow Canvas Viewport */}
+              <div className="flex-1 relative h-full w-full overflow-hidden">
                 <StrategyCanvas />
               </div>
 
@@ -294,21 +406,56 @@ export default function BuilderPage() {
               {showCode && (
                 <>
                   <div 
-                    className={`h-[3px] cursor-row-resize bg-bg-border hover:bg-accent-blue/50 transition-colors shrink-0 flex items-center justify-center ${isResizing ? 'bg-accent-blue' : ''}`}
+                    className={`h-[4px] cursor-row-resize bg-bg-border hover:bg-accent-blue/50 transition-colors shrink-0 flex items-center justify-center ${isResizing ? 'bg-accent-blue' : ''}`}
                     onMouseDown={handleResizeStart}
                   >
-                    <div className="w-8 h-[3px] rounded-full bg-bg-border" />
+                    <div className="w-10 h-[3px] rounded-full bg-bg-border" />
                   </div>
-                  <div style={{ height: codeHeight }} className="min-h-[120px] max-h-[500px] border-t border-bg-border">
+                  <div style={{ height: codeHeight }} className="min-h-[120px] max-h-[500px] border-t border-bg-border bg-bg-base shrink-0 overflow-hidden">
                     <CodeViewer />
                   </div>
                 </>
               )}
+
+              {/* Sleek Bottom Status Bar */}
+              <div className="h-8 shrink-0 border-t border-bg-border bg-bg-surface/90 backdrop-blur-md px-3 flex items-center justify-between text-[11px] select-none z-10">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1.5 text-text-secondary font-medium">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Canvas Active</span>
+                  </span>
+                  <span className="text-bg-border">•</span>
+                  <span className="text-text-tertiary">{tradingPair} ({timeframe})</span>
+                  <span className="text-bg-border hidden sm:inline">•</span>
+                  <span className="text-accent-blue font-mono hidden sm:inline">⚡ 4.2ms execution latency</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowCode(!showCode)}
+                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all ${
+                      showCode 
+                        ? 'bg-accent-blue/15 text-accent-blue border border-accent-blue/30' 
+                        : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
+                    }`}
+                  >
+                    <Code2 className="h-3.5 w-3.5" />
+                    <span>Generated Code</span>
+                    {showCode ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <SettingsPanel />
+            {/* ═══ Right: Slide-in Node Properties Inspector ═══ */}
+            {selectedNodeId && (
+              <div className="w-[310px] shrink-0 border-l border-bg-border bg-bg-surface h-full overflow-y-auto shadow-2xl z-20 animate-in slide-in-from-right duration-200">
+                <NodePropertiesPanel />
+              </div>
+            )}
+
             <BacktestDrawer />
-          </>
+          </div>
         )}
 
         {workspaceMode === 'scratchpad' && (
@@ -345,6 +492,14 @@ export default function BuilderPage() {
         onProceedToDeploy={() => {
           setIsDeployModalOpen(true)
         }}
+      />
+
+      {/* Gemini AI Engine Settings Modal */}
+      <GeminiSettingsModal />
+
+      {/* End-to-End Strategy Buildup Hub Modal */}
+      <StrategyBuildupHubModal
+        onOpenDeployModal={() => setIsDeployModalOpen(true)}
       />
     </div>
   )
