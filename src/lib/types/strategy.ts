@@ -102,6 +102,36 @@ export const ActionSchema = z.object({
   limitPriceOffsetPct: z.number().optional(),
 });
 
+export const TakeProfitTargetSchema = z.object({
+  targetPercentage: z.number(), // e.g. 2.5 for +2.5% gain
+  allocationPercentage: z.number(), // e.g. 50 for 50% of position
+  moveToBreakEven: z.boolean().optional(), // whether to move SL to break-even once hit
+  trailingStopPct: z.number().optional(), // trailing stop for runner tier
+});
+
+export const FilterSchema = z.object({
+  id: z.string().optional(),
+  sessions: z.array(z.enum(['LONDON', 'NEW_YORK', 'TOKYO', 'SYDNEY', 'OVERLAP'])).optional(),
+  daysOfWeek: z.array(z.number()).optional(), // 1=Mon, 5=Fri
+  minVolatilityATR: z.number().optional(),
+  maxVolatilityATR: z.number().optional(),
+  volumeFilterMinSMA: z.number().optional(),
+});
+
+export const WebhookSchema = z.object({
+  id: z.string().optional(),
+  channel: z.enum(['DISCORD', 'TELEGRAM', 'CUSTOM_WEBHOOK', 'SLACK']),
+  url: z.string().optional(),
+  triggerEvents: z.array(z.enum(['SIGNAL_TRIGGERED', 'ORDER_FILLED', 'SL_HIT', 'TP_HIT', 'LIQUIDATION_RISK'])).optional(),
+  customPayloadTemplate: z.string().optional(),
+});
+
+export const LogicGateSchema = z.object({
+  id: z.string(),
+  operator: z.enum(['ALL_TRUE', 'ANY_TRUE', 'WEIGHTED_SCORE']),
+  threshold: z.number().optional(), // for WEIGHTED_SCORE
+});
+
 export const RiskParametersSchema = z.object({
   stopLossPercentage: z.number().optional(),
   takeProfitPercentage: z.number().optional(),
@@ -113,6 +143,8 @@ export const RiskParametersSchema = z.object({
   maxConsecutiveLosses: z.number().optional(),
   kellyFraction: z.number().optional(), // e.g. 0.5 for Half-Kelly
   leverage: z.number().optional(),
+  takeProfitLadder: z.array(TakeProfitTargetSchema).optional(),
+  breakEvenTriggerPct: z.number().optional(),
 });
 
 export const StrategyDSLSchema = z.object({
@@ -125,6 +157,9 @@ export const StrategyDSLSchema = z.object({
   exitConditions: z.array(ConditionSchema).optional(),
   action: ActionSchema,
   riskParameters: RiskParametersSchema,
+  filters: z.array(FilterSchema).optional(),
+  webhooks: z.array(WebhookSchema).optional(),
+  logicGates: z.array(LogicGateSchema).optional(),
 });
 
 export type StrategyDSL = z.infer<typeof StrategyDSLSchema>;
@@ -134,5 +169,9 @@ export type Indicator = z.infer<typeof IndicatorSchema>;
 export type IndicatorType = z.infer<typeof IndicatorTypeSchema>;
 export type RiskParameters = z.infer<typeof RiskParametersSchema>;
 export type Timeframe = z.infer<typeof TimeframeSchema>;
+export type TakeProfitTarget = z.infer<typeof TakeProfitTargetSchema>;
+export type StrategyFilter = z.infer<typeof FilterSchema>;
+export type StrategyWebhook = z.infer<typeof WebhookSchema>;
+export type LogicGate = z.infer<typeof LogicGateSchema>;
 
 

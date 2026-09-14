@@ -33,6 +33,18 @@ export function NodePropertiesPanel() {
       {selectedNode.type === 'conditionNode' && (
         <ConditionProperties data={selectedNode.data} onChange={handleUpdate} />
       )}
+      {selectedNode.type === 'logicGateNode' && (
+        <LogicGateProperties data={selectedNode.data} onChange={handleUpdate} />
+      )}
+      {selectedNode.type === 'filterNode' && (
+        <FilterProperties data={selectedNode.data} onChange={handleUpdate} />
+      )}
+      {selectedNode.type === 'takeProfitLadderNode' && (
+        <TakeProfitLadderProperties data={selectedNode.data} onChange={handleUpdate} />
+      )}
+      {selectedNode.type === 'webhookNode' && (
+        <WebhookProperties data={selectedNode.data} onChange={handleUpdate} />
+      )}
       {selectedNode.type === 'executeNode' && (
         <ExecuteProperties data={selectedNode.data} onChange={handleUpdate} />
       )}
@@ -388,6 +400,179 @@ function RiskProperties({ data, onChange }: { data: any, onChange: (data: any) =
           onChange={(e) => updateDSL('maxDailyDrawdownPct', Number(e.target.value))}
           placeholder="e.g. 5.0"
           className="h-9 w-full rounded border border-bg-border bg-bg-base px-2 text-[13px] text-text-primary outline-none focus:border-accent-blue"
+        />
+      </div>
+    </div>
+  );
+}
+
+function LogicGateProperties({ data, onChange }: { data: any, onChange: (data: any) => void }) {
+  const gate = data.dslGate || { operator: 'ALL_TRUE', threshold: 2 };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[12px] text-text-secondary font-bold">Confluence Logic Operator</label>
+        <select 
+          value={gate.operator || 'ALL_TRUE'}
+          onChange={(e) => onChange({ dslGate: { ...gate, operator: e.target.value } })}
+          className="h-9 w-full rounded border border-bg-border bg-bg-base px-2 text-[13px] text-text-primary outline-none"
+        >
+          <option value="ALL_TRUE">ALL_TRUE (Conjunction AND - All branch conditions required)</option>
+          <option value="ANY_TRUE">ANY_TRUE (Disjunction OR - Any branch condition fires)</option>
+          <option value="WEIGHTED_SCORE">WEIGHTED_SCORE (Threshold Score Confluence)</option>
+        </select>
+      </div>
+
+      {gate.operator === 'WEIGHTED_SCORE' && (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[12px] text-text-secondary font-bold">Minimum Score Threshold</label>
+          <input 
+            type="number"
+            min={1}
+            value={gate.threshold || 2}
+            onChange={(e) => onChange({ dslGate: { ...gate, threshold: Number(e.target.value) } })}
+            className="h-9 w-full rounded border border-bg-border bg-bg-base px-2 text-[13px] text-text-primary outline-none focus:border-accent-blue"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FilterProperties({ data, onChange }: { data: any, onChange: (data: any) => void }) {
+  const filter = data.dslFilter || { sessions: ['NEW_YORK', 'LONDON'], daysOfWeek: [1, 2, 3, 4, 5], minVolatilityATR: 1.2 };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[12px] text-text-secondary font-bold">Active Trading Sessions</label>
+        <div className="grid grid-cols-2 gap-2 text-[12px]">
+          {['NEW_YORK', 'LONDON', 'TOKYO', 'OVERLAP'].map((sess) => {
+            const hasSess = filter.sessions?.includes(sess);
+            return (
+              <button
+                key={sess}
+                type="button"
+                onClick={() => {
+                  const updated = hasSess 
+                    ? filter.sessions.filter((s: string) => s !== sess)
+                    : [...(filter.sessions || []), sess];
+                  onChange({ dslFilter: { ...filter, sessions: updated } });
+                }}
+                className={`py-1.5 px-2 rounded-lg border text-center font-semibold transition-all ${
+                  hasSess 
+                    ? 'border-teal-500 bg-teal-500/20 text-teal-300' 
+                    : 'border-bg-border bg-bg-base text-text-secondary'
+                }`}
+              >
+                {sess}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[12px] text-text-secondary font-bold">Minimum Volatility (ATR %)</label>
+        <input 
+          type="number"
+          step="0.1"
+          value={filter.minVolatilityATR ?? 1.2}
+          onChange={(e) => onChange({ dslFilter: { ...filter, minVolatilityATR: Number(e.target.value) } })}
+          placeholder="e.g. 1.2"
+          className="h-9 w-full rounded border border-bg-border bg-bg-base px-2 text-[13px] text-text-primary outline-none focus:border-accent-blue"
+        />
+      </div>
+    </div>
+  );
+}
+
+function TakeProfitLadderProperties({ data, onChange }: { data: any, onChange: (data: any) => void }) {
+  const ladder = Array.isArray(data.dslLadder) ? data.dslLadder : [
+    { targetPercentage: 2.5, allocationPercentage: 50, moveToBreakEven: true },
+    { targetPercentage: 5.0, allocationPercentage: 30 },
+    { targetPercentage: 8.0, allocationPercentage: 20, trailingStopPct: 1.5 }
+  ];
+
+  const updateTier = (idx: number, field: string, value: any) => {
+    const updated = [...ladder];
+    updated[idx] = { ...updated[idx], [field]: value };
+    onChange({ dslLadder: updated });
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <span className="text-[12px] text-text-secondary font-bold">Staged Take Profit Targets</span>
+      {ladder.map((tier: any, idx: number) => (
+        <div key={idx} className="p-3 rounded-xl border border-bg-border bg-bg-base flex flex-col gap-2">
+          <div className="flex items-center justify-between text-[11px] font-bold text-emerald-400">
+            <span>Tier {idx + 1} Target</span>
+            <span>Alloc: {tier.allocationPercentage}%</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-text-tertiary">Target Gain (%)</label>
+              <input 
+                type="number"
+                step="0.1"
+                value={tier.targetPercentage}
+                onChange={(e) => updateTier(idx, 'targetPercentage', Number(e.target.value))}
+                className="h-8 w-full rounded border border-bg-border bg-bg-surface px-2 text-[12px] text-text-primary"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-tertiary">Position % Exit</label>
+              <input 
+                type="number"
+                value={tier.allocationPercentage}
+                onChange={(e) => updateTier(idx, 'allocationPercentage', Number(e.target.value))}
+                className="h-8 w-full rounded border border-bg-border bg-bg-surface px-2 text-[12px] text-text-primary"
+              />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-[11px] text-text-secondary cursor-pointer mt-1">
+            <input 
+              type="checkbox"
+              checked={!!tier.moveToBreakEven}
+              onChange={(e) => updateTier(idx, 'moveToBreakEven', e.target.checked)}
+              className="rounded accent-emerald-500"
+            />
+            <span>Move Stop Loss to Break-Even on Hit</span>
+          </label>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WebhookProperties({ data, onChange }: { data: any, onChange: (data: any) => void }) {
+  const webhook = data.dslWebhook || { channel: 'DISCORD', url: '', triggerEvents: ['ORDER_FILLED', 'SL_HIT', 'TP_HIT'] };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[12px] text-text-secondary font-bold">Alert Channel</label>
+        <select 
+          value={webhook.channel || 'DISCORD'}
+          onChange={(e) => onChange({ dslWebhook: { ...webhook, channel: e.target.value } })}
+          className="h-9 w-full rounded border border-bg-border bg-bg-base px-2 text-[13px] text-text-primary outline-none"
+        >
+          <option value="DISCORD">Discord Webhook</option>
+          <option value="TELEGRAM">Telegram Bot API</option>
+          <option value="CUSTOM_WEBHOOK">Custom REST Endpoint</option>
+          <option value="SLACK">Slack Incoming Webhook</option>
+        </select>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[12px] text-text-secondary font-bold">Webhook URL / Bot Token</label>
+        <input 
+          type="text"
+          value={webhook.url || ''}
+          onChange={(e) => onChange({ dslWebhook: { ...webhook, url: e.target.value } })}
+          placeholder="https://discord.com/api/webhooks/..."
+          className="h-9 w-full rounded border border-bg-border bg-bg-base px-2 text-[12px] text-text-primary outline-none focus:border-accent-blue font-mono"
         />
       </div>
     </div>

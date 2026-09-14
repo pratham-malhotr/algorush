@@ -28,16 +28,8 @@ export function SettingsPanel() {
   const [dailyDrawdownHalt, setDailyDrawdownHalt] = React.useState<number>(4.0)
   const [isAuditModalOpen, setIsAuditModalOpen] = React.useState(false)
 
-  if (selectedNodeId) {
-    return (
-      <div className="flex h-full w-[260px] shrink-0 flex-col overflow-y-auto border-l border-bg-border bg-bg-surface">
-        <NodePropertiesPanel />
-      </div>
-    )
-  }
-
   return (
-    <div className="flex h-full w-[260px] shrink-0 flex-col overflow-y-auto border-l border-bg-border bg-bg-surface p-4 text-xs">
+    <div className="flex h-full w-full flex-col overflow-y-auto bg-bg-surface p-4 text-xs">
       
       {/* Panel Header */}
       <div className="flex items-center justify-between mb-5 pb-3 border-b border-bg-border">

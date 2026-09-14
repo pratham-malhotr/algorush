@@ -73,7 +73,10 @@ export function StrategyPrompt() {
     setAllocation, 
     setIsAnimatingBuild,
     setBacktestResult,
-    addChatMessage
+    addChatMessage,
+    aiModel,
+    geminiApiKey,
+    setIsGeminiModalOpen
   } = useBuilderStore()
   
   const handleExecute = async (text: string) => {
@@ -87,16 +90,37 @@ export function StrategyPrompt() {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": "Bearer at_admin_master_secret"
+          "Authorization": "Bearer at_admin_master_secret",
+          ...(geminiApiKey ? { "x-gemini-api-key": geminiApiKey } : {})
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, model: aiModel, apiKey: geminiApiKey }),
       })
       
       const data = await response.json()
       
-      if (data.status === "NEEDS_CLARIFICATION") {
+      if (data.status === "CONVERSATIONAL") {
+        addChatMessage({ 
+          role: 'assistant', 
+          content: data.conversationalResponse || "Here is the quantitative analysis you requested.",
+          metadata: { 
+            isAi: data.isAi, 
+            modelUsed: data.modelUsed,
+            reasoning: data.reasoning,
+            riskAssessment: data.riskAssessment,
+            suggestedTweaks: data.suggestedTweaks,
+            latencyMs: data.latencyMs,
+            verificationAudit: data.verificationAudit
+          }
+        })
+        setPrompt("")
+        return
+      } else if (data.status === "NEEDS_CLARIFICATION") {
         setClarification(data.clarificationMessage)
-        addChatMessage({ role: 'assistant', content: data.clarificationMessage })
+        addChatMessage({ 
+          role: 'assistant', 
+          content: data.clarificationMessage,
+          metadata: { isAi: data.isAi, modelUsed: data.modelUsed }
+        })
       } else if (data.status === "SUCCESS") {
         const strat = data.strategy
 
@@ -222,7 +246,22 @@ export function StrategyPrompt() {
 
           const summaryText = `✅ **${strat.name}**\n• Direction: **${isShortSide ? '🔻 Short / Sell' : '🟢 Long / Buy'}** (${lev}x Lev)\n• Asset: **${strat.instruments?.[0]?.symbol || 'BTC/USDT'}** | Timeframe: **${strat.timeframe || '1h'}**\n• Entry Rules: **${entryCount} condition${entryCount > 1 ? 's' : ''}**\n• Exit Rules: **${exitCount} condition${exitCount > 1 ? 's' : ''}**\n• Risk: **SL ${sl}% | TP ${tp}%${trail ? ` | Trail ${trail}%` : ''}**`
 
-          addChatMessage({ role: 'assistant', content: summaryText })
+          addChatMessage({ 
+            role: 'assistant', 
+            content: summaryText,
+            metadata: {
+              modelUsed: data.modelUsed,
+              isAi: data.isAi,
+              reasoning: data.reasoning,
+              riskAssessment: data.riskAssessment,
+              suggestedTweaks: data.suggestedTweaks,
+              strategy: strat,
+              latencyMs: data.latencyMs,
+              needsApiKey: data.needsApiKey,
+              fallbackReason: data.fallbackReason,
+              verificationAudit: data.verificationAudit,
+            }
+          })
           toast.success(`Quant Strategy Built: ${strat.name}`)
         }
         animateBuild()

@@ -1,7 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { Search, ChevronDown, ChevronRight, GripVertical, Sparkles, X } from "lucide-react"
+import { Search, ChevronDown, ChevronRight, GripVertical, Sparkles, X, Zap, ArrowRight } from "lucide-react"
+import { useBuilderStore } from "@/store/useBuilderStore"
+import { toast } from "sonner"
 
 const CATEGORIES = [
   {
@@ -114,6 +116,51 @@ const CATEGORIES = [
     ]
   },
   {
+    name: "CONFLUENCE & LOGIC",
+    color: "text-cyan-400",
+    bgColor: "bg-cyan-500",
+    blocks: [
+      { label: "Confluence Gate (All True / AND)", type: "logicGateNode", dsl: { operator: 'ALL_TRUE', threshold: 2 } },
+      { label: "Disjunctive Gate (Any True / OR)", type: "logicGateNode", dsl: { operator: 'ANY_TRUE', threshold: 1 } },
+      { label: "Weighted Confluence (Score >= 2)", type: "logicGateNode", dsl: { operator: 'WEIGHTED_SCORE', threshold: 2 } },
+    ]
+  },
+  {
+    name: "FILTERS & REGIMES",
+    color: "text-teal-400",
+    bgColor: "bg-teal-500",
+    blocks: [
+      { label: "Session Filter (London & NY)", type: "filterNode", dsl: { sessions: ['LONDON', 'NEW_YORK'], daysOfWeek: [1, 2, 3, 4, 5] } },
+      { label: "Volatility Regime Filter (ATR > 1.2%)", type: "filterNode", dsl: { minVolatilityATR: 1.2 } },
+      { label: "Weekday Filter (Mon - Fri Only)", type: "filterNode", dsl: { daysOfWeek: [1, 2, 3, 4, 5] } },
+    ]
+  },
+  {
+    name: "STAGED TP LADDERS",
+    color: "text-emerald-400",
+    bgColor: "bg-emerald-500",
+    blocks: [
+      { 
+        label: "3-Tier TP Ladder (TP1 + BE, TP2, TP3)", 
+        type: "takeProfitLadderNode", 
+        dsl: [
+          { targetPercentage: 2.5, allocationPercentage: 50, moveToBreakEven: true },
+          { targetPercentage: 5.0, allocationPercentage: 30 },
+          { targetPercentage: 8.0, allocationPercentage: 20, trailingStopPct: 1.5 }
+        ] 
+      },
+    ]
+  },
+  {
+    name: "ALERTS & WEBHOOKS",
+    color: "text-indigo-400",
+    bgColor: "bg-indigo-500",
+    blocks: [
+      { label: "Discord Execution Webhook", type: "webhookNode", dsl: { channel: 'DISCORD', triggerEvents: ['ORDER_FILLED', 'SL_HIT', 'TP_HIT'] } },
+      { label: "Telegram Signal Dispatcher", type: "webhookNode", dsl: { channel: 'TELEGRAM', triggerEvents: ['SIGNAL_TRIGGERED', 'ORDER_FILLED'] } },
+    ]
+  },
+  {
     name: "RISK MANAGEMENT",
     color: "text-accent-amber",
     bgColor: "bg-accent-amber",
@@ -127,11 +174,16 @@ const CATEGORIES = [
 ]
 
 export function BlockLibrary() {
+  const { addChatMessage } = useBuilderStore()
   const [searchQuery, setSearchQuery] = React.useState("")
   const [openCategories, setOpenCategories] = React.useState<Record<string, boolean>>({
+    "CONFLUENCE & LOGIC": true,
     "ENTRY CONDITIONS": true,
-    "EXIT CONDITIONS": true,
+    "FILTERS & REGIMES": true,
     "EXECUTION & SIZING": true,
+    "STAGED TP LADDERS": true,
+    "ALERTS & WEBHOOKS": true,
+    "EXIT CONDITIONS": true,
     "RISK MANAGEMENT": true,
   })
 
@@ -148,8 +200,8 @@ export function BlockLibrary() {
   }
 
   return (
-    <div className="flex h-full w-[210px] shrink-0 flex-col border-r border-bg-border bg-bg-surface">
-      <div className="p-4 pb-2">
+    <div className="flex h-full w-full flex-col bg-bg-surface overflow-hidden">
+      <div className="p-3 pb-2">
         <h3 className="mb-3 text-[12px] font-bold uppercase tracking-wider text-text-secondary flex items-center justify-between">
           <span>Quant Block Library</span>
           <span className="text-[10px] text-accent-blue font-semibold">Pro Indicators</span>
@@ -176,6 +228,28 @@ export function BlockLibrary() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-4 scrollbar-thin scrollbar-thumb-bg-border">
+        {searchQuery.trim().length > 1 && (
+          <div className="mb-3 rounded-xl border border-accent-blue/30 bg-accent-blue/10 p-2.5 flex flex-col gap-1.5 shadow-sm">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-accent-blue">
+              <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+              <span>Ask Gemini Flash 8B</span>
+            </div>
+            <p className="text-[10px] text-text-secondary leading-snug line-clamp-2">
+              Compile &ldquo;{searchQuery}&rdquo; into canvas strategy
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                addChatMessage({ role: 'user', content: searchQuery })
+                toast.info(`Sent to AI Copilot: "${searchQuery}"`)
+              }}
+              className="mt-0.5 flex items-center justify-center gap-1 w-full py-1 px-2 rounded-lg bg-accent-blue text-white text-[11px] font-bold hover:bg-blue-600 transition-colors shadow-xs"
+            >
+              <span>Build with AI</span>
+              <ArrowRight className="h-3 w-3" />
+            </button>
+          </div>
+        )}
         {CATEGORIES.map((cat) => {
           const filteredBlocks = cat.blocks.filter(b => 
             !searchQuery || b.label.toLowerCase().includes(searchQuery.toLowerCase())
