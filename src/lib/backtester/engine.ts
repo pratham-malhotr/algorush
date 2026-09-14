@@ -733,7 +733,19 @@ export function runLocalBacktest(
   const quantityType = strategy?.action?.quantityType || "PERCENT_OF_ACCOUNT";
   const quantityValue = strategy?.action?.quantityValue ?? 50;
 
-  const equityCurve: EquityPoint[] = [{ date: data[0].date, value: Math.round(equity), benchmark: initialCapital, drawdownPct: 0 }];
+  // Start after warmup bars (min 20)
+  const startIndex = Math.min(Math.floor(data.length * 0.15), 50);
+
+  const equityCurve: EquityPoint[] = [];
+  for (let w = 0; w < startIndex; w++) {
+    const candle = data[w];
+    equityCurve.push({
+      date: candle.date,
+      value: Math.round(equity),
+      benchmark: Math.round(initialCapital * (candle.close / startPrice)),
+      drawdownPct: 0
+    });
+  }
   const trades: ExecutedTrade[] = [];
   const calcCache: Record<string, number[]> = {};
 
@@ -753,8 +765,9 @@ export function runLocalBacktest(
   const entryConds = strategy?.entryConditions || [];
   const exitConds = strategy?.exitConditions || [];
 
-  // Start after warmup bars (min 20)
-  const startIndex = Math.min(Math.floor(data.length * 0.15), 50);
+  const effectiveLeverage = strategy?.action?.leverage || strategy?.riskParameters?.leverage || leverage;
+  const tpLadder = strategy?.riskParameters?.takeProfitLadder;
+  let hasMovedToBreakEven = false;
 
   for (let i = startIndex; i < data.length; i++) {
     const candle = data[i];
@@ -778,12 +791,23 @@ export function runLocalBacktest(
         }
       }
 
+      // Staged Take Profit Ladder: check Tier 1 Break-Even Trigger
+      if (!hasMovedToBreakEven && tpLadder && tpLadder.length > 0 && tpLadder[0].moveToBreakEven) {
+        const tier1GainPct = !isShortStrategy 
+          ? ((candle.high - entryPrice) / entryPrice) * 100 
+          : ((entryPrice - candle.low) / entryPrice) * 100;
+        if (tier1GainPct >= tpLadder[0].targetPercentage) {
+          hasMovedToBreakEven = true;
+          stopLossPrice = entryPrice; // Move SL to Break-Even (Risk-Free Trade)
+        }
+      }
+
       const isStopLossHit = !isShortStrategy ? candle.low <= stopLossPrice : candle.high >= stopLossPrice;
       const isTakeProfitHit = !isShortStrategy ? candle.high >= takeProfitPrice : candle.low <= takeProfitPrice;
       const isTrailingStopHit = trailingPct > 0 && (!isShortStrategy ? candle.low <= trailingStopPrice : candle.high >= trailingStopPrice);
       
       // Liquidation threshold for leveraged positions
-      const maxLossMove = (1 / Math.max(1, leverage)) * 0.9;
+      const maxLossMove = (1 / Math.max(1, effectiveLeverage)) * 0.9;
       const isLiquidated = !isShortStrategy ? candle.low <= entryPrice * (1 - maxLossMove) : candle.high >= entryPrice * (1 + maxLossMove);
 
       let isExitTriggered = false;
@@ -822,7 +846,7 @@ export function runLocalBacktest(
         
         // PnL Math
         const rawTradeReturn = !isShortStrategy ? (slippedExitPrice - entryPrice) / entryPrice : (entryPrice - slippedExitPrice) / entryPrice;
-        const leveragedReturn = rawTradeReturn * leverage;
+        const leveragedReturn = rawTradeReturn * effectiveLeverage;
 
         // Position Sizing Model
         let tradeAllocationDollars = equity * 0.5;
@@ -836,7 +860,7 @@ export function runLocalBacktest(
           tradeAllocationDollars = (equity * (Math.min(10, Math.max(0.5, quantityValue)) / 100)) / Math.max(0.01, slPct);
         }
 
-        const tradePositionNotional = tradeAllocationDollars * leverage;
+        const tradePositionNotional = tradeAllocationDollars * effectiveLeverage;
         const feeCost = tradePositionNotional * (feePct / 100) * 2;
         const slippageCost = tradePositionNotional * (slippagePct / 100) * 2;
         const grossPnl = tradeAllocationDollars * leveragedReturn;
@@ -866,7 +890,7 @@ export function runLocalBacktest(
           entryPrice: +entryPrice.toFixed(2),
           exitPrice: +slippedExitPrice.toFixed(2),
           qty: +(tradePositionNotional / entryPrice).toFixed(4),
-          leverage,
+          leverage: effectiveLeverage,
           grossPnl: +grossPnl.toFixed(2),
           feeCost: +feeCost.toFixed(2),
           slippageCost: +slippageCost.toFixed(2),
@@ -877,16 +901,39 @@ export function runLocalBacktest(
       }
     } else {
       let shouldEnter = false;
-      if (entryConds.length > 0) {
-        shouldEnter = evaluateConditionsGroup(entryConds, i, data, calcCache, stateInfo);
-      } else {
-        // High-probability swing fallback for empty graphs
-        shouldEnter = i % 18 === 0;
+
+      // Check Volatility Regime Filter if specified
+      let passesFilter = true;
+      if (strategy?.filters && strategy.filters.length > 0) {
+        for (const flt of strategy.filters) {
+          if (flt.minVolatilityATR && flt.minVolatilityATR > 0) {
+            const highLowSpread = ((candle.high - candle.low) / candle.close) * 100;
+            if (highLowSpread < flt.minVolatilityATR * 0.5) {
+              passesFilter = false;
+              break;
+            }
+          }
+        }
+      }
+
+      if (passesFilter) {
+        const hasAnyGate = strategy?.logicGates?.some(g => g.operator === 'ANY_TRUE');
+        if (entryConds.length > 0) {
+          if (hasAnyGate) {
+            shouldEnter = entryConds.some(cond => evaluateConditionsGroup([cond], i, data, calcCache, stateInfo));
+          } else {
+            shouldEnter = evaluateConditionsGroup(entryConds, i, data, calcCache, stateInfo);
+          }
+        } else {
+          // High-probability swing fallback for empty graphs
+          shouldEnter = i % 18 === 0;
+        }
       }
 
       if (shouldEnter) {
         inPosition = true;
         entryIndex = i;
+        hasMovedToBreakEven = false;
         
         if (!isShortStrategy) {
           entryPrice = candle.close * (1 + (slippagePct / 100));

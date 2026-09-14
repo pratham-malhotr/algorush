@@ -44,7 +44,7 @@ export default function ArbitrageRadarPage() {
   const [basisList, setBasisList] = React.useState<BasisArbitrageOpportunity[]>([])
   const [triangularList, setTriangularList] = React.useState<TriangularArbitrageOpportunity[]>([])
   const [scannedCoinsCount, setScannedCoinsCount] = React.useState<number>(105)
-  const [scannedExchanges, setScannedExchanges] = React.useState<string[]>(['Binance', 'OKX', 'Bybit', 'Gate.io', 'Coinbase'])
+  const [scannedExchanges, setScannedExchanges] = React.useState<string[]>(['Binance', 'OKX', 'Bybit', 'Gate.io', 'Coinbase', 'Kraken'])
   const [scannedOrderBooksCount, setScannedOrderBooksCount] = React.useState<number>(1840)
   const [totalLiquidityScanned, setTotalLiquidityScanned] = React.useState<number>(850000000)
   const [latencyMs, setLatencyMs] = React.useState<number>(14)
@@ -82,11 +82,14 @@ export default function ArbitrageRadarPage() {
           setBasisList(data.basis || [])
           setTriangularList(data.triangular || [])
           setScannedCoinsCount(data.scannedCoinsCount || 105)
-          setScannedExchanges(data.scannedExchanges || ['Binance', 'OKX', 'Bybit', 'Gate.io', 'Coinbase'])
+          setScannedExchanges(data.scannedExchanges || ['Binance', 'OKX', 'Bybit', 'Gate.io', 'Coinbase', 'Kraken'])
           setScannedOrderBooksCount(data.scannedOrderBooksCount || 1840)
           setTotalLiquidityScanned(data.totalLiquidityScannedUsdt || 850000000)
           setLatencyMs(Date.now() - t0)
           setLastScanTime(Date.now())
+          if (isManual) {
+            toast.success(`Scanned ${data.scannedCoinsCount || 105} pairs across ${data.scannedExchanges?.length || 6} live exchanges!`)
+          }
         }
       }
     } catch (err) {
@@ -95,7 +98,6 @@ export default function ArbitrageRadarPage() {
       setIsLoading(false)
       if (isManual) {
         setIsRefreshing(false)
-        toast.success("Scanned all 105 market pairs across 5 live exchanges!")
       }
     }
   }, [])
@@ -308,7 +310,7 @@ export default function ArbitrageRadarPage() {
               </span>
             </div>
             <p className="text-text-secondary text-sm max-w-3xl leading-relaxed">
-              Detecting real sub-second price differences across <strong className="text-text-primary">Binance</strong>, <strong className="text-text-primary">OKX</strong>, <strong className="text-text-primary">Bybit</strong>, <strong className="text-text-primary">Gate.io</strong>, and <strong className="text-text-primary">Coinbase</strong> for all <strong className="text-text-primary">105 market cryptocurrencies</strong>. Complete tracking of exchange order books, taker fees, pre-funded inventory, VWAP slippage, and execution history.
+              Detecting real sub-second price differences across <strong className="text-text-primary">Binance</strong>, <strong className="text-text-primary">OKX</strong>, <strong className="text-text-primary">Bybit</strong>, <strong className="text-text-primary">Gate.io</strong>, <strong className="text-text-primary">Coinbase</strong>, and <strong className="text-text-primary">Kraken</strong> for all <strong className="text-text-primary">105 market cryptocurrencies</strong>. Complete tracking of exchange order books, taker fees, pre-funded inventory, VWAP slippage, and execution history.
             </p>
           </div>
 
@@ -339,7 +341,9 @@ export default function ArbitrageRadarPage() {
             <span className="font-mono text-xl lg:text-2xl font-black text-accent-blue">
               {scannedOrderBooksCount} Books
             </span>
-            <span className="text-[11px] text-text-secondary mt-0.5 block">Binance, OKX, Bybit, Gate, CB</span>
+            <span className="text-[11px] text-text-secondary mt-0.5 block truncate" title={scannedExchanges.join(', ')}>
+              {scannedExchanges.join(', ')}
+            </span>
           </div>
 
           <div className="rounded-2xl border border-bg-border bg-bg-surface p-4 shadow-sm">
@@ -514,6 +518,21 @@ export default function ArbitrageRadarPage() {
                 </select>
               </div>
 
+              {/* Venue Filter Dropdown */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-text-tertiary font-bold">Venue:</span>
+                <select
+                  value={selectedExchange}
+                  onChange={(e: any) => setSelectedExchange(e.target.value)}
+                  className="bg-bg-base border border-bg-border rounded-xl px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none focus:border-accent-blue"
+                >
+                  <option value="ALL">All Venues</option>
+                  {scannedExchanges.map((ex) => (
+                    <option key={ex} value={ex}>{ex}</option>
+                  ))}
+                </select>
+              </div>
+
             </div>
 
             {/* Category / Segment Badges */}
@@ -543,8 +562,8 @@ export default function ArbitrageRadarPage() {
             {isLoading && spatialList.length === 0 ? (
               <div className="rounded-2xl border border-bg-border bg-bg-surface p-12 text-center space-y-3">
                 <RefreshCw className="h-8 w-8 text-accent-blue animate-spin mx-auto" />
-                <h3 className="text-base font-bold text-text-primary">Scanning 105 Crypto Assets across 5 Live Exchanges...</h3>
-                <p className="text-xs text-text-secondary">Fetching real order book tickers from Binance, OKX, Bybit, Gate.io & Coinbase</p>
+                <h3 className="text-base font-bold text-text-primary">Scanning {scannedCoinsCount} Crypto Assets across {scannedExchanges.length} Live Exchanges...</h3>
+                <p className="text-xs text-text-secondary">Fetching real order book tickers from {scannedExchanges.join(', ')}</p>
               </div>
             ) : filteredSpatial.length === 0 ? (
               <div className="rounded-2xl border border-bg-border bg-bg-surface p-12 text-center space-y-3">
@@ -699,11 +718,12 @@ export default function ArbitrageRadarPage() {
                           <span className="font-mono text-text-tertiary">Real differences from active order books</span>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 font-mono text-xs">
-                          {['Binance', 'OKX', 'Bybit', 'Gate.io', 'Coinbase'].map((exch) => {
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 font-mono text-xs">
+                          {scannedExchanges.map((exch) => {
                             const q = quotes[exch]
                             const isBuyVenue = arb.buyExchange === exch
                             const isSellVenue = arb.sellExchange === exch
+                            const hasQuote = q && (q.bid > 0 || q.ask > 0 || q.last > 0)
 
                             return (
                               <div 
@@ -722,11 +742,11 @@ export default function ArbitrageRadarPage() {
                                   {isSellVenue && <span className="text-[9px] bg-accent-blue/20 px-1 rounded">Best Bid</span>}
                                 </div>
                                 <div className="text-sm font-bold text-text-primary">
-                                  ${q?.last ? q.last.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: q.last < 1 ? 5 : 2 }) : (arb.buyPrice).toLocaleString()}
+                                  {hasQuote ? `$${q.last.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: q.last < 1 ? 5 : 2 })}` : <span className="text-text-tertiary text-xs">Not Listed</span>}
                                 </div>
                                 <div className="text-[10px] text-text-tertiary mt-0.5 flex justify-between">
-                                  <span>Bid: ${q?.bid ? q.bid.toLocaleString(undefined, { maximumFractionDigits: q.bid < 1 ? 5 : 2 }) : '---'}</span>
-                                  <span>Ask: ${q?.ask ? q.ask.toLocaleString(undefined, { maximumFractionDigits: q.ask < 1 ? 5 : 2 }) : '---'}</span>
+                                  <span>Bid: {hasQuote && q.bid ? `$${q.bid.toLocaleString(undefined, { maximumFractionDigits: q.bid < 1 ? 5 : 2 })}` : '---'}</span>
+                                  <span>Ask: {hasQuote && q.ask ? `$${q.ask.toLocaleString(undefined, { maximumFractionDigits: q.ask < 1 ? 5 : 2 })}` : '---'}</span>
                                 </div>
                               </div>
                             )
@@ -769,7 +789,7 @@ export default function ArbitrageRadarPage() {
                     <span>•</span>
                     <span>Short Futures: <strong className="text-text-primary">${b.futuresPrice.toLocaleString()}</strong> ({b.futuresVenue})</span>
                     <span>•</span>
-                    <span>8h Funding Rate: <strong className="text-emerald-500">+{b.fundingRate8h.toFixed(3)}%</strong></span>
+                    <span>8h Funding Rate: <strong className={b.fundingRate8h >= 0 ? "text-emerald-500" : "text-amber-400"}>{b.fundingRate8h >= 0 ? `+${b.fundingRate8h.toFixed(4)}%` : `${b.fundingRate8h.toFixed(4)}%`}</strong></span>
                   </div>
 
                   {b.notes && (
@@ -830,6 +850,14 @@ export default function ArbitrageRadarPage() {
                       {tri.exchange}
                     </span>
 
+                    <span className={`rounded-md px-2.5 py-0.5 text-xs font-bold border ${
+                      tri.netReturnPct >= 0 
+                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                        : "bg-bg-elevated text-text-tertiary border-bg-border"
+                    }`}>
+                      {tri.netReturnPct >= 0 ? `+${tri.netReturnPct}% Net Loop` : `${tri.netReturnPct}% (Below Fees)`}
+                    </span>
+
                     <span className="text-xs text-text-tertiary font-mono">
                       Cycle: {tri.timestamp}
                     </span>
@@ -855,11 +883,11 @@ export default function ArbitrageRadarPage() {
                     <span className="text-[10px] text-text-tertiary block uppercase tracking-wider">
                       Net Loop Gain (${tri.startCapitalUsdt.toLocaleString()})
                     </span>
-                    <span className="text-lg lg:text-xl font-black text-emerald-500">
-                      +${tri.netProfitUsdt} USDT
+                    <span className={`text-lg lg:text-xl font-black ${tri.netProfitUsdt >= 0 ? 'text-emerald-500' : 'text-text-tertiary'}`}>
+                      {tri.netProfitUsdt >= 0 ? `+$${tri.netProfitUsdt.toLocaleString()}` : `-$${Math.abs(tri.netProfitUsdt).toLocaleString()}`} USDT
                     </span>
-                    <span className="text-[11px] text-text-secondary block">
-                      (+{tri.netReturnPct}% per cycle)
+                    <span className={`text-[11px] block font-bold ${tri.netReturnPct >= 0 ? 'text-emerald-500' : 'text-text-tertiary'}`}>
+                      {tri.netReturnPct >= 0 ? `+${tri.netReturnPct}% per cycle` : `${tri.netReturnPct}% taker fee drag`}
                     </span>
                   </div>
 
