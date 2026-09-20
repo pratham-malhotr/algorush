@@ -12,14 +12,25 @@ import {
   applyNodeChanges,
   applyEdgeChanges,
 } from 'reactflow'
-import { BacktestResult, generateMockData, runLocalBacktest } from '@/lib/backtester/engine'
+import { BacktestResult, generateMockData, runLocalBacktest, getRealisticAssetPrice } from '@/lib/backtester/engine'
 import { StrategyDSL } from '@/lib/types/strategy'
 import { toast } from 'sonner'
 import { isExplicitStrategyIntent } from '@/lib/parser/gemini'
+import { normalizeStrategyDSL } from '@/lib/parser/strategyNormalizer'
 
 export type StrategyStatus = "Draft" | "Live" | "Paused"
 
-export type AiModelType = 'gemini-2.5-flash' | 'gemini-2.5-pro' | 'gemini-3.8-flash' | 'gemini-2.0-flash' | 'gemini-1.5-pro' | 'gemini-1.5-flash-8b' | 'gemini-1.5-flash' | 'local';
+export type AiModelType = 
+  | 'groq-gpt-120b' 
+  | 'groq-qwen-27b' 
+  | 'gemini-2.5-flash' 
+  | 'gemini-2.5-pro' 
+  | 'gemini-3.8-flash' 
+  | 'gemini-2.0-flash' 
+  | 'gemini-1.5-pro' 
+  | 'gemini-1.5-flash-8b' 
+  | 'gemini-1.5-flash' 
+  | 'local';
 
 export type ChatMessage = {
   role: 'user' | 'assistant';
@@ -112,6 +123,8 @@ interface BuilderState {
   // AI Copilot Model & API Key
   aiModel: AiModelType
   setAiModel: (model: AiModelType) => void
+  groqApiKey: string
+  setGroqApiKey: (key: string) => void
   geminiApiKey: string
   setGeminiApiKey: (key: string) => void
   isGeminiModalOpen: boolean
@@ -127,6 +140,11 @@ interface BuilderState {
   setWorkspaceMode: (mode: 'canvas' | 'scratchpad' | 'code') => void
   isOptimizerModalOpen: boolean
   setIsOptimizerModalOpen: (isOpen: boolean) => void
+  isDeployModalOpen: boolean
+  setIsDeployModalOpen: (isOpen: boolean) => void
+  isHundredStrategiesModalOpen: boolean
+  setIsHundredStrategiesModalOpen: (isOpen: boolean) => void
+  loadStrategyIntoCanvas: (strategy: any) => void
   autoLayoutNodes: () => void
 
   updateStrategy: (dsl: StrategyDSL) => void
@@ -234,22 +252,29 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   backtestResult: null,
   chatHistory: [{ 
     role: 'assistant', 
-    content: "👋 **Welcome to AlgoRush AI Quant Copilot.**\n\nI am your quantitative architect powered by advanced neural reasoning. You can ask me any question about trading concepts, indicator mathematics, market conditions, or risk frameworks—or describe a trading strategy in natural language, and I will compile it into an executable visual flowchart algorithm with live backtesting.",
+    content: "👋 **Welcome to AlgoRush AI Quant Copilot.**\n\nI am your quantitative architect powered by **Groq LPUs™ (Ultra-Fast Inference)** & advanced neural reasoning. You can ask me any question about trading concepts, indicator mathematics, market conditions, or risk frameworks—or describe a trading strategy in natural language, and I will compile it into an executable visual flowchart algorithm with live backtesting in under 500ms.",
     metadata: {
       isAi: true,
-      modelUsed: 'gemini-2.5-flash',
+      modelUsed: 'Groq GPT-OSS 120B',
       reasoning: 'Calibrated for institutional algorithmic compilation, multi-factor risk audits, and zero-latency strategy formulation.'
     }
   }],
   isAnimatingBuild: false,
   
   // AI Copilot Model & API Key
-  aiModel: (typeof window !== 'undefined' ? (localStorage.getItem('algorush_ai_model') as AiModelType) : null) || 'gemini-2.5-flash',
+  aiModel: (typeof window !== 'undefined' ? (localStorage.getItem('algorush_ai_model') as AiModelType) : null) || 'groq-gpt-120b',
   setAiModel: (model) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('algorush_ai_model', model)
     }
     set({ aiModel: model })
+  },
+  groqApiKey: (typeof window !== 'undefined' ? localStorage.getItem('algorush_groq_api_key') : null) || process.env.NEXT_PUBLIC_GROQ_API_KEY || '',
+  setGroqApiKey: (key) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('algorush_groq_api_key', key)
+    }
+    set({ groqApiKey: key })
   },
   geminiApiKey: (typeof window !== 'undefined' ? localStorage.getItem('algorush_gemini_api_key') : null) || '',
   setGeminiApiKey: (key) => {
@@ -279,6 +304,10 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   setWorkspaceMode: (mode) => set({ workspaceMode: mode }),
   isOptimizerModalOpen: false,
   setIsOptimizerModalOpen: (isOpen) => set({ isOptimizerModalOpen: isOpen }),
+  isDeployModalOpen: false,
+  setIsDeployModalOpen: (isOpen) => set({ isDeployModalOpen: isOpen }),
+  isHundredStrategiesModalOpen: false,
+  setIsHundredStrategiesModalOpen: (isOpen) => set({ isHundredStrategiesModalOpen: isOpen }),
   
   history: [{ nodes: initialNodes, edges: initialEdges }],
   historyIndex: 0,
@@ -375,10 +404,10 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   clearChatHistory: () => set({
     chatHistory: [{ 
       role: 'assistant', 
-      content: "👋 **Welcome to AlgoRush AI Quant Copilot.**\n\nI am your quantitative architect powered by advanced neural reasoning. You can ask me any question about trading concepts, indicator mathematics, market conditions, or risk frameworks—or describe a trading strategy in natural language, and I will compile it into an executable visual flowchart algorithm with live backtesting.",
+      content: "👋 **Welcome to AlgoRush AI Quant Copilot.**\n\nI am your quantitative architect powered by **Groq LPUs™ (Ultra-Fast Inference)** & advanced neural reasoning. You can ask me any question about trading concepts, indicator mathematics, market conditions, or risk frameworks—or describe a trading strategy in natural language, and I will compile it into an executable visual flowchart algorithm with live backtesting in under 500ms.",
       metadata: {
         isAi: true,
-        modelUsed: 'gemini-2.5-flash',
+        modelUsed: 'Groq GPT-OSS 120B',
         reasoning: 'Calibrated for institutional algorithmic compilation, multi-factor risk audits, and zero-latency strategy formulation.'
       }
     }]
@@ -715,6 +744,175 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     toast.success(`Loaded institutional preset: ${name}`)
   },
 
+  loadStrategyIntoCanvas: (strategyInput: any) => {
+    const strat = normalizeStrategyDSL(strategyInput)
+    const name = strat.name || 'Quant Strategy'
+    const pair = strat.instruments?.[0]?.symbol || 'BTC/USDT'
+    const tf = strat.timeframe || '15m'
+    const alloc = strat.action?.quantityValue || 50
+
+    const fmtLabel = (cond: any): string => {
+      if (cond.label && typeof cond.label === 'string' && cond.label.length > 3) return cond.label
+      if (cond.description && typeof cond.description === 'string' && cond.description.length > 3) return cond.description
+      const leftName = cond.left?.parameters?.name || cond.left?.name || cond.left?.type || 'PRICE'
+      const period = cond.left?.parameters?.period || cond.left?.period
+      const leftLabel = period ? `${period} ${leftName}` : leftName
+      const compMap: Record<string, string> = { 
+        GREATER_THAN: '>', 
+        LESS_THAN: '<', 
+        EQUAL: '==', 
+        CROSSES_ABOVE: 'Crosses Above', 
+        CROSSES_BELOW: 'Crosses Below', 
+        GREATER_THAN_OR_EQUAL: '>=', 
+        LESS_THAN_OR_EQUAL: '<=' 
+      }
+      const comp = compMap[cond.comparator] || cond.comparator || '=='
+      let rightLabel = ''
+      if (typeof cond.right === 'object' && cond.right !== null) {
+        const rp = cond.right.parameters?.period || cond.right?.period
+        const rn = cond.right.parameters?.name || cond.right?.name || cond.right?.type || ''
+        const val = cond.right.parameters?.value !== undefined ? cond.right.parameters.value : cond.right.value
+        if (val !== undefined) rightLabel = String(val)
+        else if (rp && rn) rightLabel = `${rp} ${rn}`
+        else rightLabel = rn || String(cond.right)
+      } else {
+        rightLabel = String(cond.right ?? '')
+      }
+      return `${leftLabel} ${comp} ${rightLabel}`
+    }
+
+    const newNodes: Node[] = []
+    const newEdges: Edge[] = []
+    let yPos = 40
+    let sideToggle = -1
+
+    // 1. Trigger / Start Node
+    newNodes.push({
+      id: 'start-1',
+      type: 'triggerNode',
+      position: { x: 250, y: yPos },
+      data: { label: `${pair} ${tf} Data Stream` }
+    })
+    yPos += 130
+
+    // 2. Regime Filters if any
+    let lastSource = 'start-1'
+    if (strat.filters && Array.isArray(strat.filters) && strat.filters.length > 0) {
+      strat.filters.forEach((filter: any, idx: number) => {
+        const filterId = `filter-${idx + 1}`
+        newNodes.push({
+          id: filterId,
+          type: 'filterNode',
+          position: { x: 250, y: yPos },
+          data: { label: filter.name || 'Regime Filter', dslFilter: filter }
+        })
+        newEdges.push({ id: `e-${filterId}`, source: lastSource, target: filterId, animated: true })
+        lastSource = filterId
+        yPos += 130
+      })
+    }
+
+    // 3. Entry Conditions
+    if (strat.entryConditions && Array.isArray(strat.entryConditions) && strat.entryConditions.length > 0) {
+      strat.entryConditions.forEach((cond: any, idx: number) => {
+        const nodeId = `entry-${idx + 1}`
+        newNodes.push({
+          id: nodeId,
+          type: 'conditionNode',
+          position: { x: 250 + (sideToggle * 120), y: yPos },
+          data: { category: 'ENTRY CONDITIONS', label: fmtLabel(cond), dslCondition: cond }
+        })
+        sideToggle *= -1
+        newEdges.push({ id: `e-${nodeId}`, source: lastSource, target: nodeId, animated: true })
+        lastSource = nodeId
+        yPos += 130
+      })
+    }
+
+    // 4. Execution Node (BUY/SHORT X% (Yx Lev))
+    const exec1Id = 'exec-1'
+    const isShort = strat.action?.type === 'SELL'
+    const orderType = strat.action?.orderType && strat.action.orderType !== 'MARKET' ? ` ${strat.action.orderType}` : ''
+    const qtyStr = strat.action?.quantityType === 'FIXED_USD' || strat.action?.quantityType === 'USD_VALUE'
+      ? `$${strat.action.quantityValue || 1000}`
+      : strat.action?.quantityType === 'KELLY_CRITERION'
+      ? `Kelly (${strat.action.quantityValue || 0.5})`
+      : `${strat.action?.quantityValue || alloc}%`
+    const levStr = strat.action?.leverage && strat.action.leverage > 1
+      ? ` (${strat.action.leverage}x Lev)`
+      : strat.riskParameters?.leverage && strat.riskParameters.leverage > 1
+      ? ` (${strat.riskParameters.leverage}x Lev)`
+      : ''
+    const execLabel = `${isShort ? 'SHORT' : 'BUY'}${orderType} ${qtyStr}${levStr}`
+
+    newNodes.push({
+      id: exec1Id,
+      type: 'executeNode',
+      position: { x: 250, y: yPos },
+      data: {
+        label: execLabel,
+        dslAction: {
+          ...strat.action,
+          leverage: strat.action?.leverage || strat.riskParameters?.leverage || 1
+        }
+      }
+    })
+    newEdges.push({ id: `e-${exec1Id}`, source: lastSource, target: exec1Id, animated: true })
+    lastSource = exec1Id
+    yPos += 130
+
+    // 5. Exit Conditions if any
+    if (strat.exitConditions && Array.isArray(strat.exitConditions) && strat.exitConditions.length > 0) {
+      strat.exitConditions.forEach((cond: any, idx: number) => {
+        const nodeId = `exit-${idx + 1}`
+        newNodes.push({
+          id: nodeId,
+          type: 'conditionNode',
+          position: { x: 250 + (sideToggle * 120), y: yPos },
+          data: { category: 'EXIT CONDITIONS', label: fmtLabel(cond), dslCondition: cond }
+        })
+        sideToggle *= -1
+        newEdges.push({ id: `e-${nodeId}`, source: lastSource, target: nodeId, animated: true })
+        lastSource = nodeId
+        yPos += 130
+      })
+    }
+
+    // 6. Risk Parameters Node
+    if (strat.riskParameters && (strat.riskParameters.stopLossPercentage || strat.riskParameters.takeProfitPercentage)) {
+      const riskId = 'risk-1'
+      newNodes.push({
+        id: riskId,
+        type: 'riskNode',
+        position: { x: 250, y: yPos },
+        data: {
+          label: `Risk Guard (SL ${strat.riskParameters.stopLossPercentage || 2.5}% / TP ${strat.riskParameters.takeProfitPercentage || 5}%)`,
+          dslRisk: strat.riskParameters
+        }
+      })
+      newEdges.push({ id: `e-${riskId}`, source: lastSource, target: riskId, animated: true })
+    }
+
+    set({
+      strategyName: name,
+      tradingPair: pair,
+      timeframe: tf,
+      allocation: alloc,
+      nodes: newNodes,
+      edges: newEdges,
+      strategyDSL: strat,
+      history: [{ nodes: newNodes, edges: newEdges }],
+      historyIndex: 0,
+      backtestResult: null,
+      workspaceMode: 'canvas',
+    })
+
+    const data = generateMockData(90)
+    const freshResult = runLocalBacktest(strat, data)
+    set({ backtestResult: freshResult })
+    toast.success(`Loaded strategy '${name}' into Builder Canvas`)
+  },
+
   autoLayoutNodes: () => {
     const { nodes } = get()
     const triggers = nodes.filter(n => n.type === 'triggerNode')
@@ -782,8 +980,13 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   runBacktest: () => {
     set({ isBacktesting: true })
     setTimeout(() => {
-      const data = generateMockData(90)
-      const result = runLocalBacktest(get().strategyDSL, data) 
+      const activeStrat = get().strategyDSL
+      const symbol = activeStrat?.instruments?.[0]?.symbol || get().tradingPair || "BTC/USDT"
+      const tf = activeStrat?.timeframe || get().timeframe || "15m"
+      const { price, volatility } = getRealisticAssetPrice(symbol)
+      const data = generateMockData(90, price, tf, volatility)
+      const lev = activeStrat?.action?.leverage || activeStrat?.riskParameters?.leverage || 5
+      const result = runLocalBacktest(activeStrat, data, 10000, lev, 0.05, 0.03) 
       set({ 
         isBacktesting: false, 
         isBacktestDrawerOpen: true,
@@ -797,6 +1000,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     if (!textToParse.trim()) return false
     const { 
       aiModel, 
+      groqApiKey,
       geminiApiKey, 
       strategyDSL, 
       chatHistory,
@@ -824,12 +1028,14 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
         headers: { 
           "Content-Type": "application/json",
           "Authorization": "Bearer at_admin_master_secret",
+          ...(groqApiKey ? { "x-groq-api-key": groqApiKey } : {}),
           ...(geminiApiKey ? { "x-gemini-api-key": geminiApiKey } : {})
         },
         body: JSON.stringify({ 
           text: textToParse,
           model: aiModel,
-          apiKey: geminiApiKey,
+          apiKey: groqApiKey || geminiApiKey,
+          groqApiKey: groqApiKey,
           currentStrategy: strategyDSL,
           chatHistory: chatHistory.map(m => ({ role: m.role, content: m.content })).slice(-10)
         }),
@@ -837,14 +1043,15 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
 
       const data = await response.json()
 
-      if (data.status === "CONVERSATIONAL") {
+      if (data.status === "CONVERSATIONAL" || !data.strategy) {
         set({ buildupPipelineStage: 0 })
         addChatMessage({ 
           role: 'assistant', 
-          content: data.conversationalResponse || "Here is the quantitative analysis you requested.",
+          content: data.conversationalResponse || data.clarificationMessage || (typeof data.content === 'string' ? data.content : "👋 Hello! How can I assist you with your quantitative trading strategy or market questions today?"),
           metadata: {
             isAi: data.isAi,
             modelUsed: data.modelUsed,
+            reasoning: data.reasoning,
             suggestedTweaks: data.suggestedTweaks,
             latencyMs: data.latencyMs,
           }
@@ -874,9 +1081,15 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
         if (strat.action?.quantityValue) setAllocation(strat.action.quantityValue)
 
         const fmtLabel = (cond: any): string => {
-          const leftStr = cond.left?.type || 'PRICE'
-          const period = cond.left?.parameters?.period
-          const leftLabel = period ? `${period} ${leftStr}` : leftStr
+          if (cond.label && typeof cond.label === 'string' && cond.label.length > 3) {
+            return cond.label
+          }
+          if (cond.description && typeof cond.description === 'string' && cond.description.length > 3) {
+            return cond.description
+          }
+          const leftName = cond.left?.parameters?.name || cond.left?.name || cond.left?.type || 'PRICE'
+          const period = cond.left?.parameters?.period || cond.left?.period
+          const leftLabel = period ? `${period} ${leftName}` : leftName
           const compMap: Record<string, string> = { 
             GREATER_THAN: '>', 
             LESS_THAN: '<', 
@@ -888,9 +1101,17 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
           }
           const comp = compMap[cond.comparator] || cond.comparator
           let rightLabel = ''
-          if (typeof cond.right === 'object' && cond.right !== null && cond.right.type) {
-            const rp = cond.right.parameters?.period
-            rightLabel = rp ? `${rp} ${cond.right.type}` : cond.right.type
+          if (typeof cond.right === 'object' && cond.right !== null) {
+            const rp = cond.right.parameters?.period || cond.right?.period
+            const rn = cond.right.parameters?.name || cond.right?.name || cond.right?.type || ''
+            const val = cond.right.parameters?.value !== undefined ? cond.right.parameters.value : cond.right.value
+            if (val !== undefined) {
+              rightLabel = String(val)
+            } else if (rp && rn) {
+              rightLabel = `${rp} ${rn}`
+            } else {
+              rightLabel = rn || String(cond.right)
+            }
           } else {
             rightLabel = String(cond.right ?? '')
           }
@@ -922,16 +1143,32 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
           })
         }
 
-        // 3. Execution Node
+        // 3. Execution Node (Execution Box)
         const exec1Id = 'exec-1'
         const isShort = strat.action?.type === 'SELL'
+        const orderType = strat.action?.orderType && strat.action.orderType !== 'MARKET' ? ` ${strat.action.orderType}` : ''
+        const qtyStr = strat.action?.quantityType === 'FIXED_USD' || strat.action?.quantityType === 'USD_VALUE'
+          ? `$${strat.action.quantityValue || 1000}`
+          : strat.action?.quantityType === 'KELLY_CRITERION'
+          ? `Kelly (${strat.action.quantityValue || 0.5})`
+          : `${strat.action?.quantityValue || 50}%`
+        const levStr = strat.action?.leverage && strat.action.leverage > 1 
+          ? ` (${strat.action.leverage}x Lev)` 
+          : strat.riskParameters?.leverage && strat.riskParameters.leverage > 1
+          ? ` (${strat.riskParameters.leverage}x Lev)`
+          : ''
+        const execLabel = `${isShort ? 'SHORT' : 'BUY'}${orderType} ${qtyStr}${levStr}`
+
         newNodes.push({ 
           id: exec1Id, 
           type: 'executeNode', 
           position: { x: 250, y: yPos }, 
           data: { 
-            label: `${isShort ? 'SHORT' : 'BUY'} ${strat.action?.quantityValue || 50}%`, 
-            dslAction: strat.action 
+            label: execLabel, 
+            dslAction: {
+              ...strat.action,
+              leverage: strat.action?.leverage || strat.riskParameters?.leverage || 1
+            } 
           } 
         })
         const lastEntryNode = strat.entryConditions?.length ? `entry-${strat.entryConditions.length}` : 'start-1'
@@ -988,15 +1225,21 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
             })
           }
         }
+        setEdges(newEdges)
         setIsAnimatingBuild(false)
         updateStrategy(strat)
+        get().compileGraphToDSL()
 
         set({ buildupPipelineStage: 4 }) // 4: Multi-Target Code Synthesis
         await new Promise(r => setTimeout(r, 180))
 
-        set({ buildupPipelineStage: 5 }) // 5: 90-Day Backtest Simulation
-        const freshData = generateMockData(90)
-        const freshResult = runLocalBacktest(strat, freshData)
+        set({ buildupPipelineStage: 5 }) // 5: 90-Day Deep Backtest Simulation
+        const symbol = strat.instruments?.[0]?.symbol || "BTC/USDT"
+        const tf = strat.timeframe || "15m"
+        const { price, volatility } = getRealisticAssetPrice(symbol)
+        const freshData = generateMockData(90, price, tf, volatility)
+        const lev = strat.action?.leverage || strat.riskParameters?.leverage || 5
+        const freshResult = runLocalBacktest(strat, freshData, 10000, lev, 0.05, 0.03)
         setBacktestResult(freshResult)
 
         set({ buildupPipelineStage: 6 }) // 6: Completed!
@@ -1026,9 +1269,9 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
         const sl = strat.riskParameters?.stopLossPercentage
         const tp = strat.riskParameters?.takeProfitPercentage
         const trail = strat.riskParameters?.trailingStopPercentage
-        const lev = strat.action?.leverage || strat.riskParameters?.leverage || 1
+        const stratLev = strat.action?.leverage || strat.riskParameters?.leverage || 1
 
-        const summaryText = `✅ **${strat.name} Compiled**\n• Direction: **${isShortSide ? '🔻 Short / Sell' : '🟢 Long / Buy'}** (${lev}x Lev)\n• Asset: **${strat.instruments?.[0]?.symbol || 'BTC/USDT'}** | Timeframe: **${strat.timeframe || '1h'}**\n• Entry Rules: **${entryCount} rule${entryCount > 1 ? 's' : ''}**\n• Exit Rules: **${exitCount} rule${exitCount > 1 ? 's' : ''}**\n• Risk: **SL ${sl}% | TP ${tp}%${trail ? ` | Trail ${trail}%` : ''}**`
+        const summaryText = `### 🎯 **${strat.name}**\n\n${strat.description || 'Institutional quantitative algorithm synthesized with risk-calibrated execution rules.'}\n\n• **Market Execution**: **${isShortSide ? '🔻 Short / Sell' : '🟢 Long / Buy'}** on **${strat.instruments?.[0]?.symbol || 'BTC/USDT'}** (${stratLev}x Leverage)\n• **Chart Timeframe**: **${strat.timeframe || '15m'}** | **Order Type**: **${strat.action?.orderType || 'MARKET'}**\n• **Risk Bounds**: Stop Loss **${sl}%** | Take Profit **${tp}%**${trail ? ` | Trailing Stop **${trail}%**` : ''}\n• **Logic Rules**: **${entryCount} Entry Trigger${entryCount > 1 ? 's' : ''}** & **${exitCount} Exit Target${exitCount > 1 ? 's' : ''}** applied to canvas.`
 
         addChatMessage({ 
           role: 'assistant', 

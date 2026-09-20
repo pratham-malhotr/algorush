@@ -24,6 +24,7 @@ import { BlockLibrary } from "@/components/builder/BlockLibrary"
 import { QuantScratchpad } from "@/components/builder/QuantScratchpad"
 import { GeminiSettingsModal } from "@/components/builder/GeminiSettingsModal"
 import { StrategyBuildupHubModal } from "@/components/builder/StrategyBuildupHubModal"
+import { HundredStrategiesModal } from "@/components/builder/HundredStrategiesModal"
 import dynamic from "next/dynamic"
 import { toast } from "sonner"
 
@@ -51,7 +52,11 @@ export default function BuilderPage() {
     setWorkspaceMode,
     isOptimizerModalOpen,
     setIsOptimizerModalOpen,
+    isDeployModalOpen,
+    setIsDeployModalOpen,
     setIsGeminiModalOpen,
+    setIsHundredStrategiesModalOpen,
+    groqApiKey,
     geminiApiKey,
     aiModel,
     selectedNodeId
@@ -63,7 +68,6 @@ export default function BuilderPage() {
   const [activeLeftPanel, setActiveLeftPanel] = React.useState<'copilot' | 'blocks' | 'settings' | null>('copilot')
   const [showCode, setShowCode] = React.useState(false)
   const [isPaper, setIsPaper] = React.useState(true)
-  const [isDeployModalOpen, setIsDeployModalOpen] = React.useState(false)
   const [isComplianceModalOpen, setIsComplianceModalOpen] = React.useState(false)
   const [codeHeight, setCodeHeight] = React.useState(220)
   const [isResizing, setIsResizing] = React.useState(false)
@@ -128,6 +132,16 @@ export default function BuilderPage() {
             <option value="pairs_trading">Statistical Pairs Cointegration (BTC/ETH)</option>
             <option value="volatility_grid">Dynamic Volatility Grid</option>
           </select>
+
+          {/* 100 Quant Strategies Benchmark Lab Button */}
+          <button
+            onClick={() => setIsHundredStrategiesModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 px-3 py-1.5 text-[11px] font-bold transition-all shadow-sm shadow-cyan-500/10 cursor-pointer shrink-0"
+            title="Run batch backtest across 100 quantitative algorithms"
+          >
+            <Flame className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
+            <span>⚡ 100 Algos Benchmark</span>
+          </button>
         </div>
 
         {/* Center: Workspace Mode Switcher */}
@@ -204,14 +218,26 @@ export default function BuilderPage() {
         {/* Right: Actions (Compliance, Optimizer, Backtest, Kill, Deploy) */}
         <div className="flex items-center gap-2 shrink-0">
           
-          {/* Gemini AI Engine Configuration */}
+          {/* AI Engine Configuration */}
           <button
             onClick={() => setIsGeminiModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-accent-blue/30 bg-accent-blue/10 px-2.5 py-1 text-[11px] font-bold text-accent-blue hover:bg-accent-blue/20 transition-all"
-            title="Gemini Flash 8B AI Engine Settings (Free Tier)"
+            className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-[11px] font-bold transition-all ${
+              aiModel.startsWith('groq')
+                ? 'border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
+                : 'border-accent-blue/30 bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20'
+            }`}
+            title="Configure Groq LPUs or Gemini AI Engine"
           >
-            <Sparkles className="h-3.5 w-3.5 text-accent-blue" />
-            <span className="hidden sm:inline">{geminiApiKey ? 'Gemini Active' : 'Gemini AI (Free)'}</span>
+            {aiModel.startsWith('groq') ? (
+              <Zap className="h-3.5 w-3.5 text-amber-400" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5 text-accent-blue" />
+            )}
+            <span className="hidden sm:inline">
+              {aiModel.startsWith('groq') 
+                ? (groqApiKey ? '⚡ Groq Active' : '⚡ Groq LPUs')
+                : (geminiApiKey ? 'Gemini Active' : 'Gemini AI (Free)')}
+            </span>
           </button>
 
           {/* Pre-Flight Compliance Gate */}
@@ -501,6 +527,9 @@ export default function BuilderPage() {
       <StrategyBuildupHubModal
         onOpenDeployModal={() => setIsDeployModalOpen(true)}
       />
+
+      {/* 100 Quant Strategies Benchmark Lab Modal */}
+      <HundredStrategiesModal />
     </div>
   )
 }
