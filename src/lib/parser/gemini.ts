@@ -1,4 +1,5 @@
 import { StrategyDSL, Condition, IndicatorType } from '../types/strategy';
+import { normalizeStrategyDSL, normalizeSuggestedTweaks } from './strategyNormalizer';
 
 export interface GeminiChatMessage {
   role: 'user' | 'assistant';
@@ -64,71 +65,74 @@ const SUPPORTED_INDICATORS = new Set([
 export function isExplicitStrategyIntent(text: string): boolean {
   const t = text.trim().toLowerCase();
 
-  // 1. Check for algorithmic rule statements starting with 'when'
-  // (e.g. "when 50 EMA crosses 200 EMA buy BTC" or "when RSI < 30 on 15m go long")
-  const isWhenRule = /^when\b/i.test(t) && /\b(buy|sell|short|long|enter|exit)\b/i.test(t) && !t.includes('?');
-
-  // 2. Questions & Conceptual inquiries:
-  // (e.g. "how do I build a strategy for BTC?", "what is RSI?", "can you explain EMA?", "is 10x leverage safe?", "why did it cross?")
-  const isQuestion = !isWhenRule && (
-    t.includes('?') || 
-    /^(what|why|how|should|could|would|is|are|do|does|will|which|where|tell me|explain|describe|give me advice|what's|whats|can you explain|can you tell)\b/i.test(t) ||
-    /\b(how\s*to|how\s*do|can\s*you\s*explain|what\s*is|tell\s*me\s*about|explain\s*how|guide\s*me)\b/i.test(t)
-  );
-
-  // If it is a question and NOT a strict directive rule ("buy ... when ..."), it is CONVERSATIONAL!
-  if (isQuestion) {
-    const hasExplicitRuleDirective = /\b(buy|sell|go short|go long|open short|open long)\s+([a-z0-9]+)\s+when\b/i.test(t) ||
-      /\bwhen\s+.*\s+(buy|sell|go short|go long|open short|open long)\b/i.test(t);
-    if (!hasExplicitRuleDirective) {
+  // 1. Pure greetings & courtesy messages (ONLY if no strategy/trading intent is present)
+  if (/^(hi|hello|hey|hola|sup|yo|greetings|good\s*(morning|afternoon|evening|day)|howdy|welcome|thanks|thank you|ok|okay|cool|great|awesome|nice|got it|understood)\b/i.test(t)) {
+    if (!/\b(build|create|make|generate|design|strategy|strat|bot|algo|algorithm|buy|sell|long|short|backtest|trade|when)\b/i.test(t)) {
       return false;
     }
   }
 
-  // 3. Greetings, courtesy messages, general chitchat
-  if (/^(hi|hello|hey|hola|sup|yo|greetings|good\s*(morning|afternoon|evening|day)|howdy|welcome|thanks|thank you|ok|okay|cool|great|awesome|nice|got it|understood)\b/i.test(t)) {
+  // 2. Pure general platform / identity queries
+  if (/^(who are you|what are you|what is this platform|what can you do|how does this work|how to use this|help me navigate|tell me about yourself)\b/i.test(t)) {
     return false;
   }
 
-  if (/^(who are you|what are you|what is this|what can you do|how does this work|how to use|help|guide me|can you help|tell me about yourself|let's talk|lets talk)\b/i.test(t)) {
+  // 3. Pure conceptual / educational inquiries WITHOUT any strategy build request
+  // (e.g. "what is RSI?", "explain EMA vs SMA", "what is funding rate?", "how does slippage affect trades?")
+  const isPureExplanationQuestion = 
+    /^(what\s*is|whats|what's|explain|describe|tell\s*me\s*about|how\s*does|why\s*does|can\s*you\s*explain|what\s*does)\b/i.test(t) &&
+    !/\b(build|create|generate|make|design|formulate|backtest|code|set\s*up|setup|give\s*me)\b/i.test(t) &&
+    !/\b(strategy|bot|algorithm|algo|trade\s*setup|system)\b/i.test(t) &&
+    !/\b(buy|sell|long|short)\s+.*\s+when\b/i.test(t);
+
+  if (isPureExplanationQuestion) {
     return false;
   }
 
-  // 4. Indicator, condition, and risk keywords
-  const hasIndicator = /\b(ema|sma|wma|hma|rsi|macd|bollinger|supertrend|vwap|stochastic|adx|cci|atr|donchian|keltner|ichimoku|volume|golden cross|death cross)\b/i.test(t);
-  const hasConditions = /\b(crosses|crosses above|crosses below|above|below|greater than|less than|reaches|breaks|drops|oversold|overbought|>|<|==|>=|<=)\b/i.test(t);
-  const hasRiskOrSizing = /\b(stop loss|take profit|trailing stop|leverage|\d+x\b|\d+%\s*risk|\d+%\s*allocation|\d+%\s*stop|\d+%\s*sl|\d+%\s*tp)/i.test(t);
+  // 4. ANY request to build, create, generate, make, design, formulate, code, or give a strategy/bot/algo:
+  // (e.g. "build a strategy for BTC", "can you build a strategy...", "make me a strategy for ETH", "create an algorithmic bot", "generate a strategy")
+  const hasStrategyBuildVerb = /\b(build|create|generate|make|design|formulate|code|assemble|develop|construct|give\s*me|setup|set\s*up)\b/i.test(t);
+  const hasStrategyNoun = /\b(strategy|strategies|strat|strats|bot|bots|algorithm|algorithms|algo|algos|system|systems|trading\s*system)\b/i.test(t);
 
-  // 5. Imperative trading rule directives (Action + Condition)
-  // "Buy BTC when 20 EMA crosses 50 EMA on 15m"
-  // "Go short ETH when RSI > 70, SL 2%, TP 5%"
-  // "Backtest BTC when 50 EMA crosses 200 EMA on 1h"
-  // "When 20 EMA crosses 50 EMA buy BTC"
-  const hasImperativeAction = 
-    /^(buy|sell|go short|go long|open short|open long|short|long|enter|backtest|simulate)\b/i.test(t) ||
-    /\b(buy|sell|go short|go long|open short|open long|short|long)\s+([a-z0-9]+)\s+when\b/i.test(t) ||
-    /\bwhen\s+.*\s+(buy|sell|go short|go long|open short|open long)\b/i.test(t) ||
-    /\b(backtest|simulate)\s+([a-z0-9]+)\s+(when|with|on)\b/i.test(t);
-
-  if (hasImperativeAction && (hasIndicator || hasConditions || hasRiskOrSizing)) {
+  if (hasStrategyBuildVerb && hasStrategyNoun) {
     return true;
   }
 
+  // 5. Strategy by asset or trading style:
+  // (e.g. "strategy for BTC", "BTC strategy", "ETH scalping strategy", "momentum strategy for SOL", "grid trading bot", "strategy to buy ETH")
+  if (/\b(strategy|strat|bot|algo|algorithm)\b\s*(for|on|with|to|using|of)\b/i.test(t) ||
+      /\b(btc|eth|sol|crypto|bitcoin|ethereum|solana|scalping|momentum|mean\s*reversion|trend\s*following|grid)\s+(strategy|strat|bot|algo)\b/i.test(t)) {
+    return true;
+  }
+
+  // 6. Imperative trading rule directives (Action + Trigger)
+  // (e.g. "When 20 EMA crosses 50 EMA buy BTC", "Buy BTC when RSI < 30", "Long SOL when price is below lower Bollinger Band")
+  const isWhenRule = /\bwhen\b.*\b(buy|sell|short|long|enter|exit|crosses|cross|breaks|drops|rises|>|<)\b/i.test(t);
   if (isWhenRule) {
     return true;
   }
 
-  // 6. Incremental Strategy Tweaks & Mutations:
+  const hasTradingActionWithTrigger = 
+    /\b(buy|sell|long|short|go long|go short|open long|open short|enter|exit)\b.*\b(when|if|at|below|above|crosses|cross|<|>|drops|reaches)\b/i.test(t);
+  if (hasTradingActionWithTrigger) {
+    return true;
+  }
+
+  // 7. Backtest / simulation commands
+  if (/\b(backtest|simulate|test)\b.*\b(btc|eth|sol|when|with|on|using|strategy)\b/i.test(t)) {
+    return true;
+  }
+
+  // 8. Strategy tweaks / mutations
   const isTweakIntent = /\b(apply this tweak|tighten stop|loosen stop|change stop|set stop|set tp|change timeframe|add trailing stop|add a trailing stop|change leverage|set leverage|switch pair|switch to|add 200 ema|add rsi|add volume|tweak strategy)\b/i.test(t);
   if (isTweakIntent) {
     return true;
   }
 
-  // 7. Explicit build command WITH concrete indicators or condition specifications
-  const hasBuildCommand = 
-    /\b(build|create|generate|assemble|make|code|design|formulate)\s+(a\s+|an\s+)?(strategy|algorithm|bot|system)\b/i.test(t);
-
-  if (hasBuildCommand && (hasIndicator || hasConditions || hasRiskOrSizing)) {
+  // 9. Indicators combined with trading actions
+  const hasIndicator = /\b(ema|sma|wma|hma|rsi|macd|bollinger|supertrend|vwap|stochastic|adx|cci|atr|donchian|keltner|ichimoku|volume|golden\s*cross|death\s*cross)\b/i.test(t);
+  const hasTradeAction = /\b(buy|sell|long|short|trade|entry|exit|leverage|\d+x)\b/i.test(t);
+  if (hasIndicator && hasTradeAction) {
     return true;
   }
 
@@ -154,19 +158,8 @@ export function generateDynamicQuantThinkingResponse(text: string, modelUsed: st
   // 1. Greetings / Casual Openers
   if (/^(hi|hello|hey|hola|sup|yo|howdy|good\s*(morning|afternoon|evening|day)|greetings)\b/i.test(t)) {
     return {
-      response: `👋 **Greetings! I am your AI Quantitative Copilot**, powered by **${engineTitle}**.
-
-I am actively analyzing market telemetry, liquidity depth, and algorithmic patterns across crypto markets. Whether you want to explore an indicator concept, analyze a risk model, or build an automated trading bot, I am ready.
-
-**What quantitative thesis would you like to explore today?**
-• 📊 **Indicator Math**: Explore EMA crossovers, RSI divergence, MACD momentum, or Bollinger squeezes
-• 🛡️ **Risk & Sizing**: Calculate liquidation buffers, Kelly Criterion fractions, or dynamic ATR stops
-• ⚡ **Automated Bot**: Formulate an entry/exit thesis and compile it directly into an executable visual algorithm.`,
-      suggestions: [
-        'Buy ETH when 20 EMA crosses 50 EMA on 15m (10x Lev)',
-        'Explain how to calculate optimal leverage',
-        'Long SOL when RSI < 30 and price > 200 EMA'
-      ]
+      response: `👋 **Hello! How can I help you today?**\n\nI am your AI Quant Copilot. You can ask me any questions about market indicators (like EMA, RSI, MACD, or Bollinger Bands), discuss risk management and leverage, or describe a trading strategy you'd like to build and backtest.\n\nWhat would you like to explore?`,
+      suggestions: []
     };
   }
 
@@ -1088,7 +1081,7 @@ export function processAndVerifyGeminiResponse(
   }
 
   // 3. Deep Verification and Sanity Audit of StrategyDSL
-  const strat = raw.strategy || {};
+  const strat = normalizeStrategyDSL(raw.strategy, 'Institutional Quant Strategy');
   const checksPassed: string[] = [];
   const correctionsApplied: string[] = [];
   let auditScore = 100;
@@ -1290,8 +1283,8 @@ export function processAndVerifyGeminiResponse(
     strategy: validStrategy,
     reasoning: raw.reasoning && !raw.reasoning.includes('Confluence model for') ? raw.reasoning : dynamicAnalysis.reasoning,
     riskAssessment: raw.riskAssessment && !raw.riskAssessment.includes('Operating with') ? raw.riskAssessment : dynamicAnalysis.riskAssessment,
-    suggestedTweaks: Array.isArray(raw.suggestedTweaks) && raw.suggestedTweaks.length > 0
-      ? raw.suggestedTweaks
+    suggestedTweaks: normalizeSuggestedTweaks(raw.suggestedTweaks).length > 0
+      ? normalizeSuggestedTweaks(raw.suggestedTweaks)
       : dynamicAnalysis.suggestedTweaks,
     verificationAudit,
     modelUsed,

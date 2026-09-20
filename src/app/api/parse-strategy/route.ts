@@ -8,17 +8,18 @@ import {
   generateDynamicStrategyAnalysis,
   generateConversationalQuantResponse
 } from '@/lib/parser/gemini';
+import { parseStrategyWithGroq } from '@/lib/parser/groq';
 import { queryLocalOllama } from '@/lib/parser/ollama';
 
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.length < 20) {
+    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.length < 10) {
       return NextResponse.json({ error: 'Unauthorized. Valid API Key required.' }, { status: 401 });
     }
 
     const body = await req.json();
-    const { text, model = 'gemini-2.5-flash', apiKey, currentStrategy, chatHistory } = body;
+    const { text, model = 'groq-gpt-120b', apiKey, groqApiKey, currentStrategy, chatHistory } = body;
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json(
@@ -27,11 +28,35 @@ export async function POST(req: Request) {
       );
     }
 
-    const clientGeminiKey = req.headers.get('x-gemini-api-key') || apiKey;
+    const clientGroqKey = req.headers.get('x-groq-api-key') || groqApiKey || (typeof apiKey === 'string' && apiKey.startsWith('gsk_') ? apiKey : null);
+    const effectiveGroqKey = clientGroqKey?.trim() || process.env.GROQ_API_KEY?.trim();
+
+    const clientGeminiKey = req.headers.get('x-gemini-api-key') || (typeof apiKey === 'string' && !apiKey.startsWith('gsk_') ? apiKey : null);
     const effectiveGeminiKey = clientGeminiKey?.trim() || process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
     const isStrategy = isExplicitStrategyIntent(text);
 
-    // 1. If Gemini API key is available, call Google Gemini AI directly for questions and strategies with full multi-turn context
+    const isGroqModel = typeof model === 'string' && (model.startsWith('groq') || model.includes('gpt-oss') || model.includes('qwen'));
+
+    // 1. High-Performance Groq LPUs™: Blazing fast reasoning (<500ms) for strategy compilation & quant dialogue
+    if (effectiveGroqKey && (isGroqModel || !effectiveGeminiKey || model.includes('groq'))) {
+      try {
+        const groqResult = await parseStrategyWithGroq({
+          text,
+          model,
+          apiKey: effectiveGroqKey,
+          currentStrategy,
+          chatHistory
+        });
+        return NextResponse.json({
+          ...groqResult,
+          isAi: true
+        });
+      } catch (groqError: any) {
+        console.warn('Groq API call failed, falling back to Gemini or deterministic quant engine:', groqError?.message || groqError);
+      }
+    }
+
+    // 2. If Gemini API key is available, call Google Gemini AI directly for questions and strategies with full multi-turn context
     if (effectiveGeminiKey) {
       try {
         const geminiResult = await parseStrategyWithGemini({

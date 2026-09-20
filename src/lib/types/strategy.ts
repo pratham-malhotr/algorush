@@ -78,6 +78,8 @@ export const ConditionSchema = z.object({
   comparator: ComparatorSchema,
   right: z.union([IndicatorSchema, z.number(), z.string()]),
   logicalOperator: z.enum(['AND', 'OR']).optional(),
+  label: z.string().optional(),
+  description: z.string().optional(),
 });
 
 export const ActionTypeSchema = z.enum(['BUY', 'SELL', 'CLOSE_POSITION', 'REBALANCE']);
