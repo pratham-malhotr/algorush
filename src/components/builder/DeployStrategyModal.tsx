@@ -21,7 +21,9 @@ export function DeployStrategyModal({ isOpen, onClose }: DeployStrategyModalProp
 
   const activeAccount = getActiveAccount()
 
-  const [deploymentTarget, setDeploymentTarget] = React.useState<"binance_futures" | "binance_spot" | "paper">("binance_futures")
+  const [deploymentTarget, setDeploymentTarget] = React.useState<"binance_futures" | "binance_spot" | "paper">(
+    activeAccount ? "binance_futures" : "paper"
+  )
   const [leverage, setLeverage] = React.useState<number>(10)
   const [marginType, setMarginType] = React.useState<"CROSS" | "ISOLATED">("CROSS")
   const [capitalAllocation, setCapitalAllocation] = React.useState<number>(allocation || 50)
@@ -41,7 +43,12 @@ export function DeployStrategyModal({ isOpen, onClose }: DeployStrategyModalProp
 
     const checks = [
       { label: "Graph Connectivity & Logic Compile", passed: graphHealth.isValid },
-      { label: `Target Exchange Credentials (${activeAccount?.name || 'Binance'})`, passed: !!activeAccount },
+      { 
+        label: deploymentTarget === "paper" 
+          ? "Paper Trading Virtual Engine ($100,000 USD Sandbox Allocation)" 
+          : `Target Exchange Credentials (${activeAccount?.name || 'Binance'})`, 
+        passed: deploymentTarget === "paper" ? true : !!activeAccount 
+      },
       { label: "Pre-trade Risk & SL/TP Bracket Parameters", passed: !!strategyDSL?.riskParameters },
       { label: "Binance API Rate Limit & Latency Test (<20ms)", passed: true },
       { label: "RSA Signature & Withdrawal Scope Lock Safety Check", passed: true },
@@ -51,7 +58,7 @@ export function DeployStrategyModal({ isOpen, onClose }: DeployStrategyModalProp
     setPreflightStatus({ status: allPassed ? "passed" : "failed", checks })
 
     if (allPassed) {
-      toast.success("Pre-flight checks passed! Ready to deploy live.")
+      toast.success(deploymentTarget === "paper" ? "Pre-flight passed! Ready to deploy to Paper Sandbox." : "Pre-flight checks passed! Ready to deploy live.")
     } else {
       toast.error("Pre-flight check failed. Fix highlighted errors before deploying.")
     }
@@ -71,7 +78,7 @@ export function DeployStrategyModal({ isOpen, onClose }: DeployStrategyModalProp
 
     setIsDeploying(true)
     try {
-      await new Promise(r => setTimeout(r, 1200))
+      await new Promise(r => setTimeout(r, 1000))
       deployStrategy(strategyDSL)
 
       if (deploymentTarget === "binance_futures") {
@@ -79,7 +86,7 @@ export function DeployStrategyModal({ isOpen, onClose }: DeployStrategyModalProp
       } else if (deploymentTarget === "binance_spot") {
         toast.success(`🚀 Strategy '${strategyName}' deployed to Binance Spot Live Execution Engine!`)
       } else {
-        toast.success(`Strategy '${strategyName}' deployed to Paper Trading Sandbox.`)
+        toast.success(`🚀 Strategy '${strategyName}' deployed to Paper Trading Sandbox ($100,000 USD Balance)!`)
       }
 
       onClose()
@@ -316,7 +323,7 @@ export function DeployStrategyModal({ isOpen, onClose }: DeployStrategyModalProp
             <button
               onClick={handleDeploy}
               disabled={isDeploying || (deploymentTarget !== "paper" && !activeAccount)}
-              className="flex items-center gap-2 rounded-xl bg-accent-green px-6 py-2.5 text-[13px] font-bold text-white hover:bg-green-600 shadow-lg shadow-green-500/20 disabled:opacity-50 transition-all"
+              className="flex items-center gap-2 rounded-xl bg-accent-green px-6 py-2.5 text-[13px] font-bold text-white hover:bg-green-600 shadow-lg shadow-green-500/20 disabled:opacity-50 transition-all cursor-pointer"
             >
               {isDeploying ? (
                 <>
@@ -324,7 +331,7 @@ export function DeployStrategyModal({ isOpen, onClose }: DeployStrategyModalProp
                 </>
               ) : (
                 <>
-                  <Play className="h-4 w-4 fill-current" /> Deploy Live Strategy
+                  <Play className="h-4 w-4 fill-current" /> {deploymentTarget === "paper" ? "Deploy to Paper Sandbox" : "Deploy Live Strategy"}
                 </>
               )}
             </button>

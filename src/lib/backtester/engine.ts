@@ -72,6 +72,30 @@ export interface BacktestResult {
 }
 
 /**
+ * Returns realistic base price and typical volatility for any crypto or traditional asset.
+ */
+export function getRealisticAssetPrice(symbol?: string): { price: number; volatility: number } {
+  if (!symbol) return { price: 66500, volatility: 0.018 };
+  const s = symbol.toUpperCase().replace(/\s+/g, '');
+  if (s.includes('BTC') || s.includes('BITCOIN')) return { price: 66500, volatility: 0.018 };
+  if (s.includes('ETH') || s.includes('ETHEREUM')) return { price: 3450, volatility: 0.024 };
+  if (s.includes('SOL') || s.includes('SOLANA')) return { price: 155, volatility: 0.034 };
+  if (s.includes('BNB')) return { price: 590, volatility: 0.020 };
+  if (s.includes('DOGE')) return { price: 0.14, volatility: 0.042 };
+  if (s.includes('XRP')) return { price: 0.58, volatility: 0.030 };
+  if (s.includes('ADA')) return { price: 0.45, volatility: 0.032 };
+  if (s.includes('AVAX')) return { price: 28, volatility: 0.035 };
+  if (s.includes('LINK')) return { price: 13.5, volatility: 0.030 };
+  if (s.includes('SUI')) return { price: 1.75, volatility: 0.040 };
+  if (s.includes('NEAR')) return { price: 4.8, volatility: 0.035 };
+  if (s.includes('PEPE') || s.includes('SHIB')) return { price: 0.000018, volatility: 0.055 };
+  if (s.includes('AAPL')) return { price: 228, volatility: 0.012 };
+  if (s.includes('NVDA')) return { price: 122, volatility: 0.025 };
+  if (s.includes('TSLA')) return { price: 245, volatility: 0.032 };
+  return { price: 100, volatility: 0.025 };
+}
+
+/**
  * Generates realistic market candle data for any timeframe and lookback period.
  * Guarantees at least 350 warmup bars so 200 EMA/SMA never have NaN values.
  */
@@ -709,8 +733,10 @@ export function runLocalBacktest(
   slippagePct: number = 0.03, // 0.03% slippage
   targetVenue: string = "Binance Futures"
 ): BacktestResult {
+  const symbol = strategy?.instruments?.[0]?.symbol || "BTC/USDT";
   if (!data || data.length === 0) {
-    data = generateMockData(90, 64000);
+    const { price, volatility } = getRealisticAssetPrice(symbol);
+    data = generateMockData(90, price, strategy?.timeframe || "15m", volatility);
   }
 
   let equity = Math.max(100, initialCapital);
@@ -724,7 +750,6 @@ export function runLocalBacktest(
   let totalFeeCost = 0;
   let totalSlippageCost = 0;
 
-  const symbol = strategy?.instruments?.[0]?.symbol || "BTC/USDT";
   const startPrice = data[0].close;
   const endPrice = data[data.length - 1].close;
 
