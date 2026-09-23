@@ -37,7 +37,7 @@ export function GrowthChart() {
           contentStyle={{ backgroundColor: 'var(--color-bg-elevated)', border: '1px solid var(--color-bg-border)', borderRadius: '6px' }}
           itemStyle={{ color: '#F8FAFC' }}
         />
-        <Area type="monotone" dataKey="value" stroke="#3B82F6" fillOpacity={1} fill="url(#colorValue)" />
+        <Area type="linear" dataKey="value" stroke="#3B82F6" fillOpacity={1} fill="url(#colorValue)" />
       </AreaChart>
     </ResponsiveContainer>
   )

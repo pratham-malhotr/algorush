@@ -120,12 +120,15 @@ export function generateMockData(
 
   // Cap max bars for browser performance while ensuring enough density
   const calculatedBars = Math.floor(days * barsPerDay);
-  const totalBars = Math.max(350, Math.min(2500, calculatedBars));
+  const totalBars = Math.max(350, Math.min(1800, calculatedBars));
   const timeStep = (days * 24 * 60 * 60 * 1000) / totalBars;
 
+  // Scale per-bar volatility and cycles by bar frequency
+  const timeScale = Math.sqrt(Math.max(1, barsPerDay / 24));
+  const stepVol = volatility / timeScale;
   let trendAngle = Math.random() * Math.PI * 2;
-  const cycleFreq1 = 0.04 + Math.random() * 0.04;
-  const cycleFreq2 = 0.015 + Math.random() * 0.02;
+  const cycleFreq1 = (0.04 + Math.random() * 0.04) / timeScale;
+  const cycleFreq2 = (0.015 + Math.random() * 0.02) / timeScale;
 
   for (let i = totalBars; i >= 0; i--) {
     const timestamp = now - i * timeStep;
@@ -134,17 +137,17 @@ export function generateMockData(
       ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       : `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${d.getHours()}:00`;
     
-    // Multi-frequency wave cycle for technical indicator swings
+    // Multi-frequency wave cycle with mean-reverting pull to prevent unbounded exponential drift
     trendAngle += cycleFreq1;
-    const cycle = Math.sin(trendAngle) * (volatility * 0.7) + Math.cos(trendAngle * cycleFreq2) * (volatility * 0.4);
-    const drift = 0.0003;
-    const shock = (Math.random() - 0.495) * volatility;
-    const change = drift + shock + cycle;
+    const meanReversion = ((startPrice - currentPrice) / startPrice) * 0.008;
+    const cycle = Math.sin(trendAngle) * (stepVol * 0.45) + Math.cos(trendAngle * cycleFreq2) * (stepVol * 0.25);
+    const shock = (Math.random() - 0.499) * stepVol;
+    const change = meanReversion + shock + cycle;
     
     const open = currentPrice;
     const close = Math.max(0.01, currentPrice * (1 + change));
-    const wickHigh = Math.abs(change) * 0.6 + Math.random() * (volatility * 0.4);
-    const wickLow = Math.abs(change) * 0.6 + Math.random() * (volatility * 0.4);
+    const wickHigh = Math.abs(change) * 0.5 + Math.random() * (stepVol * 0.3);
+    const wickLow = Math.abs(change) * 0.5 + Math.random() * (stepVol * 0.3);
     const high = Math.max(open, close) * (1 + wickHigh);
     const low = Math.max(0.001, Math.min(open, close) * (1 - wickLow));
     
@@ -167,7 +170,7 @@ export function generateMockData(
 // TECHNICAL INDICATOR CALCULATORS (ROBUST WITH ZERO NaN OUT OF BOUNDS)
 // ═══════════════════════════════════════════════════════════════════════════
 
-function calculateSMA(series: number[], period: number): number[] {
+export function calculateSMA(series: number[], period: number): number[] {
   const sma: number[] = new Array(series.length).fill(series[0]);
   const p = Math.max(1, Math.min(period, series.length));
   
@@ -181,7 +184,7 @@ function calculateSMA(series: number[], period: number): number[] {
   return sma;
 }
 
-function calculateEMA(series: number[], period: number): number[] {
+export function calculateEMA(series: number[], period: number): number[] {
   const ema: number[] = new Array(series.length).fill(series[0]);
   if (series.length === 0) return ema;
   
@@ -194,7 +197,7 @@ function calculateEMA(series: number[], period: number): number[] {
   return ema;
 }
 
-function calculateWMA(series: number[], period: number): number[] {
+export function calculateWMA(series: number[], period: number): number[] {
   const wma: number[] = new Array(series.length).fill(series[0]);
   const p = Math.max(1, Math.min(period, series.length));
 
@@ -210,7 +213,7 @@ function calculateWMA(series: number[], period: number): number[] {
   return wma;
 }
 
-function calculateHMA(series: number[], period: number): number[] {
+export function calculateHMA(series: number[], period: number): number[] {
   const p = Math.max(2, period);
   const halfPeriod = Math.max(1, Math.floor(p / 2));
   const sqrtPeriod = Math.max(1, Math.floor(Math.sqrt(p)));
@@ -225,7 +228,7 @@ function calculateHMA(series: number[], period: number): number[] {
   return calculateWMA(rawHma, sqrtPeriod);
 }
 
-function calculateRSI(series: number[], period: number = 14): number[] {
+export function calculateRSI(series: number[], period: number = 14): number[] {
   const rsi: number[] = new Array(series.length).fill(50);
   const p = Math.max(1, period);
   if (series.length <= 1) return rsi;
@@ -281,7 +284,7 @@ function calculateATR(highs: number[], lows: number[], closes: number[], period:
   return atr;
 }
 
-function calculateBollingerBands(closes: number[], period: number = 20, stdDevMultiplier: number = 2.0) {
+export function calculateBollingerBands(closes: number[], period: number = 20, stdDevMultiplier: number = 2.0) {
   const p = Math.max(2, period);
   const sma = calculateSMA(closes, p);
   const upper: number[] = new Array(closes.length).fill(closes[0]);
@@ -303,7 +306,7 @@ function calculateBollingerBands(closes: number[], period: number = 20, stdDevMu
   return { middle: sma, upper, lower, width };
 }
 
-function calculateMACD(closes: number[], fastPeriod: number = 12, slowPeriod: number = 26, signalPeriod: number = 9) {
+export function calculateMACD(closes: number[], fastPeriod: number = 12, slowPeriod: number = 26, signalPeriod: number = 9) {
   const fastEma = calculateEMA(closes, fastPeriod);
   const slowEma = calculateEMA(closes, slowPeriod);
   const macdLine: number[] = new Array(closes.length).fill(0);

@@ -254,8 +254,8 @@ export function BacktestDrawer() {
                         contentStyle={{ backgroundColor: 'var(--color-bg-elevated)', border: '1px solid var(--color-bg-border)', borderRadius: '8px', fontSize: '12px' }}
                         itemStyle={{ color: '#F8FAFC' }}
                       />
-                      <Area type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} fill="url(#equityGrad)" dot={false} name="Strategy" />
-                      <Line type="monotone" dataKey="benchmark" stroke="#475569" strokeWidth={1} strokeDasharray="4 2" dot={false} name="Benchmark" />
+                      <Area type="linear" dataKey="value" stroke="#3B82F6" strokeWidth={2} fill="url(#equityGrad)" dot={false} name="Strategy" />
+                      <Line type="linear" dataKey="benchmark" stroke="#475569" strokeWidth={1} strokeDasharray="4 2" dot={false} name="Benchmark" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
