@@ -9,6 +9,7 @@ import {
   generateConversationalQuantResponse
 } from '@/lib/parser/gemini';
 import { parseStrategyWithGroq } from '@/lib/parser/groq';
+import { parseStrategyWithClaude, ClaudeLimitReachedError } from '@/lib/parser/claude';
 import { queryLocalOllama } from '@/lib/parser/ollama';
 
 export async function POST(req: Request) {
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { text, model = 'groq-gpt-120b', apiKey, groqApiKey, currentStrategy, chatHistory } = body;
+    const { text, model = 'claude-3-7-sonnet', apiKey, groqApiKey, claudeApiKey, currentStrategy, chatHistory } = body;
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json(
@@ -28,31 +29,80 @@ export async function POST(req: Request) {
       );
     }
 
+    const clientClaudeKey = req.headers.get('x-claude-api-key') || claudeApiKey || (typeof apiKey === 'string' && apiKey.startsWith('sk-ant-') ? apiKey : null);
+    const effectiveClaudeKey = clientClaudeKey?.trim() || process.env.ANTHROPIC_API_KEY?.trim() || process.env.CLAUDE_API_KEY?.trim();
+
     const clientGroqKey = req.headers.get('x-groq-api-key') || groqApiKey || (typeof apiKey === 'string' && apiKey.startsWith('gsk_') ? apiKey : null);
     const effectiveGroqKey = clientGroqKey?.trim() || process.env.GROQ_API_KEY?.trim();
 
-    const clientGeminiKey = req.headers.get('x-gemini-api-key') || (typeof apiKey === 'string' && !apiKey.startsWith('gsk_') ? apiKey : null);
+    const clientGeminiKey = req.headers.get('x-gemini-api-key') || (typeof apiKey === 'string' && !apiKey.startsWith('gsk_') && !apiKey.startsWith('sk-ant-') ? apiKey : null);
     const effectiveGeminiKey = clientGeminiKey?.trim() || process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
-    const isStrategy = isExplicitStrategyIntent(text);
+    const isStrategy = isExplicitStrategyIntent(text, chatHistory);
 
+    const isClaudeModel = typeof model === 'string' && (model.startsWith('claude') || model.includes('anthropic') || model.includes('sonnet'));
     const isGroqModel = typeof model === 'string' && (model.startsWith('groq') || model.includes('gpt-oss') || model.includes('qwen'));
 
-    // 1. High-Performance Groq LPUs™: Blazing fast reasoning (<500ms) for strategy compilation & quant dialogue
+    // ═══ 1. ANTHROPIC CLAUDE (PRIMARY) WITH INSTANT GROQ FAILOVER ═══
+    // When Claude API key is configured or Claude is selected:
+    // Execute with Claude 3.7 / 3.5 Sonnet; if rate limit or credit limit is reached, seamlessly failover to Groq LPUs™
+    if (effectiveClaudeKey && (isClaudeModel || (!isGroqModel && !model.startsWith('gemini')))) {
+      try {
+        const claudeResult = await parseStrategyWithClaude({
+          text,
+          model: isClaudeModel ? model : 'claude-3-7-sonnet-20250219',
+          apiKey: effectiveClaudeKey,
+          currentStrategy,
+          chatHistory
+        });
+        return NextResponse.json({
+          ...claudeResult,
+          isAi: true,
+          modelUsed: 'AlgoRush Copilot',
+          provider: 'AlgoRush Copilot'
+        });
+      } catch (claudeError: any) {
+        // Auto-failover to Groq models if Claude limits/credits are reached
+        if (effectiveGroqKey) {
+          try {
+            const groqFailoverResult = await parseStrategyWithGroq({
+              text,
+              model: 'openai/gpt-oss-120b',
+              apiKey: effectiveGroqKey,
+              currentStrategy,
+              chatHistory
+            });
+            return NextResponse.json({
+              ...groqFailoverResult,
+              isAi: true,
+              fallbackUsed: true,
+              modelUsed: 'AlgoRush Copilot',
+              provider: 'AlgoRush Copilot'
+            });
+          } catch (groqError: any) {
+            console.warn('Groq failover call encountered an issue:', groqError?.message || groqError);
+          }
+        }
+      }
+    }
+
+    // ═══ 2. HIGH-PERFORMANCE GROQ LPUs™ ═══
     if (effectiveGroqKey && (isGroqModel || !effectiveGeminiKey || model.includes('groq'))) {
       try {
         const groqResult = await parseStrategyWithGroq({
           text,
-          model,
+          model: isGroqModel ? model : 'openai/gpt-oss-120b',
           apiKey: effectiveGroqKey,
           currentStrategy,
           chatHistory
         });
         return NextResponse.json({
           ...groqResult,
-          isAi: true
+          isAi: true,
+          modelUsed: 'AlgoRush Copilot',
+          provider: 'AlgoRush Copilot'
         });
       } catch (groqError: any) {
-        console.warn('Groq API call failed, falling back to Gemini or deterministic quant engine:', groqError?.message || groqError);
+        console.warn('Groq API call failed:', groqError?.message || groqError);
       }
     }
 
@@ -125,7 +175,7 @@ export async function POST(req: Request) {
 
     // 4. Deterministic Strategy Compilation with Dynamic Quant Analysis
     await new Promise(r => setTimeout(r, 280));
-    const localResult = parseStrategyLocally(text, currentStrategy);
+    const localResult = parseStrategyLocally(text, currentStrategy, chatHistory);
     const selectedEngineName = model.startsWith('gemini') ? model : 'gemini-2.5-flash';
     
     // Dynamically calculate strategy parameters, liquidation, and edge rationale
@@ -141,7 +191,8 @@ export async function POST(req: Request) {
       },
       text,
       selectedEngineName,
-      280
+      280,
+      chatHistory
     );
 
     return NextResponse.json({
@@ -165,8 +216,12 @@ export async function POST(req: Request) {
 // leverage, price levels, exit conditions, and 20+ technical indicators.
 // ────────────────────────────────────────────────────────────────────────────
 
-function parseStrategyLocally(text: string, currentStrategy?: any) {
-  const t = text.toLowerCase();
+function parseStrategyLocally(text: string, currentStrategy?: any, chatHistory?: any[]) {
+  const userHistoryText = Array.isArray(chatHistory) 
+    ? chatHistory.filter((m: any) => m.role === 'user' && typeof m.content === 'string').map((m: any) => m.content).join(' ') 
+    : '';
+  const combinedText = `${userHistoryText} ${text}`.trim();
+  const t = combinedText.toLowerCase();
   const isIncrementalTweak = currentStrategy && (
     /\b(tweak|modify|update|change|tighten|loosen|add|remove|switch|adjust|increase|decrease|set)\b/i.test(t) ||
     /^(apply this tweak|now change|now add|also add|make it|set stop|set tp|change sl|change tp|switch to)\b/i.test(t)

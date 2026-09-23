@@ -8,10 +8,12 @@ import {
   Sliders, ChevronDown, ChevronUp, Code2, Play, ExternalLink, RefreshCw, Terminal, Layers
 } from "lucide-react"
 import { useBuilderStore, AiModelType } from "@/store/useBuilderStore"
+import { isExplicitStrategyIntent } from "@/lib/parser/intentClassifier"
 import { generateMockData, runLocalBacktest } from "@/lib/backtester/engine"
 import { generatePythonCCXT, generatePineScriptV5 } from "@/lib/generators/codeGenerators"
 import { StrategyDSL } from "@/lib/types/strategy"
 import { toast } from "sonner"
+
 
 const SAMPLE_PRESETS = [
   {
@@ -46,7 +48,7 @@ const PROMPT_ARCHETYPES = [
   {
     label: "🌊 Mean Reversion",
     icon: Activity,
-    color: "text-purple-400 border-purple-500/30 bg-purple-500/10",
+    color: "text-indigo-400 border-indigo-500/30 bg-indigo-500/10",
     template: "Long SOL when price is below lower Bollinger Band and RSI < 30 on 15m, exit when price reaches upper Bollinger Band, stop loss 3%, 5x leverage"
   },
   {
@@ -184,7 +186,7 @@ function FormattedTextBlock({ text }: { text: string }) {
 }
 
 /**
- * Interactive Deep Reasoning Disclosure ("Thought for Xs")
+ * Sleek Institutional Reasoning Disclosure ("Reasoning trace (Xs)")
  */
 function DeepThinkingAccordion({
   reasoning,
@@ -202,34 +204,26 @@ function DeepThinkingAccordion({
   const seconds = latencyMs ? (latencyMs / 1000).toFixed(1) : "1.2";
 
   return (
-    <div className="my-2.5 overflow-hidden rounded-xl border border-purple-500/30 bg-purple-950/20 text-[11.5px] transition-all shadow-sm">
+    <div className="my-2 overflow-hidden rounded-lg border border-bg-border bg-bg-elevated/40 text-[11px] transition-all">
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex w-full items-center justify-between px-3 py-2 text-left font-mono font-medium text-purple-300 hover:bg-purple-900/30 transition-colors"
+        className="flex w-full items-center justify-between px-2.5 py-1.5 text-left font-mono text-text-secondary hover:text-text-primary hover:bg-bg-elevated/70 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-purple-400 opacity-75"></span>
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-purple-500"></span>
-          </span>
-          <BrainCircuit className="h-3.5 w-3.5 text-purple-400" />
-          <span className="font-bold">Thought deeply for {seconds}s</span>
-          {modelName && (
-            <span className="rounded bg-purple-500/20 border border-purple-500/30 px-1.5 py-0.5 text-[9px] text-purple-200">
-              {modelName}
-            </span>
-          )}
+          <BrainCircuit className="h-3.5 w-3.5 text-accent-blue" />
+          <span className="font-semibold text-text-secondary">Reasoning trace</span>
+          <span className="text-[10px] text-text-tertiary font-normal">({seconds}s)</span>
         </div>
-        <div className="flex items-center gap-1 text-[10px] text-purple-400 font-semibold">
-          <span>{isExpanded ? "Hide thought process" : "View thought process"}</span>
-          <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+        <div className="flex items-center gap-1 text-[10px] text-text-tertiary hover:text-text-secondary">
+          <span>{isExpanded ? "Hide" : "Show"}</span>
+          <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
         </div>
       </button>
 
       {isExpanded && (
-        <div className="border-t border-purple-500/20 bg-bg-base/80 p-3 text-text-secondary leading-relaxed animate-in fade-in duration-200">
-          <div className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-purple-400">
+        <div className="border-t border-bg-border/60 bg-bg-base/90 p-3 text-text-secondary leading-relaxed animate-in fade-in duration-150">
+          <div className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-accent-blue">
             <Sparkles className="h-3 w-3" />
             <span>Chain-of-Thought & Quantitative Proof</span>
           </div>
@@ -241,9 +235,9 @@ function DeepThinkingAccordion({
 }
 
 /**
- * Multi-Stage Animated Deep Thinking Indicator
+ * Multi-Stage Institutional Quant Progress Indicator
  */
-function DeepWorkingProgress({ aiModel }: { aiModel: string }) {
+function DeepWorkingProgress({ aiModel, isStrategy = true }: { aiModel: string; isStrategy?: boolean }) {
   const [stage, setStage] = React.useState(0);
 
   React.useEffect(() => {
@@ -257,34 +251,44 @@ function DeepWorkingProgress({ aiModel }: { aiModel: string }) {
     };
   }, []);
 
-  const STAGES = [
-    { text: "Analyzing market microstructure & volatility regime...", icon: BrainCircuit, color: "text-purple-400" },
+  const STRATEGY_STAGES = [
+    { text: "Analyzing market microstructure & volatility regime...", icon: BrainCircuit, color: "text-accent-blue" },
     { text: "Formulating quantitative edge equations & expectancy E[R]...", icon: Sparkles, color: "text-cyan-400" },
     { text: "Simulating 90-day order execution & liquidation buffer...", icon: Activity, color: "text-amber-400" },
     { text: "Compiling institutional StrategyDSL & synthesising code...", icon: Zap, color: "text-emerald-400" },
   ];
 
+  const CONVERSATIONAL_STAGES = [
+    { text: "Parsing quantitative question & financial context...", icon: BrainCircuit, color: "text-accent-blue" },
+    { text: "Formulating mathematical reasoning & equations...", icon: Sparkles, color: "text-cyan-400" },
+    { text: "Synthesizing institutional insights & practical guidelines...", icon: Activity, color: "text-amber-400" },
+    { text: "Formatting comprehensive quant response...", icon: Zap, color: "text-emerald-400" },
+  ];
+
+  const STAGES = isStrategy ? STRATEGY_STAGES : CONVERSATIONAL_STAGES;
   const current = STAGES[stage] || STAGES[0];
   const Icon = current.icon;
 
   return (
-    <div className="flex gap-2 animate-in fade-in duration-200">
-      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/40">
-        <BrainCircuit className="h-3.5 w-3.5 animate-pulse" />
+    <div className="flex gap-2.5 animate-in fade-in duration-200">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-accent-blue/10 text-accent-blue border border-accent-blue/20 shadow-xs">
+        <BrainCircuit className="h-4 w-4 animate-pulse" />
       </div>
-      <div className="flex flex-col gap-1.5 rounded-xl border border-purple-500/30 bg-purple-950/20 px-3 py-2.5 text-[11px] shadow-sm max-w-[88%] w-full">
-        <div className="flex items-center justify-between border-b border-purple-500/20 pb-1">
+      <div className="flex flex-col gap-1.5 rounded-xl border border-bg-border bg-bg-surface/90 px-3.5 py-2.5 text-[11.5px] shadow-xs max-w-[90%] w-full">
+        <div className="flex items-center justify-between border-b border-bg-border/60 pb-1.5">
           <div className="flex items-center gap-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-purple-400 shrink-0" />
-            <span className="font-bold text-purple-200">Thinking deeply...</span>
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-accent-blue shrink-0" />
+            <span className="font-semibold text-text-primary text-[12px]">
+              {isStrategy ? "Synthesizing Strategy..." : "Analyzing Quant Inquiry..."}
+            </span>
           </div>
-          <span className="rounded bg-purple-500/20 border border-purple-500/30 px-1.5 py-0.5 text-[9px] font-mono font-semibold text-purple-300">
-            {aiModel.includes("groq") ? "Groq LPUs™" : "Neural Quant"}
+          <span className="rounded-md bg-accent-blue/10 border border-accent-blue/20 px-1.5 py-0.5 text-[9.5px] font-mono font-bold text-accent-blue">
+            AlgoRush Copilot
           </span>
         </div>
-        <div className="flex items-center gap-2 text-text-secondary pt-0.5 text-[10.5px]">
-          <Icon className={`h-3.5 w-3.5 ${current.color} shrink-0 animate-bounce`} />
-          <span className="font-medium text-text-primary animate-pulse">{current.text}</span>
+        <div className="flex items-center gap-2 text-text-secondary pt-0.5 text-[11px]">
+          <Icon className={`h-3.5 w-3.5 ${current.color} shrink-0`} />
+          <span className="font-medium text-text-secondary">{current.text}</span>
         </div>
       </div>
     </div>
@@ -567,7 +571,7 @@ function StrategyCardInteractiveControls({
         <button
           type="button"
           onClick={onOpenOptimizer}
-          className="flex items-center justify-center gap-1 rounded-md bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 py-1 transition-all"
+          className="flex items-center justify-center gap-1 rounded-md bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 py-1 transition-all"
           title="Run AI Genetic Parameter Sweep"
         >
           <Dna className="h-3 w-3" />
@@ -913,6 +917,10 @@ export function AICopilot() {
 
   const getModelBadge = () => {
     switch (aiModel) {
+      case 'claude-3-7-sonnet':
+        return { label: 'Claude 3.7 Sonnet (Auto-Groq)', icon: Sparkles, color: 'text-amber-300', bg: 'bg-amber-500/15 border-amber-500/30' }
+      case 'claude-3-5-sonnet':
+        return { label: 'Claude 3.5 Sonnet (Auto-Groq)', icon: Sparkles, color: 'text-amber-300', bg: 'bg-amber-500/15 border-amber-500/30' }
       case 'groq-gpt-120b':
         return { label: '⚡ Groq Neural Quant™', icon: Zap, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/30' }
       case 'groq-qwen-27b':
@@ -924,26 +932,21 @@ export function AICopilot() {
       case 'gemini-3.8-flash':
         return { label: 'Gemini 2.5 Flash', icon: Cpu, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' }
       case 'gemini-2.0-flash':
-        return { label: 'Gemini 2.0 Flash', icon: Cpu, color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/30' }
+        return { label: 'Gemini 2.0 Flash', icon: Cpu, color: 'text-indigo-400', bg: 'bg-indigo-500/10 border-indigo-500/30' }
       case 'gemini-1.5-pro':
         return { label: 'Gemini 1.5 Pro', icon: Sparkles, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/30' }
       case 'gemini-1.5-flash-8b':
         return { label: 'Gemini Flash 8B', icon: Zap, color: 'text-accent-blue', bg: 'bg-accent-blue/10 border-accent-blue/30' }
       default:
-        return { label: '⚡ Groq Neural Quant™', icon: Zap, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/30' }
+        return { label: 'Claude 3.7 Sonnet (Auto-Groq)', icon: Sparkles, color: 'text-amber-300', bg: 'bg-amber-500/15 border-amber-500/30' }
     }
   }
 
   const modelBadge = getModelBadge()
   const IconComponent = modelBadge.icon
 
-  const formatModelBadge = (name?: string) => {
-    if (!name) return 'Groq Neural Quant™'
-    if (name.includes('compound') || name.includes('Groq Neural')) return 'Groq Neural Quant™'
-    if (name.includes('120b')) return 'Groq GPT-OSS 120B'
-    if (name.includes('27b') || name.includes('qwen')) return 'Groq Qwen 27B'
-    if (name.includes('groq')) return 'Groq Ultra-Fast AI'
-    return name
+  const formatModelBadge = (_name?: string) => {
+    return 'AlgoRush Copilot'
   }
 
   return (
@@ -975,113 +978,10 @@ export function AICopilot() {
             </button>
           )}
 
-          {/* Engine Selector Dropdown Pill */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsModelDropdownOpen(prev => !prev)}
-              className={`flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-bold transition-all hover:scale-105 ${modelBadge.bg} ${modelBadge.color}`}
-              title="Switch AI Engine"
-            >
-              <IconComponent className="h-3 w-3" />
-              <span>{modelBadge.label}</span>
-              <ChevronDown className={`h-2.5 w-2.5 transition-transform ${isModelDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {/* Dropdown Menu */}
-            {isModelDropdownOpen && (
-              <div className="absolute right-0 top-7 w-60 rounded-xl border border-bg-border bg-bg-surface/95 backdrop-blur-md p-1.5 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-2 py-1 text-[9.5px] font-bold uppercase tracking-wider text-text-tertiary">
-                  Select Quant AI Engine
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAiModel('groq-gpt-120b')
-                    setIsModelDropdownOpen(false)
-                    toast.success("Switched to Groq Neural Quant™ (500ms synthesis)")
-                  }}
-                  className={`w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left text-[11px] transition-colors ${
-                    aiModel === 'groq-gpt-120b' ? 'bg-amber-500/15 text-amber-300 font-bold' : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Zap className="h-3.5 w-3.5 text-amber-400" />
-                    <span>⚡ Groq Neural Quant™</span>
-                  </div>
-                  <span className="text-[9px] font-mono text-emerald-400">~400ms</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAiModel('groq-qwen-27b')
-                    setIsModelDropdownOpen(false)
-                    toast.success("Switched to Groq LPU Instant")
-                  }}
-                  className={`w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left text-[11px] transition-colors ${
-                    aiModel === 'groq-qwen-27b' ? 'bg-orange-500/15 text-orange-300 font-bold' : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Cpu className="h-3.5 w-3.5 text-orange-400" />
-                    <span>⚡ Groq LPU (Instant)</span>
-                  </div>
-                  <span className="text-[9px] font-mono text-emerald-400">~300ms</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAiModel('gemini-2.5-flash')
-                    setIsModelDropdownOpen(false)
-                    toast.success("Switched to Gemini 2.5 Flash")
-                  }}
-                  className={`w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left text-[11px] transition-colors ${
-                    aiModel === 'gemini-2.5-flash' ? 'bg-emerald-500/15 text-emerald-300 font-bold' : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Cpu className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Gemini 2.5 Flash</span>
-                  </div>
-                  <span className="text-[9px] font-mono text-text-tertiary">Verified</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAiModel('gemini-2.5-pro')
-                    setIsModelDropdownOpen(false)
-                    toast.success("Switched to Gemini 2.5 Pro")
-                  }}
-                  className={`w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left text-[11px] transition-colors ${
-                    aiModel === 'gemini-2.5-pro' ? 'bg-blue-500/15 text-blue-300 font-bold' : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-blue-400" />
-                    <span>Gemini 2.5 Pro</span>
-                  </div>
-                  <span className="text-[9px] font-mono text-blue-400">Deep Math</span>
-                </button>
-
-                <div className="my-1 border-t border-bg-border/60" />
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsModelDropdownOpen(false)
-                    setIsGeminiModalOpen(true)
-                  }}
-                  className="w-full flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-[10.5px] text-text-tertiary hover:bg-bg-elevated hover:text-text-primary transition-colors"
-                >
-                  <Settings2 className="h-3 w-3" />
-                  <span>Configure API Keys...</span>
-                </button>
-              </div>
-            )}
+          {/* Status Indicator */}
+          <div className="flex items-center gap-1.5 rounded-md border border-accent-blue/30 bg-accent-blue/10 px-2 py-0.5 text-[10px] font-bold text-accent-blue shadow-xs">
+            <Sparkles className="h-3 w-3 text-accent-blue" />
+            <span>AI Copilot</span>
           </div>
         </div>
       </div>
@@ -1114,29 +1014,32 @@ export function AICopilot() {
                 }`}>
                   {/* AI Badge & Actions */}
                   {msg.role === 'assistant' && (
-                    <div className="mb-2 flex items-center justify-between border-b border-bg-border/60 pb-1.5 text-[10px]">
-                      <span className="flex items-center gap-1 font-bold text-accent-blue">
-                        <Zap className={`h-3 w-3 ${msg.metadata?.modelUsed?.toLowerCase().includes('groq') ? 'text-amber-400' : 'text-accent-blue'}`} />
-                        <span>
-                          {formatModelBadge(msg.metadata?.modelUsed)}
+                    <>
+                      <div className="mb-2 flex items-center justify-between border-b border-bg-border/60 pb-1.5 text-[10px]">
+                        <span className="flex items-center gap-1.5 font-bold text-accent-blue tracking-wide">
+                          <Sparkles className="h-3 w-3 text-accent-blue" />
+                          <span>AlgoRush Copilot</span>
                         </span>
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        {msg.metadata?.latencyMs !== undefined && (
-                          <span className="font-mono text-[9px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1 py-0.5 rounded">
-                            {msg.metadata.latencyMs}ms
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleCopyMessage(msg.content, idx)}
-                          className="p-0.5 text-text-tertiary hover:text-accent-blue transition-colors rounded"
-                          title="Copy message content"
-                        >
-                          {copiedIdx === idx ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          {msg.metadata?.latencyMs !== undefined && (
+                            <span 
+                              title="Quant Inference Latency"
+                              className="font-mono text-[9px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1 py-0.5 rounded cursor-default"
+                            >
+                              {msg.metadata.latencyMs}ms
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleCopyMessage(msg.content, idx)}
+                            className="p-0.5 text-text-tertiary hover:text-accent-blue transition-colors rounded"
+                            title="Copy message content"
+                          >
+                            {copiedIdx === idx ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    </>
                   )}
 
                   {/* Message Content: Streamed progressive typewriter for new assistant messages */}
@@ -1306,7 +1209,10 @@ export function AICopilot() {
 
           {/* Multi-Stage Animated Deep Thinking Indicator */}
           {isLoading && (
-            <DeepWorkingProgress aiModel={aiModel} />
+            <DeepWorkingProgress 
+              aiModel={aiModel} 
+              isStrategy={chatHistory.length > 0 ? isExplicitStrategyIntent(chatHistory[chatHistory.length - 1].content, chatHistory.slice(0, -1).map(m => ({ role: m.role, content: m.content }))) : true} 
+            />
           )}
 
           {/* Quick Preset Prompts when chat is at initial welcome */}

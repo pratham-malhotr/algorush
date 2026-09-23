@@ -62,7 +62,7 @@ const PRESET_STRATEGIES = [
   },
   {
     category: "⚡ Scalping & High Frequency",
-    color: "border-purple-500/30 bg-purple-500/10 text-purple-400",
+    color: "border-indigo-500/30 bg-indigo-500/10 text-indigo-400",
     items: [
       {
         title: "🔥 5m Volume Surge Micro-Scalper",
@@ -321,181 +321,92 @@ export function StrategyPromptStudio() {
     const target = textToCompile || prompt
     if (!target.trim() || buildupPipelineStage > 0) return
     await executeFullEndToEndBuild(target)
+    setIsPromptStudioOpen(false)
   }
 
   const isBuilding = buildupPipelineStage > 0
 
-  if (!isPromptStudioOpen) {
-    return (
-      <div className="w-full rounded-2xl border border-bg-border/90 bg-bg-surface/90 backdrop-blur-xl shadow-2xl p-1.5 flex items-center gap-2 transition-all duration-200 hover:border-accent-blue/40">
-        {/* Left AI Sparkle Pill */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-accent-blue/10 border border-accent-blue/25 text-accent-blue font-bold text-xs shrink-0 select-none shadow-xs">
-          <Sparkles className="h-3.5 w-3.5 text-accent-blue animate-pulse" />
-          <span className="hidden sm:inline font-mono tracking-tight text-[11px]">AI Studio</span>
-        </div>
-
-        {/* Input */}
-        <div className="flex-1 relative flex items-center min-w-0">
-          <input
-            type="text"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                handleBuild()
-              }
-            }}
-            placeholder="Type strategy (e.g. 'Buy 50% BTC on 15m when 20 EMA > 50 EMA, stop loss 2%')..."
-            className="w-full bg-transparent px-2 text-xs text-text-primary outline-none placeholder:text-text-tertiary truncate"
-          />
-          {prompt.length > 0 && (
-            <button
-              onClick={() => setPrompt("")}
-              className="p-1 text-text-tertiary hover:text-text-primary rounded"
-              title="Clear"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Voice Input */}
-          <button
-            type="button"
-            onClick={toggleSpeechRecognition}
-            className={`p-1.5 rounded-lg text-xs transition-all ${
-              isListening
-                ? 'bg-rose-500 text-white animate-pulse'
-                : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
-            }`}
-            title="Voice input"
-          >
-            {isListening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
-          </button>
-
-          {/* Auto Enhance */}
-          <button
-            type="button"
-            onClick={handleAutoEnhance}
-            className="hidden md:flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-bg-elevated hover:bg-accent-blue/10 hover:text-accent-blue text-text-secondary border border-bg-border transition-all"
-            title="Auto-Enhance prompt with risk safeguards"
-          >
-            <Wand2 className="h-3 w-3" />
-            <span>Auto</span>
-          </button>
-
-          {/* Build Strategy */}
-          <button
-            type="button"
-            onClick={() => handleBuild()}
-            disabled={isBuilding || !prompt.trim()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-blue hover:bg-blue-600 disabled:opacity-40 text-white font-bold text-[11.5px] shadow-sm shadow-accent-blue/20 transition-all hover:scale-102"
-          >
-            {isBuilding ? (
-              <>
-                <span className="h-3 w-3 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                <span className="hidden sm:inline">Compiling...</span>
-              </>
-            ) : (
-              <>
-                <Zap className="h-3.5 w-3.5 fill-current" />
-                <span>Build</span>
-              </>
-            )}
-          </button>
-
-          <div className="h-4 w-px bg-bg-border mx-0.5" />
-
-          {/* Expand to full Studio */}
-          <button
-            type="button"
-            onClick={() => setIsPromptStudioOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold text-text-secondary hover:text-text-primary hover:bg-bg-elevated border border-transparent hover:border-bg-border transition-all"
-            title="Expand Full Studio (Clause Matrix, Live Tokenizer HUD, Presets)"
-          >
-            <span>Studio</span>
-            <ChevronDown className="h-3 w-3" />
-          </button>
-        </div>
-      </div>
-    )
-  }
+  if (!isPromptStudioOpen) return null
 
   return (
-    <div className="w-full rounded-2xl border border-bg-border/90 bg-bg-surface/95 backdrop-blur-xl transition-all shadow-2xl overflow-hidden flex flex-col">
-      {/* ═══ Header Bar: Studio Tabs & Mode Switchers ═══ */}
-      <div className="flex h-10 items-center justify-between px-4 border-b border-bg-border/60 text-xs">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 font-bold text-accent-blue">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span className="tracking-wide">AI Strategy Studio</span>
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 md:pt-16 bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      {/* Backdrop overlay */}
+      <div 
+        className="fixed inset-0" 
+        onClick={() => setIsPromptStudioOpen(false)} 
+      />
+
+      <div className="relative z-10 w-full max-w-3xl rounded-2xl border border-bg-border bg-bg-surface/98 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150">
+        {/* ═══ Header Bar: Studio Tabs & Mode Switchers ═══ */}
+        <div className="flex h-11 items-center justify-between px-4 border-b border-bg-border/60 text-xs shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 font-bold text-accent-blue">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="tracking-wide">AI Strategy Studio</span>
+            </div>
+
+            <div className="h-3 w-px bg-bg-border mx-1" />
+
+            {/* Mode Switcher Tabs */}
+            <div className="flex items-center bg-bg-elevated p-0.5 rounded-lg border border-bg-border">
+              <button
+                type="button"
+                onClick={() => setActiveTab('freeform')}
+                className={`px-2.5 py-0.5 rounded-md font-semibold text-[11px] transition-all ${
+                  activeTab === 'freeform'
+                    ? 'bg-accent-blue text-white shadow-xs'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                Natural Language
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('builder')}
+                className={`px-2.5 py-0.5 rounded-md font-semibold text-[11px] transition-all ${
+                  activeTab === 'builder'
+                    ? 'bg-accent-blue text-white shadow-xs'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                Clause Matrix
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('presets')}
+                className={`px-2.5 py-0.5 rounded-md font-semibold text-[11px] transition-all ${
+                  activeTab === 'presets'
+                    ? 'bg-accent-blue text-white shadow-xs'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                Institutional Presets
+              </button>
+            </div>
           </div>
 
-          <div className="h-3 w-px bg-bg-border mx-1" />
+          {/* Engine Status & Close */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsGeminiModalOpen(true)}
+              className="flex items-center gap-1 text-[10.5px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+              title="Configure Frontier AI Engine"
+            >
+              <Cpu className="h-3 w-3" />
+              <span>{aiModel.includes('3.8') ? 'Gemini 3.8 Flash' : aiModel}</span>
+            </button>
 
-          {/* Mode Switcher Tabs */}
-          <div className="flex items-center bg-bg-elevated p-0.5 rounded-lg border border-bg-border">
             <button
               type="button"
-              onClick={() => setActiveTab('freeform')}
-              className={`px-2.5 py-0.5 rounded-md font-semibold text-[11px] transition-all ${
-                activeTab === 'freeform'
-                  ? 'bg-accent-blue text-white shadow-xs'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
+              onClick={() => setIsPromptStudioOpen(false)}
+              className="p-1 text-text-tertiary hover:text-text-primary transition-colors rounded-md hover:bg-bg-elevated"
+              title="Close studio (Esc)"
             >
-              Natural Language
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('builder')}
-              className={`px-2.5 py-0.5 rounded-md font-semibold text-[11px] transition-all ${
-                activeTab === 'builder'
-                  ? 'bg-accent-blue text-white shadow-xs'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              Clause Matrix
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('presets')}
-              className={`px-2.5 py-0.5 rounded-md font-semibold text-[11px] transition-all ${
-                activeTab === 'presets'
-                  ? 'bg-accent-blue text-white shadow-xs'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              Institutional Presets
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>
-
-        {/* Engine Status & Collapse Toggle */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsGeminiModalOpen(true)}
-            className="flex items-center gap-1 text-[10.5px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
-            title="Configure Frontier AI Engine"
-          >
-            <Cpu className="h-3 w-3" />
-            <span>{aiModel.includes('3.8') ? 'Gemini 3.8 Flash' : aiModel}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsPromptStudioOpen(false)}
-            className="p-1 text-text-tertiary hover:text-text-primary transition-colors rounded-md hover:bg-bg-elevated"
-            title="Collapse studio"
-          >
-            <Minimize2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
 
       {/* ═══ Tab 1: Freeform Natural Language Studio ═══ */}
       {activeTab === 'freeform' && (
@@ -523,7 +434,7 @@ export function StrategyPromptStudio() {
             </span>
 
             {/* Timeframe */}
-            <span className="px-2 py-0.5 rounded-md font-bold shrink-0 bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            <span className="px-2 py-0.5 rounded-md font-bold shrink-0 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               ⏱️ {analysis.timeframe || timeframe}
             </span>
 
@@ -695,7 +606,7 @@ export function StrategyPromptStudio() {
             <button
               type="button"
               onClick={() => appendToken("2% trailing stop")}
-              className="px-2 py-0.5 rounded-md bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 transition-colors font-medium"
+              className="px-2 py-0.5 rounded-md bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 transition-colors font-medium"
             >
               + 2% Trail Stop
             </button>
@@ -934,6 +845,7 @@ export function StrategyPromptStudio() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

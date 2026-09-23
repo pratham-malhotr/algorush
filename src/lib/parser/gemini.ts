@@ -57,87 +57,20 @@ const SUPPORTED_INDICATORS = new Set([
   'FUNDING_RATE', 'ORDERBOOK_IMBALANCE', 'TIME_SINCE_ENTRY'
 ]);
 
-/**
- * Intelligent Intent Discriminator: Distinguishes explicit strategy building commands
- * (including backtest & simulation commands) from normal conversational messages,
- * greetings, quant inquiries, and chitchat.
- */
-export function isExplicitStrategyIntent(text: string): boolean {
-  const t = text.trim().toLowerCase();
+import { 
+  isExplicitStrategyIntent, 
+  classifyUserIntent, 
+  type UserIntentType, 
+  type IntentClassificationResult 
+} from './intentClassifier';
 
-  // 1. Pure greetings & courtesy messages (ONLY if no strategy/trading intent is present)
-  if (/^(hi|hello|hey|hola|sup|yo|greetings|good\s*(morning|afternoon|evening|day)|howdy|welcome|thanks|thank you|ok|okay|cool|great|awesome|nice|got it|understood)\b/i.test(t)) {
-    if (!/\b(build|create|make|generate|design|strategy|strat|bot|algo|algorithm|buy|sell|long|short|backtest|trade|when)\b/i.test(t)) {
-      return false;
-    }
-  }
+export { 
+  isExplicitStrategyIntent, 
+  classifyUserIntent, 
+  type UserIntentType, 
+  type IntentClassificationResult 
+};
 
-  // 2. Pure general platform / identity queries
-  if (/^(who are you|what are you|what is this platform|what can you do|how does this work|how to use this|help me navigate|tell me about yourself)\b/i.test(t)) {
-    return false;
-  }
-
-  // 3. Pure conceptual / educational inquiries WITHOUT any strategy build request
-  // (e.g. "what is RSI?", "explain EMA vs SMA", "what is funding rate?", "how does slippage affect trades?")
-  const isPureExplanationQuestion = 
-    /^(what\s*is|whats|what's|explain|describe|tell\s*me\s*about|how\s*does|why\s*does|can\s*you\s*explain|what\s*does)\b/i.test(t) &&
-    !/\b(build|create|generate|make|design|formulate|backtest|code|set\s*up|setup|give\s*me)\b/i.test(t) &&
-    !/\b(strategy|bot|algorithm|algo|trade\s*setup|system)\b/i.test(t) &&
-    !/\b(buy|sell|long|short)\s+.*\s+when\b/i.test(t);
-
-  if (isPureExplanationQuestion) {
-    return false;
-  }
-
-  // 4. ANY request to build, create, generate, make, design, formulate, code, or give a strategy/bot/algo:
-  // (e.g. "build a strategy for BTC", "can you build a strategy...", "make me a strategy for ETH", "create an algorithmic bot", "generate a strategy")
-  const hasStrategyBuildVerb = /\b(build|create|generate|make|design|formulate|code|assemble|develop|construct|give\s*me|setup|set\s*up)\b/i.test(t);
-  const hasStrategyNoun = /\b(strategy|strategies|strat|strats|bot|bots|algorithm|algorithms|algo|algos|system|systems|trading\s*system)\b/i.test(t);
-
-  if (hasStrategyBuildVerb && hasStrategyNoun) {
-    return true;
-  }
-
-  // 5. Strategy by asset or trading style:
-  // (e.g. "strategy for BTC", "BTC strategy", "ETH scalping strategy", "momentum strategy for SOL", "grid trading bot", "strategy to buy ETH")
-  if (/\b(strategy|strat|bot|algo|algorithm)\b\s*(for|on|with|to|using|of)\b/i.test(t) ||
-      /\b(btc|eth|sol|crypto|bitcoin|ethereum|solana|scalping|momentum|mean\s*reversion|trend\s*following|grid)\s+(strategy|strat|bot|algo)\b/i.test(t)) {
-    return true;
-  }
-
-  // 6. Imperative trading rule directives (Action + Trigger)
-  // (e.g. "When 20 EMA crosses 50 EMA buy BTC", "Buy BTC when RSI < 30", "Long SOL when price is below lower Bollinger Band")
-  const isWhenRule = /\bwhen\b.*\b(buy|sell|short|long|enter|exit|crosses|cross|breaks|drops|rises|>|<)\b/i.test(t);
-  if (isWhenRule) {
-    return true;
-  }
-
-  const hasTradingActionWithTrigger = 
-    /\b(buy|sell|long|short|go long|go short|open long|open short|enter|exit)\b.*\b(when|if|at|below|above|crosses|cross|<|>|drops|reaches)\b/i.test(t);
-  if (hasTradingActionWithTrigger) {
-    return true;
-  }
-
-  // 7. Backtest / simulation commands
-  if (/\b(backtest|simulate|test)\b.*\b(btc|eth|sol|when|with|on|using|strategy)\b/i.test(t)) {
-    return true;
-  }
-
-  // 8. Strategy tweaks / mutations
-  const isTweakIntent = /\b(apply this tweak|tighten stop|loosen stop|change stop|set stop|set tp|change timeframe|add trailing stop|add a trailing stop|change leverage|set leverage|switch pair|switch to|add 200 ema|add rsi|add volume|tweak strategy)\b/i.test(t);
-  if (isTweakIntent) {
-    return true;
-  }
-
-  // 9. Indicators combined with trading actions
-  const hasIndicator = /\b(ema|sma|wma|hma|rsi|macd|bollinger|supertrend|vwap|stochastic|adx|cci|atr|donchian|keltner|ichimoku|volume|golden\s*cross|death\s*cross)\b/i.test(t);
-  const hasTradeAction = /\b(buy|sell|long|short|trade|entry|exit|leverage|\d+x)\b/i.test(t);
-  if (hasIndicator && hasTradeAction) {
-    return true;
-  }
-
-  return false;
-}
 
 /**
  * Dynamic Quantitative Thinking Engine.
@@ -160,6 +93,53 @@ export function generateDynamicQuantThinkingResponse(text: string, modelUsed: st
     return {
       response: `👋 **Hello! How can I help you today?**\n\nI am your AI Quant Copilot. You can ask me any questions about market indicators (like EMA, RSI, MACD, or Bollinger Bands), discuss risk management and leverage, or describe a trading strategy you'd like to build and backtest.\n\nWhat would you like to explore?`,
       suggestions: []
+    };
+  }
+
+  // 1b. Open-Ended / Underspecified Strategy Requests (e.g. "can you build a strategy for me", "build me a strategy", "help me build a strategy")
+  const isGenericStrategyRequest = (
+    /^(can\s*you|could\s*you|please|i\s*want\s*(you\s*to)?|help\s*me)?\s*(build|create|make|design|generate|code|formulate|assemble)\s*(me\s+)?(a\s+)?(strategy|strat|bot|algo|system|trading\s*system)\s*(for\s*me)?\??$/i.test(t) ||
+    /^(can\s*you|could\s*you|please)?\s*build\s+(me\s+)?(a\s+)?(strategy|bot|algo)\s*(for\s*me)?\??$/i.test(t) ||
+    t === 'can you build a strategy for me' ||
+    t === 'can you build a strategy' ||
+    t === 'build a strategy for me' ||
+    t === 'build me a strategy' ||
+    t === 'build a strategy' ||
+    t === 'create a strategy for me' ||
+    t === 'help me build a strategy' ||
+    t === 'make me a strategy'
+  );
+
+  if (isGenericStrategyRequest) {
+    return {
+      response: `🎯 **I would be delighted to build a custom quantitative strategy for you!**
+
+To ensure the strategy matches your exact trading goals and risk profile, please share a few requirements:
+
+1. **Asset & Timeframe**:
+   • Which crypto pair would you like to trade? (e.g., **BTC/USDT**, **ETH/USDT**, **SOL/USDT**)
+   • What chart timeframe? (e.g., **15m** scalping, **1h** intraday swing, **4h** macro trend)
+
+2. **Strategy Archetype & Style**:
+   • **Trend Following**: Ride sustained directional trends (e.g., EMA crossovers)
+   • **Mean Reversion**: Buy oversold dips and short overbought rips (e.g., RSI, Bollinger Bands)
+   • **Breakout**: Exploit sudden volume surges and volatility expansion (e.g., ATR, volume spikes)
+
+3. **Key Indicator Triggers**:
+   • What indicators do you prefer? (e.g., **20/50 EMA**, **14 RSI**, **MACD**, **Bollinger Bands**, **Volume SMA**)
+   • What condition triggers entry? (e.g., *"Buy when 20 EMA crosses above 50 EMA and RSI < 35"*)
+
+4. **Risk & Position Sizing**:
+   • Target leverage (e.g., **1x Spot**, **3x - 5x Futures**)
+   • Stop Loss & Take Profit targets (e.g., **2.5% SL** and **6% TP** for an optimal $2.4:1$ R/R ratio)
+
+---
+💡 *Or click any of these battle-tested algorithmic setups to compile immediately:*`,
+      suggestions: [
+        'Buy BTC on 15m when 20 EMA > 50 EMA and RSI < 35, 5x leverage, 2% SL, 6% TP',
+        'Long ETH on 1h when price touches lower Bollinger Band with RSI < 30, 3x leverage',
+        'Breakout on SOL 15m when MACD histogram > 0 and volume > 1.5x SMA, 5x leverage'
+      ]
     };
   }
 
@@ -294,6 +274,131 @@ Never trade in isolation on one timeframe. Use the **4h / 1h 200 EMA** as a dire
         'Build a 15m trend strategy with 1h confirmation',
         'Compare 15m vs 1h Sharpe ratios',
         'Explain the Golden Cross on 4h candles'
+      ]
+    };
+  }
+
+  // 7b. Strategy Archetypes: Momentum, Trend, Mean Reversion, Grid, DCA & Arbitrage
+  if (/momentum\s*strat|what\s*is.*momentum|explain\s*momentum/i.test(t)) {
+    return {
+      response: `🚀 **Quantitative Architecture: Momentum Strategies**:
+
+Momentum strategies are grounded in the empirical financial anomaly that assets that have outperformed over the past 1-12 months tend to continue outperforming in the near term:
+
+1. **Cross-Sectional vs Time-Series Momentum**:
+   • **Time-Series Momentum (Trend Following)**: Evaluates an asset's price relative to its own past history (e.g. Price > 200 EMA).
+   • **Cross-Sectional Momentum (Relative Strength)**: Ranks a universe of crypto tokens by 30-day returns and goes long the top decile while shorting the bottom decile.
+
+2. **Mathematical Expectancy & Win Rate**:
+   Momentum strategies typically yield a **40% - 48% win rate**, but achieve profitability through high payoff ratios ($W / L \\ge 2.5 : 1$). The primary quantitative challenge is identifying momentum exhaustion before regime reversion occurs.
+
+3. **Key Indicator Pairings**:
+   • **Direction**: 20/50 EMA crossover.
+   • **Confirmation**: MACD histogram acceleration ($d^2P/dt^2 > 0$).
+   • **Exhaustion Guard**: RSI > 75 or volume divergence.`,
+      suggestions: [
+        'Build a momentum strategy for BTC with 20/50 EMA and RSI',
+        'Explain time-series vs cross-sectional momentum',
+        'How to set an ATR trailing stop on momentum breakouts'
+      ]
+    };
+  }
+
+  if (/grid\s*bot|grid\s*trad|what\s*is.*grid/i.test(t)) {
+    return {
+      response: `🕸️ **Quantitative Architecture: Grid Trading Bots**:
+
+Grid trading is a non-directional market-making strategy designed to exploit sideways, range-bound market regimes through automated staggered limit orders:
+
+1. **How the Grid Works**:
+   • The algorithm defines an upper price boundary ($P_{\\text{max}}$) and lower boundary ($P_{\\text{min}}$).
+   • The interval is divided into $N$ equidistant or geometric grid levels.
+   • When price drops to a lower level, the bot automatically buys; when price rises to the level above, the bot automatically sells, capturing the grid profit spread minus exchange fees.
+
+2. **Mathematical Risk & Drawdown**:
+   • **Inventory Risk**: If price enters a structural macro downtrend and breaks below $P_{\\text{min}}$, the bot becomes 100% long at declining prices, accumulating heavy unrealized drawdown.
+   • **Optimal Conditions**: High volatility clustering with stationary mean (ADX < 20).
+
+3. **Grid Optimization Rule**:
+   Always enforce an emergency stop-loss boundary below the lowest support level to prevent holding a depreciating asset in a bear liquidation cascade.`,
+      suggestions: [
+        'What market conditions are best for grid bots?',
+        'Calculate exchange fee impact on grid trading',
+        'Compare grid trading vs trend following'
+      ]
+    };
+  }
+
+  if (/mean\s*reversion|what\s*is.*mean\s*reversion/i.test(t)) {
+    return {
+      response: `🌊 **Quantitative Architecture: Mean Reversion Strategies**:
+
+Mean reversion is based on the statistical tendency of asset prices and volatility to return to a long-term historical mean or moving average over time:
+
+1. **Statistical Foundation (Ornstein-Uhlenbeck Process)**:
+   $$dX_t = \\theta (\\mu - X_t) dt + \\sigma dW_t$$
+   Where $\\theta$ represents the rate of mean reversion, $\\mu$ is the long-term equilibrium mean, and $\\sigma$ is the diffusion volatility.
+
+2. **Core Indicator Implementations**:
+   • **Bollinger Bands ($2.0\\sigma$)**: Buys when price touches the lower 2-standard-deviation band and RSI < 30; targets the 20 SMA middle band.
+   • **Z-Score Deviation**: Quantifies how many standard deviations price has strayed from the VWAP benchmark.
+
+3. **Critical Trap & Defense**:
+   In trending crypto markets, "oversold can stay oversold for weeks." Always pair mean-reversion with a macro trend filter (e.g. only buy dips when 4h 200 EMA is upward sloping).`,
+      suggestions: [
+        'Long SOL when price is below lower Bollinger Band and RSI < 30',
+        'Explain the Ornstein-Uhlenbeck mean-reversion formula',
+        'How to identify when mean-reversion fails in a trend'
+      ]
+    };
+  }
+
+  if (/trend\s*following|what\s*is.*trend\s*follow/i.test(t)) {
+    return {
+      response: `📈 **Quantitative Architecture: Trend Following Systems**:
+
+Trend following is the institutional cornerstone of commodity trading advisors (CTAs) and macro quant funds (e.g. Dunn Capital, AHL, Winton):
+
+1. **Core Philosophy**:
+   *"Cut losses short, let winners run."* Trend followers make zero predictions about price tops or bottoms. They wait for an established trend, enter on momentum confirmation, and ride the trend until a trailing stop exits the position.
+
+2. **Statistical Profile**:
+   • **Win Rate**: Typically low (**35% - 42%**).
+   • **Profit Factor**: High (**1.8 - 2.4**), driven by fat-tailed outlier trends ("black swan winners").
+   • **Convex Payoff**: Positive skewness $\\gamma_1 > 0$ that thrives during market panics and parabolic expansions.
+
+3. **Implementation Tools**:
+   • Moving Average Crossovers: 20/50 EMA for medium-term, 50/200 EMA for macro regimes.
+   • Trailing Exits: Chandelier Exit ($3.0 \\times \\text{ATR}$) or Supertrend indicator.`,
+      suggestions: [
+        'Build a trend following strategy for Bitcoin on 1h',
+        'Explain why trend followers have a 40% win rate',
+        'How to calibrate ATR trailing stops'
+      ]
+    };
+  }
+
+  if (/\bdca\b|dollar\s*cost\s*averag/i.test(t)) {
+    return {
+      response: `💰 **Quantitative Architecture: Dollar Cost Averaging (DCA)**:
+
+DCA is a systematic accumulation protocol where a fixed fiat sum is invested at consistent calendar intervals regardless of asset price:
+
+1. **Mathematical Mechanics**:
+   $$P_{\\text{average}} = \\frac{\\sum_{i=1}^{n} C_i}{\\sum_{i=1}^{n} \\frac{C_i}{P_i}}$$
+   Because a fixed cash amount $C_i$ buys more units when prices are low and fewer units when prices are high, the arithmetic average price paid is mathematically lower than the simple average of market prices.
+
+2. **Smart DCA (Dynamic Quant Variant)**:
+   Instead of static weekly buys, institutional quants scale allocation dynamically:
+   • Allocate $1.5\\times$ normal size when RSI(14) < 30 on daily candles.
+   • Allocate $0.5\\times$ normal size when RSI(14) > 70.
+
+3. **Risk Profile**:
+   Ideal for long-term secular store-of-value assets (BTC, ETH). Inappropriate for leveraged derivatives due to liquidation and funding cost drag.`,
+      suggestions: [
+        'Explain Dynamic RSI-Weighted DCA',
+        'Compare DCA vs Lump-Sum investing',
+        'How to automate DCA using Python CCXT'
       ]
     };
   }
@@ -784,15 +889,20 @@ You are powered by Google Gemini AI.
 Your mission is to perform deep, rigorous quantitative analysis and strategy design:
 
 CRITICAL RULE 1: Determine the user's intent:
-- "CONVERSATIONAL": If the user is asking a conceptual question, asking for advice, discussing markets/indicators/risk/math, requesting Python CCXT code, greeting, or inquiring about trading. DO NOT generate a strategy!
-  Provide an articulate, highly informative, thorough, intellectual quantitative response in "conversationalResponse".
+- "CONVERSATIONAL": If the user is asking a conceptual question, asking for advice, discussing markets/indicators/risk/math, requesting Python CCXT code, greeting, or inquiring about trading.
+  CRITICAL: If the user provides an open-ended strategy request (e.g. "can you build a strategy for me", "build me a strategy", "help me build a strategy", "can you create a strategy") WITHOUT specifying an asset, timeframe, indicator, or rules: DO NOT generate a strategy object!
+  Respond with status 'CONVERSATIONAL' and systematically ask for their requirements:
+  1. Asset & Timeframe (e.g., BTC/USDT on 15m or 1h)
+  2. Strategy Style (Trend Following, Mean Reversion, Breakout)
+  3. Indicators & Triggers (EMA crossovers, RSI oversold, Bollinger Bands, Volume)
+  4. Risk Parameters (Leverage multiplier, Stop Loss %, Take Profit %)
+  Provide 2-3 specific clickable strategy prompt examples in "suggestedTweaks".
   Format with GitHub Markdown:
   • Bold key terms
   • Use LaTeX math notation where helpful ($...$ or $$...$$)
   • Provide clean fenced code blocks with language identifiers (\`\`\`python ... \`\`\`) if code is helpful
   • Detail why things work mathematically (e.g. microstructure, volatility, slippage, expectancy)
-  • Provide 2-3 tailored follow-up question ideas or next steps in "suggestedTweaks".
-- "SUCCESS": ONLY if the user explicitly describes or commands a trading strategy with entry/exit logic or algorithmic directives. Return a strictly typed StrategyDSL object.
+- "SUCCESS": ONLY if the user explicitly describes or commands a trading strategy with concrete entry/exit logic, indicators, or specific algorithmic directives. Return a strictly typed StrategyDSL object.
 - "NEEDS_CLARIFICATION": If input was an attempt at a strategy but was missing essential details.
 
 CRITICAL RULE 2: In-Depth Quantitative Analysis Required for SUCCESS:
@@ -858,7 +968,7 @@ export async function parseStrategyWithGemini(options: GeminiParseOptions): Prom
       const result = await callGeminiModel(candidateModel, key, text, options.currentStrategy, chatHistory);
       const latencyMs = Date.now() - startTime;
 
-      return processAndVerifyGeminiResponse(result, text, model || candidateModel, latencyMs);
+      return processAndVerifyGeminiResponse(result, text, model || candidateModel, latencyMs, chatHistory);
     } catch (err: unknown) {
       lastError = err instanceof Error ? err : new Error(String(err));
       const errorStr = (lastError.message || '').toLowerCase();
@@ -909,9 +1019,9 @@ async function callGeminiModel(
     contents.shift();
   }
 
-  const isExplicitStrategy = isExplicitStrategyIntent(userText);
+  const isExplicitStrategy = isExplicitStrategyIntent(userText, chatHistory);
   const directive = isExplicitStrategy
-    ? `\n\n[CRITICAL DIRECTIVE]: The user input is an explicit strategy command. Synthesize the strategy into a valid StrategyDSL object with status 'SUCCESS', containing full entry/exit conditions, indicators, and risk parameters.`
+    ? `\n\n[CRITICAL DIRECTIVE]: The user input is an explicit strategy command. Review the full conversation history. Synthesize the strategy into a valid StrategyDSL object with status 'SUCCESS', containing full entry/exit conditions, indicators, and risk parameters based on all details provided across turns. DO NOT re-ask for parameters already provided.`
     : `\n\n[CRITICAL DIRECTIVE]: The user input is conversational, educational, or an advisory question. Respond with status 'CONVERSATIONAL', provide a comprehensive, brilliant quant explanation in 'conversationalResponse' formatted in markdown with LaTeX formulas and bullet points, and DO NOT generate a strategy object (omit 'strategy' or set to null).`;
 
   const currentUserPrompt = `USER INPUT:\n"${userText}"${strategyContextPrompt}${directive}\n\nAnalyze deeply and produce valid JSON:`;
@@ -1051,10 +1161,11 @@ export function processAndVerifyGeminiResponse(
   raw: RawGeminiOutput,
   promptText: string,
   modelUsed: string,
-  latencyMs: number
+  latencyMs: number,
+  chatHistory?: Array<{ role: string; content: string }>
 ): GeminiParseResponse {
   // CRITICAL INTENT GUARD: If user prompt is NOT an explicit strategy, or raw status is CONVERSATIONAL
-  if (!isExplicitStrategyIntent(promptText) || raw.status === 'CONVERSATIONAL') {
+  if (!isExplicitStrategyIntent(promptText, chatHistory) || raw.status === 'CONVERSATIONAL') {
     const fallbackDynamic = generateDynamicQuantThinkingResponse(promptText, modelUsed);
     return {
       status: 'CONVERSATIONAL',

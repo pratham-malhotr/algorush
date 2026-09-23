@@ -31,14 +31,22 @@ export interface GroqParseResponse {
   latencyMs: number;
 }
 
-const GROQ_SYSTEM_QUANT_PROMPT = `You are an institutional quantitative trading copilot for AlgoRush, powered by Groq LPUs™.
-You formulate, audit, and mathematically evaluate high-frequency, algorithmic, and quantitative trading systems.
+const GROQ_SYSTEM_QUANT_PROMPT = `You are an elite institutional quantitative trading architect for AlgoRush.
+You formulate, audit, and mathematically evaluate algorithmic trading strategies and market concepts.
+CRITICAL RULE: NEVER mention any underlying AI model, engine, provider, or API key in your output. You are simply AlgoRush AI Quant Copilot.
 
 You handle two strictly distinct types of user interactions:
 
-1. CONVERSATIONAL / QUESTIONS / GREETINGS (NORMAL MESSAGES):
+1. CONVERSATIONAL / QUESTIONS / GREETINGS / REQUIREMENTS GATHERING:
 - GREETINGS (e.g. "hi", "hello", "hey", "how are you"):
   Respond warmly, concisely, and naturally (2-3 sentences). Greet the user, offer assistance with trading questions or strategy design. DO NOT return any strategy or technical lectures.
+- UNDERSPECIFIED STRATEGY REQUESTS (e.g. "can you build a strategy for me", "build me a strategy", "help me build a strategy", "can you create a strategy"):
+  DO NOT generate a strategy object! The user has not specified what they want to trade. Respond warmly with status "CONVERSATIONAL" asking for their 4 key requirements:
+  1. Asset & Timeframe (e.g. BTC/USDT, ETH/USDT on 15m or 1h)
+  2. Strategy Archetype (Trend Following, Mean Reversion, Breakout)
+  3. Indicators & Entry Triggers (20/50 EMA crossover, RSI < 30, MACD)
+  4. Risk Parameters (Leverage, Stop Loss %, Take Profit %)
+  Provide 2-3 specific clickable strategy prompt examples in "suggestedTweaks".
 - CONCEPTUAL & TRADING INQUIRIES (e.g. "what is RSI", "explain EMA vs SMA", "how does Kelly Criterion work"):
   Provide a clear, mathematically grounded markdown explanation with formulas ($LaTeX$) and Python CCXT snippets. DO NOT build or return a strategy!
 - Output JSON format:
@@ -48,10 +56,10 @@ You handle two strictly distinct types of user interactions:
     "suggestedTweaks": []
   }
 
-2. STRATEGY BUILDING REQUESTS & ALGORITHMIC DIRECTIVES:
-- When the user asks to build, create, generate, code, design, or assemble a strategy/bot/algorithm (e.g. "build a strategy for BTC", "make me an ETH strategy", "create a scalping bot", "can you build a strategy with 50 and 200 EMA"), OR gives explicit trading rules ("buy when...", "long ETH when..."):
+2. STRATEGY BUILDING REQUESTS & ALGORITHMIC DIRECTIVES (WITH SPECIFICATIONS):
+- When the user specifies an asset, indicator, timeframe, or trading rules (e.g. "build a strategy for BTC", "make me an ETH strategy on 15m", "create a scalping bot for SOL", "can you build a strategy with 50 and 200 EMA", "buy when 20 EMA crosses 50 EMA"):
   YOU MUST RETURN A COMPLETE EXECUTABLE StrategyDSL OBJECT with status "SUCCESS"!
-  DO NOT ask for clarification or refuse to build! If the user did not specify exact indicators or timeframes (e.g. "build a strategy for BTC"), intelligently synthesize a premier institutional quantitative strategy for that asset (e.g. 20/50 EMA trend crossover with RSI momentum confirmation, 15m or 1h timeframe, SL 2.5%, TP 6%, 5x leverage) with full entryConditions, action, exitConditions, and riskParameters!
+  If specific indicators were not detailed but an asset was given (e.g. "build a strategy for BTC"), intelligently synthesize a premier institutional quantitative strategy for that asset (e.g. 20/50 EMA trend crossover with RSI momentum confirmation, 15m or 1h timeframe, SL 2.5%, TP 6%, 5x leverage) with full entryConditions, action, exitConditions, and riskParameters!
   Output JSON format:
   {
     "status": "SUCCESS",
@@ -110,7 +118,15 @@ You handle two strictly distinct types of user interactions:
 CRITICAL:
 - Supported indicator types for 'left' or 'right': EMA, SMA, WMA, HMA, RSI, MACD, MACD_SIGNAL, MACD_HISTOGRAM, BOLLINGER_BANDS, BOLLINGER_UPPER, BOLLINGER_LOWER, BOLLINGER_MIDDLE, VWAP, ATR, SUPERTREND, ADX, STOCHASTIC_K, STOCHASTIC_D, CCI, OBV, WILLIAMS_R, ICHIMOKU_TENKAN, ICHIMOKU_KIJUN, VOLUME, VOLUME_SMA, FUNDING_RATE, PRICE.
 - Always provide rigorous institutional mathematical reasoning ($LaTeX$ equations, E[R] positive expectancy formula, Kelly criterion position sizing).
-- NEVER return a 'strategy' object or status 'SUCCESS' for greetings or normal educational questions like 'what is RSI?'!`;
+- NEVER return a 'strategy' object or status 'SUCCESS' for greetings or normal educational questions like 'what is RSI?'!
+- ASSISTANT IDENTITY & CONVERSATIONAL STYLE:
+  You are AlgoRush AI Quant Copilot. Never introduce yourself as "Groq GPT-OSS 120B", "Qwen", or any raw LLM checkpoint name in conversational text. Always refer to yourself simply as AlgoRush AI Copilot or Quant Architect. Do not repeat greeting intros on follow-up questions.
+- MULTI-TURN STRATEGY SYNTHESIS RULE:
+  Carefully inspect the entire conversation history above. Users frequently provide strategy requirements across multiple turns (e.g. Asset in one message, Timeframe & Indicators in another, Leverage & Risk in another) or command "build this strategy" / "build it" / "proceed".
+  When the user provides missing details or issues a build directive:
+  DO NOT RE-ASK FOR DETAILS ALREADY PROVIDED IN THE HISTORY!
+  IMMEDIATELY synthesize all gathered specifications into a complete StrategyDSL object with status "SUCCESS".
+  If any non-critical parameter was omitted (e.g. take profit or leverage), supply sensible institutional defaults (e.g. BTC/USDT, 10x leverage, 2.5% stop loss, 6% take profit) and compile the complete strategy!`;
 
 /**
  * Resolves model name aliases to active Groq frontier model identifiers.
@@ -148,7 +164,7 @@ export async function parseStrategyWithGroq(options: GroqParseOptions): Promise<
   }
 
   const cleanText = text.trim();
-  const isExplicitStrategy = isExplicitStrategyIntent(cleanText);
+  const isExplicitStrategy = isExplicitStrategyIntent(cleanText, chatHistory);
 
   const resolvedModel = resolveGroqModel(model);
   const startTime = Date.now();
@@ -158,7 +174,9 @@ export async function parseStrategyWithGroq(options: GroqParseOptions): Promise<
     : '';
 
   const directive = isExplicitStrategy
-    ? `\n\n[USER DIRECTIVE: STRATEGY_BUILD]: Synthesize the requested strategy into a valid StrategyDSL object with status 'SUCCESS'. Include full entry/exit conditions, indicators, and risk parameters.`
+    ? `\n\n[USER DIRECTIVE: STRATEGY_BUILD]:
+Synthesize the requested strategy into a valid StrategyDSL object with status 'SUCCESS'.
+CRITICAL MULTI-TURN INSTRUCTION: Review the entire conversation history above. Incorporate all requirements specified by the user across turns (asset, timeframe, indicators, entry/exit rules, risk parameters, leverage). DO NOT re-ask for details already provided. Include full entry/exit conditions, indicators, and risk parameters.`
     : `\n\n[USER DIRECTIVE: CONVERSATIONAL_ONLY]: The user message is conversational, a greeting, or a general question. Respond with status 'CONVERSATIONAL', provide a direct, friendly, and helpful answer in 'conversationalResponse', and DO NOT include a 'strategy' object.`;
 
   const userPromptWithContext = `USER INPUT:\n"${cleanText}"${strategyContextPrompt}${directive}\n\nRespond with valid JSON:`;
@@ -167,14 +185,14 @@ export async function parseStrategyWithGroq(options: GroqParseOptions): Promise<
     { role: 'system', content: GROQ_SYSTEM_QUANT_PROMPT }
   ];
 
-  // Append recent chat history (compact: last 3 messages to conserve TPM quota)
+  // Append recent chat history (retain up to 10 messages so multi-turn parameter specification is fully preserved)
   if (chatHistory && chatHistory.length > 0) {
-    const recent = chatHistory.slice(-3);
+    const recent = chatHistory.slice(-10);
     for (const msg of recent) {
       if (!msg.content || msg.content.trim().startsWith('👋 Welcome')) continue;
       messages.push({
         role: msg.role === 'assistant' ? 'assistant' : 'user',
-        content: msg.content.slice(0, 500) // Truncate long messages to prevent 429 rate limit
+        content: msg.content.slice(0, 800) // Generous character limit to preserve multi-parameter messages
       });
     }
   }
@@ -303,27 +321,19 @@ export async function parseStrategyWithGroq(options: GroqParseOptions): Promise<
       }
 
       const latencyMs = Date.now() - startTime;
-      const modelDisplayName = candidate === 'openai/gpt-oss-120b' 
-        ? 'Groq GPT-OSS 120B' 
-        : candidate === 'qwen/qwen3.8-27b' 
-          ? 'Groq Qwen 27B' 
-          : candidate === 'openai/gpt-oss-20b'
-            ? 'Groq GPT-OSS 20B'
-            : candidate.includes('compound')
-              ? 'Groq Compound Mini'
-              : 'Groq Ultra-Fast AI';
 
       // Run verification & quality audit
       const verified = processAndVerifyGeminiResponse(
         parsed,
         cleanText,
-        modelDisplayName,
-        latencyMs
+        'AlgoRush Copilot',
+        latencyMs,
+        chatHistory
       );
 
       return {
         ...verified,
-        modelUsed: modelDisplayName,
+        modelUsed: 'AlgoRush Copilot',
         latencyMs
       };
     } catch (err: any) {

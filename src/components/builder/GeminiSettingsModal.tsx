@@ -14,14 +14,25 @@ export function GeminiSettingsModal() {
     setIsGeminiModalOpen, 
     aiModel, 
     setAiModel, 
+    claudeApiKey,
+    setClaudeApiKey,
     groqApiKey,
     setGroqApiKey,
     geminiApiKey, 
     setGeminiApiKey 
   } = useBuilderStore()
 
-  // Active tab: 'groq' (default & recommended) | 'gemini'
-  const [activeTab, setActiveTab] = React.useState<'groq' | 'gemini'>('groq')
+  // Active tab: 'claude' | 'groq' | 'gemini'
+  const [activeTab, setActiveTab] = React.useState<'claude' | 'groq' | 'gemini'>('claude')
+
+  // Claude State
+  const [inputClaudeKey, setInputClaudeKey] = React.useState(claudeApiKey)
+  const [showClaudeKey, setShowClaudeKey] = React.useState(false)
+  const [isTestingClaude, setIsTestingClaude] = React.useState(false)
+  const [claudeTestStatus, setClaudeTestStatus] = React.useState<'idle' | 'success' | 'warning' | 'error'>('idle')
+  const [claudeLatency, setClaudeLatency] = React.useState<number | null>(null)
+  const [claudeMessage, setClaudeMessage] = React.useState<string | null>(null)
+  const [claudeError, setClaudeError] = React.useState<string | null>(null)
 
   // Groq State
   const [inputGroqKey, setInputGroqKey] = React.useState(groqApiKey)
@@ -39,20 +50,72 @@ export function GeminiSettingsModal() {
   const [geminiError, setGeminiError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
+    setInputClaudeKey(claudeApiKey)
     setInputGroqKey(groqApiKey)
     setInputGeminiKey(geminiApiKey)
+    setClaudeTestStatus('idle')
     setGroqTestStatus('idle')
     setGeminiTestStatus('idle')
+    setClaudeError(null)
     setGroqError(null)
     setGeminiError(null)
-    if (aiModel.startsWith('gemini')) {
+    if (aiModel.startsWith('claude')) {
+      setActiveTab('claude')
+    } else if (aiModel.startsWith('gemini')) {
       setActiveTab('gemini')
     } else {
       setActiveTab('groq')
     }
-  }, [groqApiKey, geminiApiKey, isGeminiModalOpen, aiModel])
+  }, [claudeApiKey, groqApiKey, geminiApiKey, isGeminiModalOpen, aiModel])
 
   if (!isGeminiModalOpen) return null
+
+  const handleTestClaudeKey = async () => {
+    if (!inputClaudeKey.trim()) {
+      toast.error("Please enter an Anthropic Claude API key to test.")
+      return
+    }
+
+    setIsTestingClaude(true)
+    setClaudeTestStatus('idle')
+    setClaudeError(null)
+    setClaudeMessage(null)
+
+    try {
+      const res = await fetch("/api/test-claude", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apiKey: inputClaudeKey.trim(),
+          model: aiModel.startsWith('claude') ? aiModel : 'claude-3-7-sonnet'
+        })
+      })
+      const result = await res.json()
+      setIsTestingClaude(false)
+
+      if (result.valid) {
+        if (result.limitReached) {
+          setClaudeTestStatus('warning')
+          setClaudeMessage(result.message || "Claude limit reached — Auto-Groq failover is ready.")
+          toast.warning(result.message || "Claude limit reached! Auto-Groq failover active.")
+        } else {
+          setClaudeTestStatus('success')
+          setClaudeLatency(result.latencyMs || 600)
+          setClaudeMessage(result.message || "Connected to Anthropic Claude.")
+          toast.success(`Claude API verified! Connected to ${result.modelVerified || 'Claude 3.7 Sonnet'}.`)
+        }
+      } else {
+        setClaudeTestStatus('error')
+        setClaudeError(result.error || "Failed to authenticate with Claude API.")
+        toast.error(result.error || "Invalid Claude API Key.")
+      }
+    } catch (err: any) {
+      setIsTestingClaude(false)
+      setClaudeTestStatus('error')
+      setClaudeError(err?.message || "Connection failed")
+      toast.error("Error connecting to Anthropic API.")
+    }
+  }
 
   const handleTestGroqKey = async () => {
     if (!inputGroqKey.trim()) {
@@ -132,11 +195,13 @@ export function GeminiSettingsModal() {
   }
 
   const handleSave = () => {
+    setClaudeApiKey(inputClaudeKey.trim())
     setGroqApiKey(inputGroqKey.trim())
     setGeminiApiKey(inputGeminiKey.trim())
 
-    // If Groq is the active tab and the current model is not Groq, switch to recommended Groq model
-    if (activeTab === 'groq' && !aiModel.startsWith('groq')) {
+    if (activeTab === 'claude' && !aiModel.startsWith('claude')) {
+      setAiModel('claude-3-7-sonnet')
+    } else if (activeTab === 'groq' && !aiModel.startsWith('groq')) {
       setAiModel('groq-gpt-120b')
     } else if (activeTab === 'gemini' && !aiModel.startsWith('gemini')) {
       setAiModel('gemini-2.5-flash')
@@ -144,6 +209,15 @@ export function GeminiSettingsModal() {
 
     toast.success("AI Copilot Engine Settings Saved!")
     setIsGeminiModalOpen(false)
+  }
+
+  const handleClearClaude = () => {
+    setInputClaudeKey("")
+    setClaudeApiKey("")
+    setClaudeTestStatus('idle')
+    setClaudeError(null)
+    setClaudeMessage(null)
+    toast.info("Claude API key cleared.")
   }
 
   const handleClearGroq = () => {
@@ -192,7 +266,28 @@ export function GeminiSettingsModal() {
         </div>
 
         {/* Engine Switcher Tabs */}
-        <div className="flex rounded-xl bg-bg-base p-1 border border-bg-border/80">
+        <div className="flex rounded-xl bg-bg-base p-1 border border-bg-border/80 gap-1">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('claude')
+              if (!aiModel.startsWith('claude')) {
+                setAiModel('claude-3-7-sonnet')
+              }
+            }}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${
+              activeTab === 'claude'
+                ? 'bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                : 'text-text-tertiary hover:text-text-primary'
+            }`}
+          >
+            <Sparkles className="h-3.5 w-3.5 text-purple-400" />
+            <span>Claude (Auto-Groq)</span>
+            <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-extrabold">
+              Failover
+            </span>
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -201,14 +296,14 @@ export function GeminiSettingsModal() {
                 setAiModel('groq-gpt-120b')
               }
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${
               activeTab === 'groq'
                 ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/40 shadow-sm'
                 : 'text-text-tertiary hover:text-text-primary'
             }`}
           >
             <Zap className="h-3.5 w-3.5 text-amber-400" />
-            <span>Groq LPUs™ (Ultra-Fast)</span>
+            <span>Groq LPUs™</span>
             <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-extrabold">
               &lt;500ms
             </span>
@@ -222,19 +317,185 @@ export function GeminiSettingsModal() {
                 setAiModel('gemini-2.5-flash')
               }
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${
               activeTab === 'gemini'
                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
                 : 'text-text-tertiary hover:text-text-primary'
             }`}
           >
-            <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+            <Cpu className="h-3.5 w-3.5 text-emerald-400" />
             <span>Google Gemini</span>
             <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-extrabold">
-              Free Tier
+              Free
             </span>
           </button>
         </div>
+
+        {/* TAB 0: ANTHROPIC CLAUDE + AUTO-GROQ FAILOVER */}
+        {activeTab === 'claude' && (
+          <div className="flex flex-col gap-4">
+            {/* Claude Callout Card */}
+            <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-3 flex flex-col gap-1.5 text-xs">
+              <div className="flex items-center justify-between font-semibold text-purple-400">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4 text-purple-400" />
+                  <span>Anthropic Claude 3.7 & 3.5 Sonnet</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1">
+                    <Zap className="h-3 w-3 text-emerald-400" />
+                    Auto-Failover to Groq LPUs™
+                  </span>
+                </div>
+              </div>
+              <p className="text-text-secondary text-[11px] leading-relaxed">
+                Elite institutional quantitative reasoning. If Claude encounters credit limits or rate limits (HTTP 429/529), AlgoRush seamlessly and instantaneously routes all prompts to Groq LPUs™ (GPT-OSS 120B) for zero-downtime execution.
+              </p>
+            </div>
+
+            {/* Claude Model Picker */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-text-primary flex items-center justify-between">
+                <span>Select Claude Model</span>
+                <span className="text-[10px] text-purple-400 font-semibold flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  Dual Engine Failover
+                </span>
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {/* Claude 3.7 Sonnet */}
+                <button
+                  type="button"
+                  onClick={() => setAiModel('claude-3-7-sonnet')}
+                  className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all ${
+                    aiModel === 'claude-3-7-sonnet'
+                      ? 'border-purple-500 bg-purple-500/10 shadow-sm ring-1 ring-purple-500/40'
+                      : 'border-bg-border bg-bg-base hover:border-bg-border/80'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-text-primary">
+                      <Sparkles className="h-4 w-4 text-purple-400" />
+                      <span>Claude 3.7 Sonnet</span>
+                    </div>
+                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      Recommended
+                    </span>
+                  </div>
+                  <span className="text-[10.5px] text-text-secondary mt-1">
+                    Anthropic's frontier hybrid reasoning model. Deep quantitative alpha reasoning with automatic Groq fallback.
+                  </span>
+                </button>
+
+                {/* Claude 3.5 Sonnet */}
+                <button
+                  type="button"
+                  onClick={() => setAiModel('claude-3-5-sonnet')}
+                  className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all ${
+                    aiModel === 'claude-3-5-sonnet'
+                      ? 'border-purple-500 bg-purple-500/10 shadow-sm ring-1 ring-purple-500/40'
+                      : 'border-bg-border bg-bg-base hover:border-bg-border/80'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-text-primary">
+                      <Cpu className="h-4 w-4 text-indigo-400" />
+                      <span>Claude 3.5 Sonnet</span>
+                    </div>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      Institutional
+                    </span>
+                  </div>
+                  <span className="text-[10.5px] text-text-secondary mt-1">
+                    Proven institutional benchmark for coding & algorithmic strategy synthesis with automatic Groq fallback.
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Claude API Key Input */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+                  <Key className="h-3.5 w-3.5 text-purple-400" />
+                  <span>Anthropic Claude API Key</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  {inputClaudeKey && (
+                    <button
+                      type="button"
+                      onClick={handleClearClaude}
+                      className="text-[10px] text-rose-400 hover:underline"
+                    >
+                      Clear
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowClaudeKey(!showClaudeKey)}
+                    className="text-[11px] text-purple-400 hover:underline"
+                  >
+                    {showClaudeKey ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative">
+                <input
+                  type={showClaudeKey ? "text" : "password"}
+                  value={inputClaudeKey}
+                  onChange={(e) => {
+                    setInputClaudeKey(e.target.value)
+                    setClaudeTestStatus('idle')
+                    setClaudeError(null)
+                    setClaudeMessage(null)
+                  }}
+                  placeholder="sk-ant-api03-..."
+                  className="h-10 w-full rounded-xl border border-bg-border bg-bg-base px-3.5 pr-20 text-xs text-text-primary outline-none focus:border-purple-400 font-mono transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={handleTestClaudeKey}
+                  disabled={isTestingClaude || !inputClaudeKey.trim()}
+                  className="absolute right-1.5 top-1.5 h-7 px-2.5 rounded-lg bg-bg-elevated border border-bg-border text-[11px] font-bold text-text-primary hover:border-purple-400 hover:text-purple-400 disabled:opacity-40 transition-all flex items-center gap-1"
+                >
+                  {isTestingClaude ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                  <span>{isTestingClaude ? "Testing" : "Test"}</span>
+                </button>
+              </div>
+
+              {/* Status Feedback */}
+              {claudeTestStatus === 'success' && (
+                <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold mt-0.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                  <span>{claudeMessage || `Claude API verified! Latency: ${claudeLatency}ms`}</span>
+                </div>
+              )}
+
+              {claudeTestStatus === 'warning' && (
+                <div className="flex items-start gap-2 p-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-xs text-amber-300 mt-0.5">
+                  <Zap className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-bold text-amber-400">Claude Key Authenticated — Auto-Groq LPUs™ Active</span>
+                    <span className="text-[11px] text-text-secondary leading-snug">{claudeMessage}</span>
+                  </div>
+                </div>
+              )}
+
+              {claudeTestStatus === 'error' && (
+                <div className="flex items-start gap-1.5 text-xs text-rose-400 mt-0.5">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                  <span className="leading-tight">{claudeError}</span>
+                </div>
+              )}
+
+              <p className="text-[10px] text-text-tertiary">
+                Loaded securely from <code className="text-purple-400 font-mono">ANTHROPIC_API_KEY</code> in <code className="text-text-primary font-mono">.env.local</code>.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: GROQ LPU ENGINE */}
         {activeTab === 'groq' && (
