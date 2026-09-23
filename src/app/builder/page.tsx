@@ -10,13 +10,14 @@ import { Button } from "@/components/ui/button"
 import { 
   Play, ShieldAlert, FlaskConical, Code2, CheckCircle2, Zap, ShieldCheck, 
   ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X, Timer, BarChart3, Sparkles, LayoutGrid, Terminal, 
-  Sliders, Layers, Flame, RefreshCw, Dna, Activity, BrainCircuit
+  Sliders, Layers, Flame, RefreshCw, Dna, Activity, BrainCircuit, Wrench, Rocket, LineChart
 } from "lucide-react"
 import { SettingsPanel } from "@/components/builder/SettingsPanel"
 import { NodePropertiesPanel } from "@/components/builder/NodePropertiesPanel"
 import { BacktestDrawer } from "@/components/builder/BacktestDrawer"
 import { AICopilot } from "@/components/builder/AICopilot"
 import { CodeViewer } from "@/components/builder/CodeViewer"
+import { StrategyChartViewer } from "@/components/builder/StrategyChartViewer"
 import { DeployStrategyModal } from "@/components/builder/DeployStrategyModal"
 import { AutoOptimizerModal } from "@/components/builder/AutoOptimizerModal"
 import { ComplianceAuditModal } from "@/components/builder/ComplianceAuditModal"
@@ -56,6 +57,8 @@ export default function BuilderPage() {
     setIsDeployModalOpen,
     setIsGeminiModalOpen,
     setIsHundredStrategiesModalOpen,
+    setIsPromptStudioOpen,
+    claudeApiKey,
     groqApiKey,
     geminiApiKey,
     aiModel,
@@ -71,6 +74,18 @@ export default function BuilderPage() {
   const [isComplianceModalOpen, setIsComplianceModalOpen] = React.useState(false)
   const [codeHeight, setCodeHeight] = React.useState(220)
   const [isResizing, setIsResizing] = React.useState(false)
+  const [isToolsDropdownOpen, setIsToolsDropdownOpen] = React.useState(false)
+  const toolsDropdownRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (toolsDropdownRef.current && !toolsDropdownRef.current.contains(event.target as Node)) {
+        setIsToolsDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const activeAccount = getActiveAccount()
 
@@ -96,56 +111,66 @@ export default function BuilderPage() {
 
   return (
     <div className="flex h-[calc(100vh-64px)] w-full flex-col bg-bg-base overflow-hidden">
-      {/* ═══ Top Action Bar ═══ */}
-      <div className="flex h-[56px] w-full shrink-0 items-center justify-between border-b border-bg-border bg-bg-surface px-4 gap-3 overflow-x-auto">
+      {/* ═══ Top Action Bar (Enterprise Grade & Guaranteed Deploy Visibility) ═══ */}
+      <div className="flex h-[58px] w-full shrink-0 items-center justify-between border-b border-bg-border bg-bg-surface px-5 select-none z-30">
         
-        {/* Left: Strategy Identity & Quick Presets */}
+        {/* Left Zone: Strategy Identity & Asset Context */}
         <div className="flex items-center gap-2.5 min-w-0 shrink-0">
-          <div className="flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-500 shrink-0">
+          <div className="flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-500 shrink-0 shadow-xs">
             <ShieldCheck className="h-3.5 w-3.5" />
-            <span>VIP Quant</span>
+            <span className="hidden sm:inline">VIP Quant</span>
           </div>
 
           <div className="h-4 w-px bg-bg-border shrink-0" />
 
           {/* Editable Strategy Name */}
-          <input 
-            type="text" 
-            value={strategyName}
-            onChange={(e) => setStrategyName(e.target.value)}
-            className="bg-transparent text-[13px] font-bold text-text-primary outline-none hover:bg-bg-elevated focus:bg-bg-elevated px-2 py-1 rounded-lg border border-transparent focus:border-accent-blue transition-colors min-w-[140px] max-w-[220px] truncate"
-            title="Click to rename strategy"
-          />
-          <Badge variant={strategyStatus.toLowerCase() as any} className="shrink-0 text-[10px] uppercase font-bold">{strategyStatus}</Badge>
+          <div className="flex items-center gap-1.5 group">
+            <input 
+              type="text" 
+              value={strategyName}
+              onChange={(e) => setStrategyName(e.target.value)}
+              className="bg-transparent text-[13px] font-bold text-text-primary outline-none hover:bg-bg-elevated focus:bg-bg-elevated px-2 py-1 rounded-lg border border-transparent focus:border-accent-blue transition-colors w-[140px] xl:w-[180px] truncate"
+              title="Click to rename strategy"
+              placeholder="Strategy Title"
+            />
+            <Badge variant={strategyStatus.toLowerCase() as any} className="shrink-0 text-[10px] uppercase font-bold tracking-wider">{strategyStatus}</Badge>
+          </div>
 
-          {/* Quick Presets Dropdown */}
-          <select
-            onChange={(e) => e.target.value && loadPresetTemplate(e.target.value)}
-            defaultValue=""
-            className="hidden xl:inline-block h-8 rounded-lg border border-bg-border bg-bg-base px-2.5 text-[11px] font-bold text-accent-blue outline-none hover:border-accent-blue transition-colors cursor-pointer"
-          >
-            <option value="" disabled>⚡ Institutional Presets</option>
-            <option value="triple_ema">Triple EMA Trend + Volatility Guard</option>
-            <option value="bollinger_squeeze">Bollinger Squeeze Mean Reversion</option>
-            <option value="basis_arbitrage">Spot-Futures Basis Funding Arbitrage</option>
-            <option value="order_flow">Order Flow Imbalance Scalper</option>
-            <option value="pairs_trading">Statistical Pairs Cointegration (BTC/ETH)</option>
-            <option value="volatility_grid">Dynamic Volatility Grid</option>
-          </select>
+          <div className="h-4 w-px bg-bg-border shrink-0" />
 
-          {/* 100 Quant Strategies Benchmark Lab Button */}
-          <button
-            onClick={() => setIsHundredStrategiesModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 px-3 py-1.5 text-[11px] font-bold transition-all shadow-sm shadow-cyan-500/10 cursor-pointer shrink-0"
-            title="Run batch backtest across 100 quantitative algorithms"
-          >
-            <Flame className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
-            <span>⚡ 100 Algos Benchmark</span>
-          </button>
+          {/* Instrument & Timeframe Pickers */}
+          <div className="flex items-center gap-1.5 bg-bg-elevated/90 px-2.5 py-1 rounded-xl border border-bg-border text-xs font-bold shadow-xs">
+            <select
+              value={tradingPair}
+              onChange={(e) => setTradingPair(e.target.value)}
+              className="bg-transparent text-text-primary outline-none cursor-pointer hover:text-accent-blue transition-colors font-mono"
+            >
+              <option value="BTC/USDT">BTC/USDT</option>
+              <option value="ETH/USDT">ETH/USDT</option>
+              <option value="SOL/USDT">SOL/USDT</option>
+              <option value="PAXG/USDT">PAXG/USDT</option>
+              <option value="NEAR/USDT">NEAR/USDT</option>
+            </select>
+
+            <span className="text-text-tertiary">|</span>
+
+            <select
+              value={timeframe}
+              onChange={(e) => setTimeframe(e.target.value)}
+              className="bg-transparent text-accent-blue outline-none cursor-pointer hover:underline transition-all font-mono"
+            >
+              <option value="1m">1m</option>
+              <option value="5m">5m</option>
+              <option value="15m">15m</option>
+              <option value="1h">1h</option>
+              <option value="4h">4h</option>
+              <option value="1d">1d</option>
+            </select>
+          </div>
         </div>
 
-        {/* Center: Workspace Mode Switcher */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Center Zone: Workspace Mode Switcher & AI Studio Trigger */}
+        <div className="hidden lg:flex items-center gap-2.5 shrink-0">
           <div className="flex items-center rounded-xl bg-bg-elevated p-1 border border-bg-border shadow-inner">
             <button 
               onClick={() => setWorkspaceMode('canvas')}
@@ -157,6 +182,18 @@ export default function BuilderPage() {
             >
               <LayoutGrid className="h-3.5 w-3.5" />
               <span>Flow Graph</span>
+            </button>
+
+            <button 
+              onClick={() => setWorkspaceMode('chart')}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11.5px] font-bold transition-all ${
+                workspaceMode === 'chart'
+                  ? 'bg-accent-blue text-white shadow-sm'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              <LineChart className="h-3.5 w-3.5" />
+              <span>Strategy Chart</span>
             </button>
 
             <button 
@@ -184,116 +221,142 @@ export default function BuilderPage() {
             </button>
           </div>
 
-          {/* Instrument & Timeframe Pickers */}
-          <div className="hidden lg:flex items-center gap-1.5 bg-bg-elevated px-2 py-1 rounded-xl border border-bg-border text-xs font-bold">
-            <select
-              value={tradingPair}
-              onChange={(e) => setTradingPair(e.target.value)}
-              className="bg-transparent text-text-primary outline-none cursor-pointer"
-            >
-              <option value="BTC/USDT">BTC/USDT</option>
-              <option value="ETH/USDT">ETH/USDT</option>
-              <option value="SOL/USDT">SOL/USDT</option>
-              <option value="PAXG/USDT">PAXG/USDT (Gold)</option>
-              <option value="NEAR/USDT">NEAR/USDT</option>
-            </select>
-
-            <span className="text-text-tertiary">|</span>
-
-            <select
-              value={timeframe}
-              onChange={(e) => setTimeframe(e.target.value)}
-              className="bg-transparent text-accent-blue outline-none cursor-pointer"
-            >
-              <option value="1m">1m</option>
-              <option value="5m">5m</option>
-              <option value="15m">15m</option>
-              <option value="1h">1h</option>
-              <option value="4h">4h</option>
-              <option value="1d">1d</option>
-            </select>
-          </div>
+          {/* AI Strategy Studio Button */}
+          <button
+            onClick={() => setIsPromptStudioOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-accent-blue/30 bg-accent-blue/10 hover:bg-accent-blue/20 text-accent-blue px-3 py-1.5 text-[11.5px] font-bold transition-all shadow-xs cursor-pointer"
+            title="Open AI Strategy Studio (Cmd+K)"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-accent-blue" />
+            <span>AI Studio</span>
+            <span className="text-[9.5px] font-mono opacity-70 bg-accent-blue/20 px-1 py-0.2 rounded">⌘K</span>
+          </button>
         </div>
 
-        {/* Right: Actions (Compliance, Optimizer, Backtest, Kill, Deploy) */}
-        <div className="flex items-center gap-2 shrink-0">
-          
-          {/* AI Engine Configuration */}
-          <button
-            onClick={() => setIsGeminiModalOpen(true)}
-            className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-[11px] font-bold transition-all ${
-              aiModel.startsWith('groq')
-                ? 'border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
-                : 'border-accent-blue/30 bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20'
-            }`}
-            title="Configure Groq LPUs or Gemini AI Engine"
-          >
-            {aiModel.startsWith('groq') ? (
-              <Zap className="h-3.5 w-3.5 text-amber-400" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5 text-accent-blue" />
+        {/* Right Zone: Institutional Tools & PRIMARY ACTIONS (NEVER OVERFLOWS) */}
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
+          {/* AI Copilot Status */}
+          <div className="flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-bold text-emerald-400 shadow-xs">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="hidden xl:inline">AI Copilot: Online</span>
+            <span className="xl:hidden">AI Online</span>
+          </div>
+
+          {/* Institutional Quant Tools Dropdown */}
+          <div className="relative" ref={toolsDropdownRef}>
+            <button
+              onClick={() => setIsToolsDropdownOpen(!isToolsDropdownOpen)}
+              className="flex items-center gap-1.5 rounded-xl border border-bg-border bg-bg-elevated hover:bg-bg-border/60 text-text-secondary hover:text-text-primary px-2.5 py-1.5 text-[11px] font-bold transition-all shadow-xs cursor-pointer"
+              title="Institutional Audit & Optimization Tools"
+            >
+              <Wrench className="h-3.5 w-3.5 text-accent-blue" />
+              <span className="hidden sm:inline">Tools</span>
+              <ChevronDown className={`h-3 w-3 text-text-tertiary transition-transform ${isToolsDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Popover Menu */}
+            {isToolsDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-bg-border/90 bg-bg-surface/95 backdrop-blur-xl p-2 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">
+                  Institutional Suite
+                </div>
+
+                {/* 100 Algos Benchmark */}
+                <button
+                  onClick={() => {
+                    setIsToolsDropdownOpen(false)
+                    setIsHundredStrategiesModalOpen(true)
+                  }}
+                  className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-semibold text-text-primary hover:bg-bg-elevated transition-colors cursor-pointer"
+                >
+                  <div className="h-7 w-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                    <Flame className="h-4 w-4 text-cyan-400" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-[12px] text-cyan-400">100 Algos Benchmark</div>
+                    <div className="text-[10px] text-text-tertiary font-normal">Batch backtest 100 quant strategies</div>
+                  </div>
+                </button>
+
+                {/* Genetic Auto-Optimizer */}
+                <button
+                  onClick={() => {
+                    setIsToolsDropdownOpen(false)
+                    setIsOptimizerModalOpen(true)
+                  }}
+                  className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-semibold text-text-primary hover:bg-bg-elevated transition-colors cursor-pointer"
+                >
+                  <div className="h-7 w-7 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center shrink-0">
+                    <Dna className="h-4 w-4 text-indigo-400" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-[12px] text-indigo-400">Genetic Optimizer</div>
+                    <div className="text-[10px] text-text-tertiary font-normal">AI hyperparameter multi-sweep</div>
+                  </div>
+                </button>
+
+                {/* Compliance Audit */}
+                <button
+                  onClick={() => {
+                    setIsToolsDropdownOpen(false)
+                    setIsComplianceModalOpen(true)
+                  }}
+                  className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-semibold text-text-primary hover:bg-bg-elevated transition-colors cursor-pointer"
+                >
+                  <div className="h-7 w-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-[12px] text-emerald-400">Compliance Audit</div>
+                    <div className="text-[10px] text-text-tertiary font-normal">Pre-flight regulatory risk check</div>
+                  </div>
+                </button>
+
+                <div className="my-1.5 h-px bg-bg-border/80" />
+
+                {/* Emergency Kill Switch */}
+                <button
+                  onClick={async () => {
+                    setIsToolsDropdownOpen(false)
+                    try {
+                      await fetch('/api/kill-switch', {
+                        method: 'POST',
+                        headers: { 
+                          'Content-Type': 'application/json',
+                          'Authorization': 'Bearer at_admin_master_secret'
+                        },
+                        body: JSON.stringify({ action: 'engage' })
+                      });
+                      setStrategyStatus('Paused');
+                      haltAllTrading();
+                      toast.error('CRITICAL: Kill Switch Engaged. All trading halted.');
+                    } catch (e) {
+                      toast.error('Error engaging Kill Switch!');
+                    }
+                  }}
+                  className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-semibold text-accent-red hover:bg-accent-red/10 transition-colors cursor-pointer"
+                >
+                  <div className="h-7 w-7 rounded-lg bg-accent-red/10 border border-accent-red/30 flex items-center justify-center shrink-0">
+                    <ShieldAlert className="h-4 w-4 text-accent-red" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-[12px] text-accent-red">Emergency Kill Switch</div>
+                    <div className="text-[10px] text-text-tertiary font-normal">Halt all execution & cancel orders</div>
+                  </div>
+                </button>
+              </div>
             )}
-            <span className="hidden sm:inline">
-              {aiModel.startsWith('groq') 
-                ? (groqApiKey ? '⚡ Groq Active' : '⚡ Groq LPUs')
-                : (geminiApiKey ? 'Gemini Active' : 'Gemini AI (Free)')}
-            </span>
-          </button>
+          </div>
 
-          {/* Pre-Flight Compliance Gate */}
-          <button
-            onClick={() => setIsComplianceModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all"
-            title="Pre-Flight Institutional Risk & Compliance Audit"
-          >
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Compliance</span>
-          </button>
+          <div className="h-4 w-px bg-bg-border mx-0.5" />
 
-          {/* Genetic Auto-Optimizer */}
-          <button
-            onClick={() => setIsOptimizerModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-purple-500/30 bg-purple-500/10 px-2.5 py-1 text-[11px] font-bold text-purple-400 hover:bg-purple-500/20 transition-all"
-            title="Run AI Genetic Parameter Sweep"
-          >
-            <Dna className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">AI Optimizer</span>
-          </button>
-
-          {/* Emergency Kill Switch */}
-          <button 
-            className="flex items-center gap-1.5 rounded-xl border border-accent-red/30 bg-accent-red/10 px-2.5 py-1 text-[11px] font-bold text-accent-red hover:bg-accent-red/20 transition-all"
-            onClick={async () => {
-              try {
-                await fetch('/api/kill-switch', {
-                  method: 'POST',
-                  headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer at_admin_master_secret'
-                  },
-                  body: JSON.stringify({ action: 'engage' })
-                });
-                setStrategyStatus('Paused');
-                haltAllTrading();
-                toast.error('CRITICAL: Kill Switch Engaged. All trading halted.');
-              } catch (e) {
-                toast.error('Error engaging Kill Switch!');
-              }
-            }}
-            title="Emergency halt all orders and close positions"
-          >
-            <ShieldAlert className="h-3.5 w-3.5" />
-            <span>Kill</span>
-          </button>
-
-          <div className="h-4 w-px bg-bg-border" />
-
-          {/* Backtest Trigger */}
+          {/* Primary Action 1: Backtest Simulation */}
           <Button 
             variant="secondary" 
-            className="text-[11px] h-8 flex items-center gap-1.5 px-3 font-bold border-bg-border bg-bg-surface hover:bg-bg-elevated"
+            className="text-[11.5px] h-9 flex items-center gap-1.5 px-3.5 font-bold border-bg-border bg-bg-elevated hover:bg-bg-border/60 text-text-primary rounded-xl transition-all cursor-pointer"
             onClick={runBacktest}
             disabled={isBacktesting || !strategyDSL}
+            title="Run Historical Backtest"
           >
             {isBacktesting ? (
               <span className="h-3.5 w-3.5 rounded-full border-2 border-text-secondary border-t-accent-blue animate-spin" />
@@ -303,21 +366,28 @@ export default function BuilderPage() {
             <span>Backtest</span>
           </Button>
 
-          {/* Deploy Live / Sandbox */}
-          <Button 
-            variant="primary" 
-            className="text-[11px] text-white h-8 flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 font-bold px-3.5 shadow-md shadow-emerald-500/20 transition-all"
+          {/* Primary Action 2: DEPLOY STRATEGY (ALWAYS PROMINENT & VISIBLE) */}
+          <button 
+            className="text-[12px] text-white h-9 flex items-center gap-2 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 font-bold px-4 rounded-xl shadow-lg shadow-emerald-600/25 border border-emerald-400/30 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
             onClick={() => {
               if (strategyDSL) {
                 setIsDeployModalOpen(true)
               } else {
-                toast.error("Build a strategy first!")
+                toast.error("Build a strategy on canvas first!", {
+                  description: "Use AI Copilot or AI Studio to generate your trading rules."
+                })
+                setIsPromptStudioOpen(true)
               }
             }}
+            title="Deploy Strategy to Live Exchange or Sandbox Paper Trading"
           >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+            </span>
             <Zap className="h-3.5 w-3.5 fill-current text-white" />
-            <span>Deploy</span>
-          </Button>
+            <span>Deploy Strategy</span>
+          </button>
         </div>
       </div>
 
@@ -382,28 +452,44 @@ export default function BuilderPage() {
 
             {/* ═══ Active Left Drawer (Single Panel) ═══ */}
             {activeLeftPanel && (
-              <div className="w-[320px] shrink-0 border-r border-bg-border bg-bg-surface h-full flex flex-col overflow-hidden z-10 animate-in slide-in-from-left duration-200">
-                <div className="flex h-9 shrink-0 items-center justify-between px-3 border-b border-bg-border bg-bg-elevated/40 text-xs font-bold text-text-secondary">
-                  <span className="flex items-center gap-1.5">
-                    {activeLeftPanel === 'copilot' && (
-                      <>
-                        <BrainCircuit className="h-3.5 w-3.5 text-accent-blue" />
-                        <span>AI Copilot</span>
-                      </>
-                    )}
-                    {activeLeftPanel === 'blocks' && (
-                      <>
-                        <Layers className="h-3.5 w-3.5 text-accent-blue" />
-                        <span>Block Library</span>
-                      </>
-                    )}
-                    {activeLeftPanel === 'settings' && (
-                      <>
-                        <Sliders className="h-3.5 w-3.5 text-accent-blue" />
-                        <span>Quant Settings</span>
-                      </>
-                    )}
-                  </span>
+              <div className="w-[380px] xl:w-[410px] shrink-0 border-r border-bg-border bg-bg-surface h-full flex flex-col overflow-hidden z-10 animate-in slide-in-from-left duration-200">
+                <div className="flex h-10 shrink-0 items-center justify-between px-3 border-b border-bg-border bg-bg-elevated/40 text-xs font-bold text-text-secondary">
+                  <div className="flex items-center gap-1 bg-bg-base/60 p-0.5 rounded-lg border border-bg-border/60">
+                    <button
+                      onClick={() => setActiveLeftPanel('copilot')}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                        activeLeftPanel === 'copilot'
+                          ? 'bg-accent-blue text-white shadow-xs'
+                          : 'text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      <BrainCircuit className="h-3 w-3" />
+                      <span>Copilot</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveLeftPanel('blocks')}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                        activeLeftPanel === 'blocks'
+                          ? 'bg-accent-blue text-white shadow-xs'
+                          : 'text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      <Layers className="h-3 w-3" />
+                      <span>Blocks</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveLeftPanel('settings')}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                        activeLeftPanel === 'settings'
+                          ? 'bg-accent-blue text-white shadow-xs'
+                          : 'text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      <Sliders className="h-3 w-3" />
+                      <span>Settings</span>
+                    </button>
+                  </div>
+
                   <button
                     onClick={() => setActiveLeftPanel(null)}
                     className="p-1 text-text-tertiary hover:text-text-primary hover:bg-bg-elevated rounded transition-colors"
@@ -451,15 +537,17 @@ export default function BuilderPage() {
                     <span>Canvas Active</span>
                   </span>
                   <span className="text-bg-border">•</span>
-                  <span className="text-text-tertiary">{tradingPair} ({timeframe})</span>
+                  <span className="text-text-primary font-mono font-bold">{tradingPair} ({timeframe})</span>
                   <span className="text-bg-border hidden sm:inline">•</span>
                   <span className="text-accent-blue font-mono hidden sm:inline">⚡ 4.2ms execution latency</span>
+                  <span className="text-bg-border hidden md:inline">•</span>
+                  <span className="text-text-secondary hidden md:inline font-mono">Binance Futures (Paper)</span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setShowCode(!showCode)}
-                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all ${
+                    className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
                       showCode 
                         ? 'bg-accent-blue/15 text-accent-blue border border-accent-blue/30' 
                         : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
@@ -481,6 +569,12 @@ export default function BuilderPage() {
             )}
 
             <BacktestDrawer />
+          </div>
+        )}
+
+        {workspaceMode === 'chart' && (
+          <div className="flex-1 h-full w-full overflow-hidden">
+            <StrategyChartViewer />
           </div>
         )}
 

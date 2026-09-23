@@ -21,6 +21,8 @@ import { normalizeStrategyDSL } from '@/lib/parser/strategyNormalizer'
 export type StrategyStatus = "Draft" | "Live" | "Paused"
 
 export type AiModelType = 
+  | 'claude-3-7-sonnet'
+  | 'claude-3-5-sonnet'
   | 'groq-gpt-120b' 
   | 'groq-qwen-27b' 
   | 'gemini-2.5-flash' 
@@ -45,6 +47,8 @@ export type ChatMessage = {
     latencyMs?: number;
     needsApiKey?: boolean;
     fallbackReason?: string;
+    failoverNotice?: string;
+    provider?: string;
     verificationAudit?: {
       verified: boolean;
       score: number;
@@ -123,6 +127,8 @@ interface BuilderState {
   // AI Copilot Model & API Key
   aiModel: AiModelType
   setAiModel: (model: AiModelType) => void
+  claudeApiKey: string
+  setClaudeApiKey: (key: string) => void
   groqApiKey: string
   setGroqApiKey: (key: string) => void
   geminiApiKey: string
@@ -136,8 +142,8 @@ interface BuilderState {
   undo: () => void
   redo: () => void
 
-  workspaceMode: 'canvas' | 'scratchpad' | 'code'
-  setWorkspaceMode: (mode: 'canvas' | 'scratchpad' | 'code') => void
+  workspaceMode: 'canvas' | 'chart' | 'scratchpad' | 'code'
+  setWorkspaceMode: (mode: 'canvas' | 'chart' | 'scratchpad' | 'code') => void
   isOptimizerModalOpen: boolean
   setIsOptimizerModalOpen: (isOpen: boolean) => void
   isDeployModalOpen: boolean
@@ -252,22 +258,29 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   backtestResult: null,
   chatHistory: [{ 
     role: 'assistant', 
-    content: "👋 **Welcome to AlgoRush AI Quant Copilot.**\n\nI am your quantitative architect powered by **Groq LPUs™ (Ultra-Fast Inference)** & advanced neural reasoning. You can ask me any question about trading concepts, indicator mathematics, market conditions, or risk frameworks—or describe a trading strategy in natural language, and I will compile it into an executable visual flowchart algorithm with live backtesting in under 500ms.",
+    content: "👋 **Welcome to AlgoRush AI Quant Copilot.**\n\nI am your institutional quantitative architect. You can ask me any question about trading concepts, indicator mathematics, market conditions, or risk frameworks—or describe a trading strategy in natural language, and I will compile it into an executable visual flowchart algorithm with live backtesting.",
     metadata: {
       isAi: true,
-      modelUsed: 'Groq GPT-OSS 120B',
-      reasoning: 'Calibrated for institutional algorithmic compilation, multi-factor risk audits, and zero-latency strategy formulation.'
+      modelUsed: 'AlgoRush Copilot',
+      reasoning: 'Calibrated for institutional algorithmic compilation, multi-factor risk audits, and high-frequency strategy formulation.'
     }
   }],
   isAnimatingBuild: false,
   
   // AI Copilot Model & API Key
-  aiModel: (typeof window !== 'undefined' ? (localStorage.getItem('algorush_ai_model') as AiModelType) : null) || 'groq-gpt-120b',
+  aiModel: (typeof window !== 'undefined' ? (localStorage.getItem('algorush_ai_model') as AiModelType) : null) || 'claude-3-7-sonnet',
   setAiModel: (model) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('algorush_ai_model', model)
     }
     set({ aiModel: model })
+  },
+  claudeApiKey: (typeof window !== 'undefined' ? localStorage.getItem('algorush_claude_api_key') : null) || process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '',
+  setClaudeApiKey: (key) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('algorush_claude_api_key', key)
+    }
+    set({ claudeApiKey: key })
   },
   groqApiKey: (typeof window !== 'undefined' ? localStorage.getItem('algorush_groq_api_key') : null) || process.env.NEXT_PUBLIC_GROQ_API_KEY || '',
   setGroqApiKey: (key) => {
@@ -404,11 +417,11 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   clearChatHistory: () => set({
     chatHistory: [{ 
       role: 'assistant', 
-      content: "👋 **Welcome to AlgoRush AI Quant Copilot.**\n\nI am your quantitative architect powered by **Groq LPUs™ (Ultra-Fast Inference)** & advanced neural reasoning. You can ask me any question about trading concepts, indicator mathematics, market conditions, or risk frameworks—or describe a trading strategy in natural language, and I will compile it into an executable visual flowchart algorithm with live backtesting in under 500ms.",
+      content: "👋 **Welcome to AlgoRush AI Quant Copilot.**\n\nI am your institutional quantitative architect. You can ask me any question about trading concepts, indicator mathematics, market conditions, or risk frameworks—or describe a trading strategy in natural language, and I will compile it into an executable visual flowchart algorithm with live backtesting.",
       metadata: {
         isAi: true,
-        modelUsed: 'Groq GPT-OSS 120B',
-        reasoning: 'Calibrated for institutional algorithmic compilation, multi-factor risk audits, and zero-latency strategy formulation.'
+        modelUsed: 'AlgoRush Copilot',
+        reasoning: 'Calibrated for institutional algorithmic compilation, multi-factor risk audits, and high-frequency strategy formulation.'
       }
     }]
   }),
@@ -699,10 +712,10 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
       tf = "1h"
       presetNodes = [
         { id: 'start', type: 'triggerNode', position: { x: 250, y: 40 }, data: { label: 'Strategy Start' } },
-        { id: 'entry-ema', type: 'conditionNode', position: { x: 250, y: 160 }, data: { category: 'ENTRY CONDITIONS', label: 'EMA Golden Cross', dslCondition: { left: { type: 'EMA', timeframe: '1h', parameters: { period: 50 } }, comparator: 'CROSSES_ABOVE', right: { type: 'EMA', timeframe: '1h', parameters: { period: 200 } }, logicalOperator: 'AND' } } },
-        { id: 'exec-buy', type: 'executeNode', position: { x: 250, y: 280 }, data: { label: 'Buy Long (50% Account)', dslAction: { type: 'BUY', orderType: 'MARKET', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 50 } } },
-        { id: 'exit-rsi', type: 'conditionNode', position: { x: 250, y: 400 }, data: { category: 'EXIT CONDITIONS', label: 'Exit RSI Overbought (>75)', dslCondition: { left: { type: 'RSI', parameters: { period: 14 } }, comparator: 'GREATER_THAN', right: 75, logicalOperator: 'OR' } } },
-        { id: 'risk-guard', type: 'riskNode', position: { x: 250, y: 520 }, data: { label: 'Risk Guard (3% SL / 6% TP)', dslRisk: { stopLossPercentage: 3.0, takeProfitPercentage: 6.0, trailingStopPercentage: 1.5 } } },
+        { id: 'entry-ema', type: 'conditionNode', position: { x: 250, y: 260 }, data: { category: 'ENTRY CONDITIONS', label: 'EMA Golden Cross', dslCondition: { left: { type: 'EMA', timeframe: '1h', parameters: { period: 50 } }, comparator: 'CROSSES_ABOVE', right: { type: 'EMA', timeframe: '1h', parameters: { period: 200 } }, logicalOperator: 'AND' } } },
+        { id: 'exec-buy', type: 'executeNode', position: { x: 250, y: 560 }, data: { label: 'Buy Long (50% Account)', dslAction: { type: 'BUY', orderType: 'MARKET', quantityType: 'PERCENT_OF_ACCOUNT', quantityValue: 50 } } },
+        { id: 'exit-rsi', type: 'conditionNode', position: { x: 250, y: 840 }, data: { category: 'EXIT CONDITIONS', label: 'Exit RSI Overbought (>75)', dslCondition: { left: { type: 'RSI', parameters: { period: 14 } }, comparator: 'GREATER_THAN', right: 75, logicalOperator: 'OR' } } },
+        { id: 'risk-guard', type: 'riskNode', position: { x: 250, y: 1140 }, data: { label: 'Risk Guard (3% SL / 6% TP)', dslRisk: { stopLossPercentage: 3.0, takeProfitPercentage: 6.0, trailingStopPercentage: 1.5 } } },
       ]
       presetEdges = [
         { id: 'e1', source: 'start', target: 'entry-ema', animated: true },
@@ -716,9 +729,9 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
       tf = "5m"
       presetNodes = [
         { id: 'start', type: 'triggerNode', position: { x: 250, y: 40 }, data: { label: 'Strategy Start' } },
-        { id: 'entry-rsi', type: 'conditionNode', position: { x: 250, y: 160 }, data: { category: 'ENTRY CONDITIONS', label: 'RSI Oversold (<28)', dslCondition: { left: { type: 'RSI', timeframe: '5m', parameters: { period: 14 } }, comparator: 'LESS_THAN', right: 28, logicalOperator: 'AND' } } },
-        { id: 'exec-buy', type: 'executeNode', position: { x: 250, y: 280 }, data: { label: 'Buy (Half-Kelly Sizing)', dslAction: { type: 'BUY', orderType: 'MARKET', quantityType: 'KELLY_CRITERION', quantityValue: 0.5 } } },
-        { id: 'risk-tight', type: 'riskNode', position: { x: 250, y: 400 }, data: { label: 'Tight SL (1.5%) / TP (4.0%)', dslRisk: { stopLossPercentage: 1.5, takeProfitPercentage: 4.0 } } },
+        { id: 'entry-rsi', type: 'conditionNode', position: { x: 250, y: 260 }, data: { category: 'ENTRY CONDITIONS', label: 'RSI Oversold (<28)', dslCondition: { left: { type: 'RSI', timeframe: '5m', parameters: { period: 14 } }, comparator: 'LESS_THAN', right: 28, logicalOperator: 'AND' } } },
+        { id: 'exec-buy', type: 'executeNode', position: { x: 250, y: 560 }, data: { label: 'Buy (Half-Kelly Sizing)', dslAction: { type: 'BUY', orderType: 'MARKET', quantityType: 'KELLY_CRITERION', quantityValue: 0.5 } } },
+        { id: 'risk-tight', type: 'riskNode', position: { x: 250, y: 840 }, data: { label: 'Tight SL (1.5%) / TP (4.0%)', dslRisk: { stopLossPercentage: 1.5, takeProfitPercentage: 4.0 } } },
       ]
       presetEdges = [
         { id: 'e1', source: 'start', target: 'entry-rsi', animated: true },
@@ -933,10 +946,10 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
       const layer = layers[layerIdx] || [node]
       const nodeIdx = layer.findIndex(n => n.id === node.id)
       const totalInLayer = layer.length
-      const spacingX = 300
+      const spacingX = 360
       const startX = 320 - ((totalInLayer - 1) * spacingX) / 2
       const x = Math.round(startX + nodeIdx * spacingX)
-      const y = Math.round(50 + layerIdx * 140)
+      const y = Math.round(50 + layerIdx * 260)
 
       return {
         ...node,
@@ -1000,7 +1013,8 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     if (!textToParse.trim()) return false
     const { 
       aiModel, 
-      groqApiKey,
+      claudeApiKey,
+      groqApiKey, 
       geminiApiKey, 
       strategyDSL, 
       chatHistory,
@@ -1016,7 +1030,8 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
       setIsAnimatingBuild 
     } = get()
 
-    const isStrategy = isExplicitStrategyIntent(textToParse)
+    const historyForIntent = chatHistory.map(m => ({ role: m.role, content: m.content }))
+    const isStrategy = isExplicitStrategyIntent(textToParse, historyForIntent)
     addChatMessage({ role: 'user', content: textToParse })
     if (isStrategy) {
       set({ buildupPipelineStage: 1 }) // 1: Tokenizing & Semantic Extraction
@@ -1028,13 +1043,15 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
         headers: { 
           "Content-Type": "application/json",
           "Authorization": "Bearer at_admin_master_secret",
+          ...(claudeApiKey ? { "x-claude-api-key": claudeApiKey } : {}),
           ...(groqApiKey ? { "x-groq-api-key": groqApiKey } : {}),
           ...(geminiApiKey ? { "x-gemini-api-key": geminiApiKey } : {})
         },
         body: JSON.stringify({ 
           text: textToParse,
           model: aiModel,
-          apiKey: groqApiKey || geminiApiKey,
+          apiKey: claudeApiKey || groqApiKey || geminiApiKey,
+          claudeApiKey: claudeApiKey,
           groqApiKey: groqApiKey,
           currentStrategy: strategyDSL,
           chatHistory: chatHistory.map(m => ({ role: m.role, content: m.content })).slice(-10)
@@ -1050,10 +1067,11 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
           content: data.conversationalResponse || data.clarificationMessage || (typeof data.content === 'string' ? data.content : "👋 Hello! How can I assist you with your quantitative trading strategy or market questions today?"),
           metadata: {
             isAi: data.isAi,
-            modelUsed: data.modelUsed,
+            modelUsed: 'AlgoRush Copilot',
             reasoning: data.reasoning,
             suggestedTweaks: data.suggestedTweaks,
             latencyMs: data.latencyMs,
+            provider: 'AlgoRush Copilot',
           }
         })
         return false
@@ -1064,9 +1082,10 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
           content: data.clarificationMessage || "Could you provide more details about entry triggers or leverage?",
           metadata: {
             isAi: data.isAi,
-            modelUsed: data.modelUsed,
+            modelUsed: 'AlgoRush Copilot',
             suggestedTweaks: data.suggestedTweaks,
             latencyMs: data.latencyMs,
+            provider: 'AlgoRush Copilot',
           }
         })
         return false
@@ -1277,13 +1296,14 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
           role: 'assistant', 
           content: summaryText,
           metadata: {
-            modelUsed: data.modelUsed,
+            modelUsed: 'AlgoRush Copilot',
             isAi: data.isAi,
             reasoning: data.reasoning,
             riskAssessment: data.riskAssessment,
             suggestedTweaks: data.suggestedTweaks,
             strategy: strat,
             latencyMs: data.latencyMs,
+            provider: 'AlgoRush Copilot',
             verificationAudit: data.verificationAudit,
             backtestResult: freshResult,
           }

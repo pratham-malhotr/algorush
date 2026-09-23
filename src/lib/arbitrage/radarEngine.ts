@@ -146,6 +146,31 @@ export function formatRoi(pct: number): {
 }
 
 /**
+ * Format price preserving authentic institutional exchange precision.
+ */
+export function formatPricePrecision(price: number): number {
+  if (!price || isNaN(price) || price <= 0) return 0;
+  if (price < 0.00001) return +price.toFixed(8);
+  if (price < 0.001) return +price.toFixed(6);
+  if (price < 1) return +price.toFixed(5);
+  if (price < 10) return +price.toFixed(4);
+  if (price < 500) return +price.toFixed(3);
+  return +price.toFixed(2);
+}
+
+/**
+ * Display formatted string of price with commas and dynamic decimal places.
+ */
+export function formatPriceDisplay(price: number): string {
+  if (!price || isNaN(price) || price <= 0) return '0.00';
+  const decimals = price < 0.00001 ? 8 : price < 0.001 ? 6 : price < 1 ? 5 : price < 10 ? 4 : price < 500 ? 3 : 2;
+  return price.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: decimals
+  });
+}
+
+/**
  * Calculates Level-2 Orderbook VWAP Slippage, real fee deductions, and net realized PnL.
  * Supports Institutional VIP (prefunded inventory, low fees) vs Retail mode.
  */
@@ -176,8 +201,8 @@ export function calculateVwapSlippage(
   const buySlippagePct = Math.min(0.008 * depthFactor, 0.25);
   const sellSlippagePct = Math.min(0.010 * depthFactor, 0.25);
 
-  const effectiveBuyPrice = +(arb.buyPrice * (1 + buySlippagePct / 100)).toFixed(arb.buyPrice < 1 ? 5 : 2);
-  const effectiveSellPrice = +(arb.sellPrice * (1 - sellSlippagePct / 100)).toFixed(arb.sellPrice < 1 ? 5 : 2);
+  const effectiveBuyPrice = formatPricePrecision(arb.buyPrice * (1 + buySlippagePct / 100));
+  const effectiveSellPrice = formatPricePrecision(arb.sellPrice * (1 - sellSlippagePct / 100));
 
   const qty = cap / effectiveBuyPrice;
   const grossReturnUsdt = (effectiveSellPrice - effectiveBuyPrice) * qty;
@@ -214,3 +239,4 @@ export function calculateVwapSlippage(
     isProfitable: netPnLUsdt > 0
   };
 }
+

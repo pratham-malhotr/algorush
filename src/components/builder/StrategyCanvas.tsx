@@ -12,10 +12,11 @@ import { LogicGateNode } from "./nodes/LogicGateNode"
 import { FilterNode } from "./nodes/FilterNode"
 import { TakeProfitLadderNode } from "./nodes/TakeProfitLadderNode"
 import { WebhookNode } from "./nodes/WebhookNode"
-import { Undo, Redo, Trash2, Sparkles, CheckCircle2, AlertTriangle, Wand2, LayoutGrid, ShieldCheck, Download, Upload, Wrench } from "lucide-react"
+import { Undo, Redo, Trash2, Sparkles, CheckCircle2, AlertTriangle, Wand2, LayoutGrid, ShieldCheck, Download, Upload, Wrench, BarChart3, Zap, LineChart } from "lucide-react"
 import { StrategyPromptStudio } from "./StrategyPromptStudio"
 import { StrategyDiagnosticsModal } from "./StrategyDiagnosticsModal"
 import { StrategyImportExportModal } from "./StrategyImportExportModal"
+import { toast } from "sonner"
 
 const nodeTypes = {
   triggerNode: TriggerNode,
@@ -45,7 +46,13 @@ function CanvasFlow() {
     validateGraph, 
     loadPresetTemplate, 
     clearCanvas,
-    autoLayoutNodes
+    autoLayoutNodes,
+    setIsPromptStudioOpen,
+    strategyDSL,
+    setIsDeployModalOpen,
+    runBacktest,
+    isBacktesting,
+    setWorkspaceMode
   } = useBuilderStore()
 
   const reactFlowWrapper = React.useRef<HTMLDivElement>(null)
@@ -153,13 +160,24 @@ function CanvasFlow() {
 
   return (
     <div className="flex-1 h-full w-full bg-bg-base relative overflow-hidden" ref={reactFlowWrapper}>
-      {/* ═══ Floating Center Command Island (Spotlight Prompt Studio) ═══ */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-2xl pointer-events-auto">
-        <StrategyPromptStudio />
-      </div>
+      {/* ═══ AI Prompt Studio Spotlight Modal ═══ */}
+      <StrategyPromptStudio />
 
       {/* ═══ Top-Left Floating Controls Pill ═══ */}
       <div className="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-xl border border-bg-border/80 bg-bg-surface/90 p-1 backdrop-blur-md shadow-md">
+        {/* AI Studio Trigger */}
+        <button
+          onClick={() => setIsPromptStudioOpen(true)}
+          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold bg-accent-blue/10 border border-accent-blue/30 text-accent-blue hover:bg-accent-blue/20 transition-all shadow-xs"
+          title="Open AI Strategy Studio (Cmd+K)"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-accent-blue" />
+          <span>AI Studio</span>
+          <span className="text-[9px] font-mono opacity-75 bg-accent-blue/20 px-1 py-0.2 rounded">⌘K</span>
+        </button>
+
+        <div className="h-3.5 w-px bg-bg-border" />
+
         {/* Presets Dropdown */}
         <select
           onChange={(e) => e.target.value && loadPresetTemplate(e.target.value)}
@@ -176,6 +194,16 @@ function CanvasFlow() {
           <option value="golden_cross">50/200 Golden Cross</option>
           <option value="rsi_oversold">RSI Scalper</option>
         </select>
+
+        {/* Quick Strategy Chart View Toggle */}
+        <button
+          onClick={() => setWorkspaceMode('chart')}
+          className="hidden md:flex items-center gap-1.5 h-7 rounded-lg border border-accent-blue/40 bg-accent-blue/10 hover:bg-accent-blue/20 text-accent-blue px-2.5 text-[11px] font-bold transition-all shadow-xs cursor-pointer"
+          title="Switch to Enterprise Strategy Chart View"
+        >
+          <LineChart className="h-3.5 w-3.5" />
+          <span>Strategy Chart</span>
+        </button>
 
         <div className="hidden sm:block h-3.5 w-px bg-bg-border" />
 
@@ -216,7 +244,7 @@ function CanvasFlow() {
           className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-bg-elevated hover:text-text-primary transition-colors"
           title="Export / Import Strategy"
         >
-          <Download className="h-3.5 w-3.5 text-purple-400" />
+          <Download className="h-3.5 w-3.5 text-text-secondary" />
           <span className="hidden md:inline">Port</span>
         </button>
 
@@ -231,17 +259,19 @@ function CanvasFlow() {
         </button>
       </div>
 
-      {/* ═══ Top-Right Graph Validation Health Pill & Diagnostics Trigger ═══ */}
+      {/* ═══ Top-Right Graph Validation Health Pill & Pre-Flight / Deploy Cluster ═══ */}
       <div className="absolute right-3 top-3 z-20 flex items-center gap-2">
+        {/* Pre-Flight Diagnostics */}
         <button
           onClick={() => setIsDiagnosticsOpen(true)}
-          className="flex items-center gap-1.5 rounded-xl border border-bg-border/80 bg-bg-surface/90 px-2.5 py-1 text-[11px] font-bold text-text-primary backdrop-blur-md shadow-md hover:border-accent-blue hover:text-accent-blue transition-all"
+          className="flex items-center gap-1.5 rounded-xl border border-bg-border/80 bg-bg-surface/90 px-2.5 py-1 text-[11px] font-bold text-text-primary backdrop-blur-md shadow-md hover:border-accent-blue hover:text-accent-blue transition-all cursor-pointer"
           title="Open Institutional Pre-Flight Diagnostics"
         >
           <ShieldCheck className="h-3.5 w-3.5 text-accent-blue" />
           <span className="hidden sm:inline">Diagnostics</span>
         </button>
 
+        {/* Validation Status Badge */}
         {validation.isValid ? (
           <div 
             onClick={() => setIsDiagnosticsOpen(true)}
@@ -254,13 +284,53 @@ function CanvasFlow() {
         ) : (
           <div 
             onClick={() => setIsDiagnosticsOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-500 backdrop-blur-md shadow-sm max-w-[220px] truncate cursor-pointer hover:bg-amber-500/20 transition-all" 
+            className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-500 backdrop-blur-md shadow-sm max-w-[180px] truncate cursor-pointer hover:bg-amber-500/20 transition-all" 
             title={validation.errors[0] || validation.warnings[0]}
           >
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{validation.errors[0] || validation.warnings[0]}</span>
           </div>
         )}
+
+        <div className="h-4 w-px bg-bg-border/80" />
+
+        {/* Quick Backtest Trigger on Canvas */}
+        <button
+          onClick={runBacktest}
+          disabled={isBacktesting || !strategyDSL}
+          className="flex items-center gap-1.5 rounded-xl border border-bg-border/80 bg-bg-surface/90 hover:bg-bg-elevated text-text-primary px-3 py-1 text-[11px] font-bold backdrop-blur-md shadow-md transition-all disabled:opacity-40 cursor-pointer"
+          title="Run Historical Backtest"
+        >
+          {isBacktesting ? (
+            <span className="h-3 w-3 rounded-full border-2 border-text-secondary border-t-accent-blue animate-spin" />
+          ) : (
+            <BarChart3 className="h-3.5 w-3.5 text-accent-blue" />
+          )}
+          <span>Backtest</span>
+        </button>
+
+        {/* Quick Deploy Trigger on Canvas (Always Prominently Visible) */}
+        <button
+          onClick={() => {
+            if (strategyDSL) {
+              setIsDeployModalOpen(true)
+            } else {
+              toast.error("Build a strategy first!", {
+                description: "Use AI Copilot or AI Studio to generate your trading rules."
+              })
+              setIsPromptStudioOpen(true)
+            }
+          }}
+          className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white px-3.5 py-1 text-[11.5px] font-bold shadow-md shadow-emerald-500/25 border border-emerald-400/30 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+          title="Deploy Strategy to Live Exchange or Sandbox Paper Trading"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+          </span>
+          <Zap className="h-3.5 w-3.5 fill-current text-white" />
+          <span>Deploy</span>
+        </button>
       </div>
 
       <ReactFlow
